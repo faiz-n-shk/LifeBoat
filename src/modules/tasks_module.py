@@ -1,6 +1,6 @@
 """
 Lifeboat - Tasks Module
-task management
+Notion-like task management with properties and views
 """
 import customtkinter as ctk
 from src.ui.widgets import ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry, ThemedTextbox, ThemedComboBox
@@ -11,7 +11,7 @@ from src.core import config
 from src.utils import helpers as utils
 
 class TasksModule(ThemedFrame):
-    """tasks management module"""
+    """Notion-like tasks management module"""
     
     def __init__(self, master, **kwargs):
         super().__init__(master, color_key="bg_primary", **kwargs)
@@ -27,7 +27,7 @@ class TasksModule(ThemedFrame):
         self.load_tasks()
     
     def setup_ui(self):
-        """setup tasks UI"""
+        """Setup Notion-like tasks UI"""
         # Header with title and actions
         header = ThemedFrame(self, color_key="bg_primary")
         header.grid(row=0, column=0, sticky="ew", padx=30, pady=20)

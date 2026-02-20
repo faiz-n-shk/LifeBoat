@@ -5,12 +5,33 @@ import customtkinter as ctk
 from src.core import config
 from src.ui.widgets import ThemedFrame, ThemedLabel, ThemedButton
 from src.core.theme_manager import theme_manager
+import sys
+import os
+
+# Performance optimizations for Windows
+if sys.platform == "win32":
+    try:
+        # Enable high DPI awareness
+        import ctypes
+        ctypes.windll.shcore.SetProcessDpiAwareness(2)
+    except:
+        pass
+
+# Optimize CustomTkinter rendering
+ctk.set_widget_scaling(1.0)
+ctk.set_window_scaling(1.0)
+
+# Reduce corner radius for better performance
+ctk.set_default_color_theme("blue")
 
 class LifeboatApp(ctk.CTk):
     """Main application class"""
     
     def __init__(self):
         super().__init__()
+        
+        # Performance optimizations
+        self._theme_update_id = None
         
         # Window configuration - do this FIRST for instant visibility
         self.title(config.APP_NAME)
@@ -19,7 +40,15 @@ class LifeboatApp(ctk.CTk):
         
         # Set basic theme
         ctk.set_appearance_mode("dark")
-        ctk.set_default_color_theme("blue")
+        
+        # Optimize Tkinter rendering
+        try:
+            # Reduce update frequency for smoother resize
+            self.tk.call('wm', 'attributes', '.', '-alpha', 0.0)
+            self.update()
+            self.tk.call('wm', 'attributes', '.', '-alpha', 1.0)
+        except:
+            pass
         
         # Show loading screen
         self.show_loading_screen()
@@ -28,7 +57,7 @@ class LifeboatApp(ctk.CTk):
         self.after(10, self.initialize_app)
     
     def show_loading_screen(self):
-        """simple loading screen with boat logo and app name"""
+        """Show a simple loading screen"""
         loading_frame = ctk.CTkFrame(self, fg_color="#1a1a1a")
         loading_frame.pack(fill="both", expand=True)
         
@@ -40,6 +69,7 @@ class LifeboatApp(ctk.CTk):
         ).pack(expand=True)
         
         self.loading_frame = loading_frame
+        self.update()  # Force update to show loading screen
     
     def initialize_app(self):
         """Initialize app after window is visible"""
@@ -144,8 +174,9 @@ class LifeboatApp(ctk.CTk):
         # Clear current module
         if self.current_module:
             self.current_module.destroy()
+            self.current_module = None
         
-        # Update navigation buttons
+        # Update navigation buttons immediately
         for name, btn in self.nav_buttons.items():
             if name == module_name:
                 btn.configure(
@@ -159,6 +190,9 @@ class LifeboatApp(ctk.CTk):
                     hover_color=theme_manager.get_color("border"),
                     text_color=theme_manager.get_color("fg_primary")
                 )
+        
+        # Force update to prevent lag
+        self.update_idletasks()
         
         # Lazy import and create module
         if module_name == "Dashboard":
@@ -189,12 +223,22 @@ class LifeboatApp(ctk.CTk):
             from src.modules.settings_module import SettingsModule
             self.current_module = SettingsModule(self.content_frame, app_instance=self)
         
-        self.current_module.grid(row=0, column=0, sticky="nsew")
+        if self.current_module:
+            self.current_module.grid(row=0, column=0, sticky="nsew")
+        
         self.current_module_name = module_name
     
     def on_theme_change(self):
         """Handle theme change - use after_idle to prevent freezing"""
-        self.after_idle(self._apply_theme_changes)
+        # Cancel any pending theme updates
+        if hasattr(self, '_theme_update_id') and self._theme_update_id is not None:
+            try:
+                self.after_cancel(self._theme_update_id)
+            except:
+                pass
+        
+        # Schedule theme update
+        self._theme_update_id = self.after_idle(self._apply_theme_changes)
     
     def _apply_theme_changes(self):
         """Apply theme changes to all widgets"""
@@ -202,13 +246,10 @@ class LifeboatApp(ctk.CTk):
         self.configure(fg_color=theme_manager.get_color("bg_primary"))
         
         # Update sidebar and content frame
-        self.sidebar.update_theme()
-        self.content_frame.update_theme()
+        self.sidebar.configure(fg_color=theme_manager.get_color("bg_secondary"))
+        self.content_frame.configure(fg_color=theme_manager.get_color("bg_primary"))
         
-        # Update all themed widgets recursively first
-        self._update_widget_theme(self)
-        
-        # Then update navigation buttons with proper states
+        # Update navigation buttons with proper states
         for name, btn in self.nav_buttons.items():
             if name == self.current_module_name:
                 # Active button - use accent color with white text
@@ -225,17 +266,18 @@ class LifeboatApp(ctk.CTk):
                     text_color=theme_manager.get_color("fg_primary")
                 )
         
-        # Refresh current module
-        if self.current_module and hasattr(self.current_module, 'refresh'):
-            self.current_module.refresh()
+        # Force update current module by reloading it
+        if self.current_module and self.current_module_name:
+            # Save current module name
+            current = self.current_module_name
+            # Destroy current module
+            self.current_module.destroy()
+            self.current_module = None
+            self.current_module_name = None
+            # Reload it with new theme
+            self.show_module(current)
     
     def _update_widget_theme(self, widget):
-        """Recursively update theme for all widgets"""
-        if hasattr(widget, 'update_theme'):
-            try:
-                widget.update_theme()
-            except:
-                pass
-        
-        for child in widget.winfo_children():
-            self._update_widget_theme(child)
+        """Recursively update theme for all widgets - REMOVED FOR PERFORMANCE"""
+        # This method is no longer used to prevent lag
+        pass

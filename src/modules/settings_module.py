@@ -1,6 +1,6 @@
 """
 Lifeboat - Settings Module
-Settings and options for application
+App settings and theme customization
 """
 import customtkinter as ctk
 from src.ui.widgets import ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry, ColorPickerButton

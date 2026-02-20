@@ -7,7 +7,7 @@ from pathlib import Path
 
 # App Information
 APP_NAME = "Lifeboat"
-APP_VERSION = "1.0.0"
+APP_VERSION = "1.0.1"
 APP_AUTHOR = "Lifeboat Team"
 
 # Paths
@@ -83,6 +83,10 @@ WINDOW_WIDTH = 1400
 WINDOW_HEIGHT = 900
 MIN_WINDOW_WIDTH = 1200
 MIN_WINDOW_HEIGHT = 700
+
+# UI Settings
+CORNER_RADIUS = 6  # Reduced from default 10
+BORDER_WIDTH = 1
 
 # Font Settings
 FONT_FAMILY = "Segoe UI"

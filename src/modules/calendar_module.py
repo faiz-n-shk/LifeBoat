@@ -293,11 +293,30 @@ class CalendarModule(ThemedFrame):
         events_panel.grid_columnconfigure(0, weight=1)
         events_panel.grid_rowconfigure(1, weight=1)
         
-        ThemedLabel(
-            events_panel,
-            text="Upcoming Events",
-            font=(config.FONT_FAMILY, config.FONT_SIZE_LARGE, "bold")
-        ).grid(row=0, column=0, sticky="w", padx=20, pady=15)
+        # Tab buttons
+        tabs_frame = ThemedFrame(events_panel, color_key="bg_secondary")
+        tabs_frame.grid(row=0, column=0, sticky="ew", padx=10, pady=(10, 5))
+        tabs_frame.grid_columnconfigure(0, weight=1)
+        tabs_frame.grid_columnconfigure(1, weight=1)
+        
+        self.events_view = "upcoming"  # Default view
+        
+        self.upcoming_tab = ThemedButton(
+            tabs_frame,
+            text="Upcoming",
+            height=35,
+            command=lambda: self.switch_events_view("upcoming"),
+            button_style="accent"
+        )
+        self.upcoming_tab.grid(row=0, column=0, sticky="ew", padx=(0, 3))
+        
+        self.recent_tab = ThemedButton(
+            tabs_frame,
+            text="Recent",
+            height=35,
+            command=lambda: self.switch_events_view("recent")
+        )
+        self.recent_tab.grid(row=0, column=1, sticky="ew", padx=(3, 0))
         
         self.events_list = ctk.CTkScrollableFrame(
             events_panel,
@@ -399,20 +418,30 @@ class CalendarModule(ThemedFrame):
         self.load_events_list()
     
     def load_events_list(self):
-        """Load upcoming events list"""
+        """Load events list based on current view"""
         for widget in self.events_list.winfo_children():
             widget.destroy()
         
-        # Get upcoming events
+        # Get events based on view
         today = datetime.now()
-        events = Event.select().where(
-            Event.start_date >= today
-        ).order_by(Event.start_date).limit(20)
+        
+        if self.events_view == "upcoming":
+            # Upcoming and current events
+            events = Event.select().where(
+                Event.start_date >= today
+            ).order_by(Event.start_date).limit(20)
+            empty_message = "No upcoming events"
+        else:
+            # Recent events (past)
+            events = Event.select().where(
+                Event.start_date < today
+            ).order_by(Event.start_date.desc()).limit(20)
+            empty_message = "No recent events"
         
         if not events:
             no_events = ThemedLabel(
                 self.events_list,
-                text="No upcoming events",
+                text=empty_message,
                 color_key="fg_secondary"
             )
             no_events.pack(pady=20)
@@ -423,6 +452,9 @@ class CalendarModule(ThemedFrame):
             event_frame.pack(fill="x", pady=5, padx=5)
             event_frame.grid_columnconfigure(0, weight=1)
             
+            # Make frame clickable to navigate to event date
+            event_frame.bind("<Button-1>", lambda e, evt=event: self.navigate_to_event(evt))
+            
             # Title
             title_label = ThemedLabel(
                 event_frame,
@@ -430,6 +462,7 @@ class CalendarModule(ThemedFrame):
                 font=(config.FONT_FAMILY, config.FONT_SIZE_NORMAL, "bold")
             )
             title_label.grid(row=0, column=0, sticky="w", padx=10, pady=(10, 5))
+            title_label.bind("<Button-1>", lambda e, evt=event: self.navigate_to_event(evt))
             
             # Date/Time
             date_label = ThemedLabel(
@@ -439,8 +472,22 @@ class CalendarModule(ThemedFrame):
                 color_key="fg_secondary"
             )
             date_label.grid(row=1, column=0, sticky="w", padx=10, pady=(0, 5))
+            date_label.bind("<Button-1>", lambda e, evt=event: self.navigate_to_event(evt))
+            
+            # Description
+            if event.description:
+                desc_label = ThemedLabel(
+                    event_frame,
+                    text=utils.truncate_text(event.description, 100),
+                    font=(config.FONT_FAMILY, config.FONT_SIZE_SMALL),
+                    color_key="fg_secondary",
+                    wraplength=250
+                )
+                desc_label.grid(row=2, column=0, sticky="w", padx=10, pady=(0, 5))
+                desc_label.bind("<Button-1>", lambda e, evt=event: self.navigate_to_event(evt))
             
             # Location
+            row_num = 3 if event.description else 2
             if event.location:
                 loc_label = ThemedLabel(
                     event_frame,
@@ -448,11 +495,13 @@ class CalendarModule(ThemedFrame):
                     font=(config.FONT_FAMILY, config.FONT_SIZE_SMALL),
                     color_key="fg_secondary"
                 )
-                loc_label.grid(row=2, column=0, sticky="w", padx=10, pady=(0, 5))
+                loc_label.grid(row=row_num, column=0, sticky="w", padx=10, pady=(0, 5))
+                loc_label.bind("<Button-1>", lambda e, evt=event: self.navigate_to_event(evt))
+                row_num += 1
             
             # Actions
             actions_frame = ThemedFrame(event_frame, color_key="bg_tertiary")
-            actions_frame.grid(row=3, column=0, sticky="ew", padx=10, pady=(5, 10))
+            actions_frame.grid(row=row_num, column=0, sticky="ew", padx=10, pady=(5, 10))
             
             ThemedButton(
                 actions_frame,
@@ -498,6 +547,53 @@ class CalendarModule(ThemedFrame):
         """Go to current month"""
         self.current_date = datetime.now()
         self.load_calendar()
+    
+    def go_to_date(self, date):
+        """Go to specific date"""
+        # Convert to datetime if it's a date object
+        if hasattr(date, 'year') and hasattr(date, 'month'):
+            self.current_date = datetime(date.year, date.month, 1)
+        else:
+            self.current_date = date.replace(day=1)
+        self.load_calendar()
+    
+    def navigate_to_event(self, event):
+        """Navigate calendar to event's date"""
+        event_date = event.start_date
+        if hasattr(event_date, 'date'):
+            event_date = event_date.date()
+        self.go_to_date(event_date)
+    
+    def switch_events_view(self, view):
+        """Switch between upcoming and recent events"""
+        self.events_view = view
+        
+        # Update tab button styles
+        if view == "upcoming":
+            self.upcoming_tab.configure(
+                fg_color=theme_manager.get_color("accent"),
+                hover_color=theme_manager.get_color("accent_hover"),
+                text_color="#ffffff"
+            )
+            self.recent_tab.configure(
+                fg_color=theme_manager.get_color("bg_tertiary"),
+                hover_color=theme_manager.get_color("border"),
+                text_color=theme_manager.get_color("fg_primary")
+            )
+        else:
+            self.recent_tab.configure(
+                fg_color=theme_manager.get_color("accent"),
+                hover_color=theme_manager.get_color("accent_hover"),
+                text_color="#ffffff"
+            )
+            self.upcoming_tab.configure(
+                fg_color=theme_manager.get_color("bg_tertiary"),
+                hover_color=theme_manager.get_color("border"),
+                text_color=theme_manager.get_color("fg_primary")
+            )
+        
+        # Reload events list
+        self.load_events_list()
     
     def show_add_event_dialog(self, event=None):
         """Show dialog to add/edit event with date and time pickers"""

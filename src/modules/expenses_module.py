@@ -282,6 +282,14 @@ class ExpensesModule(ThemedFrame):
         )
         date_label.grid(row=0, column=2, padx=15, pady=10)
         
+        # Edit button
+        ThemedButton(
+            item_frame,
+            text="✎",
+            width=30,
+            command=lambda: self.show_edit_dialog(item)
+        ).grid(row=0, column=3, padx=5, pady=10)
+        
         # Delete button
         ThemedButton(
             item_frame,
@@ -289,7 +297,7 @@ class ExpensesModule(ThemedFrame):
             width=30,
             button_style="danger",
             command=lambda: self.delete_item(item)
-        ).grid(row=0, column=3, padx=10, pady=10)
+        ).grid(row=0, column=4, padx=10, pady=10)
     
     def load_charts(self, items):
         """Load charts"""
@@ -414,14 +422,22 @@ class ExpensesModule(ThemedFrame):
     
     def show_add_dialog(self):
         """Show add expense/income dialog"""
+        self._show_item_dialog()
+    
+    def show_edit_dialog(self, item):
+        """Show edit expense/income dialog"""
+        self._show_item_dialog(item)
+    
+    def _show_item_dialog(self, item=None):
+        """Show add/edit expense/income dialog"""
         dialog = ctk.CTkToplevel(self)
-        dialog.title(f"Add {self.view_mode.capitalize()[:-1]}")
+        dialog.title(f"{'Edit' if item else 'Add'} {self.view_mode.capitalize()[:-1]}")
         dialog.geometry("500x600")
         dialog.transient(self)
         dialog.grab_set()
         
         # Import DatePicker
-        from modules.calendar_module import DatePicker
+        from src.modules.calendar_module import DatePicker
         
         scroll_frame = ctk.CTkScrollableFrame(
             dialog,
@@ -432,30 +448,35 @@ class ExpensesModule(ThemedFrame):
         # Amount
         ThemedLabel(scroll_frame, text="Amount:").pack(anchor="w", pady=(0, 5))
         amount_entry = ThemedEntry(scroll_frame, placeholder_text="0.00")
+        if item:
+            amount_entry.insert(0, str(item.amount))
         amount_entry.pack(fill="x", pady=(0, 15))
         
         # Category
         ThemedLabel(scroll_frame, text="Category:").pack(anchor="w", pady=(0, 5))
         categories = config.EXPENSE_CATEGORIES if self.view_mode == "expenses" else config.INCOME_CATEGORIES
         category_combo = ThemedComboBox(scroll_frame, values=categories)
-        category_combo.set(categories[0])
+        category_combo.set(item.category if item else categories[0])
         category_combo.pack(fill="x", pady=(0, 15))
         
         # Description
         ThemedLabel(scroll_frame, text="Description (optional):").pack(anchor="w", pady=(0, 5))
         desc_entry = ThemedEntry(scroll_frame)
+        if item and item.description:
+            desc_entry.insert(0, item.description)
         desc_entry.pack(fill="x", pady=(0, 15))
         
         # Date Picker
         ThemedLabel(scroll_frame, text="Date:").pack(anchor="w", pady=(0, 5))
-        date_picker = DatePicker(scroll_frame, initial_date=datetime.now())
+        initial_date = datetime.combine(item.date, datetime.min.time()) if item else datetime.now()
+        date_picker = DatePicker(scroll_frame, initial_date=initial_date)
         date_picker.pack(fill="x", pady=(0, 15))
         
         # Buttons
         btn_frame = ThemedFrame(scroll_frame, color_key="bg_primary")
         btn_frame.pack(fill="x", pady=(20, 0))
         
-        def save_item():
+        def save_item_data():
             try:
                 amount_str = amount_entry.get().strip()
                 if not amount_str:
@@ -471,20 +492,29 @@ class ExpensesModule(ThemedFrame):
                 date = date_picker.get_date().date()
                 description = desc_entry.get().strip()
                 
-                if self.view_mode == "expenses":
-                    Expense.create(
-                        amount=amount,
-                        category=category_combo.get(),
-                        description=description if description else None,
-                        date=date
-                    )
+                if item:
+                    # Update existing item
+                    item.amount = amount
+                    item.category = category_combo.get()
+                    item.description = description if description else None
+                    item.date = date
+                    item.save()
                 else:
-                    Income.create(
-                        amount=amount,
-                        category=category_combo.get(),
-                        description=description if description else None,
-                        date=date
-                    )
+                    # Create new item
+                    if self.view_mode == "expenses":
+                        Expense.create(
+                            amount=amount,
+                            category=category_combo.get(),
+                            description=description if description else None,
+                            date=date
+                        )
+                    else:
+                        Income.create(
+                            amount=amount,
+                            category=category_combo.get(),
+                            description=description if description else None,
+                            date=date
+                        )
                 
                 self.load_data()
                 dialog.destroy()
@@ -492,7 +522,7 @@ class ExpensesModule(ThemedFrame):
                 print(f"Error saving: {e}")
         
         ThemedButton(btn_frame, text="Cancel", width=100, command=dialog.destroy).pack(side="right", padx=5)
-        ThemedButton(btn_frame, text="Save", width=100, button_style="accent", command=save_item).pack(side="right")
+        ThemedButton(btn_frame, text="Save", width=100, button_style="accent", command=save_item_data).pack(side="right")
     
     def delete_item(self, item):
         """Delete an item"""

@@ -1,6 +1,6 @@
 """
 Lifeboat - Custom Widgets
-Reusable custom widgets for the app
+Reusable custom widgets for the application
 """
 import customtkinter as ctk
 from src.core.theme_manager import theme_manager
@@ -9,11 +9,15 @@ from src.core import config
 
 class ThemedFrame(ctk.CTkFrame):
     """Frame with theme support"""
-    def __init__(self, master, color_key="bg_secondary", **kwargs):
+    def __init__(self, master, color_key="bg_secondary", corner_radius=None, **kwargs):
         self.color_key = color_key
+        # Use smaller corner radius for better performance
+        if corner_radius is None:
+            corner_radius = 6
         super().__init__(
             master,
             fg_color=theme_manager.get_color(color_key),
+            corner_radius=corner_radius,
             **kwargs
         )
     

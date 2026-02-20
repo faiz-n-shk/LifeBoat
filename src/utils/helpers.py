@@ -1,6 +1,6 @@
 """
 Lifeboat - Utility Functions
-utils helper file
+Common utility functions used across the application
 """
 from datetime import datetime, timedelta
 import calendar

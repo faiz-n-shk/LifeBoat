@@ -14,7 +14,7 @@ class BaseModule(ThemedFrame):
         self.grid_rowconfigure(1, weight=1)
     
     def create_header(self, show_search=False, show_add_button=False, add_button_text="+ Add", add_callback=None):
-        """make standard module header"""
+        """Create standard module header"""
         header = ThemedFrame(self, color_key="bg_primary")
         header.grid(row=0, column=0, sticky="ew", padx=20, pady=20)
         header.grid_columnconfigure(1, weight=1)

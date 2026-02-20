@@ -1,6 +1,6 @@
 """
 Lifeboat - Todo Module
-todo list with daily/weekly/monthly views
+Minimal, modern todo list with daily/weekly/monthly views
 """
 import customtkinter as ctk
 from src.ui.widgets import ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry
@@ -10,7 +10,7 @@ from datetime import datetime, timedelta
 from src.core import config
 
 class TodoModule(ThemedFrame):
-    """todo list module"""
+    """Minimal todo list module"""
     
     def __init__(self, master, **kwargs):
         super().__init__(master, color_key="bg_primary", **kwargs)
@@ -24,7 +24,7 @@ class TodoModule(ThemedFrame):
         self.load_todos()
     
     def setup_ui(self):
-        """Setup todo UI"""
+        """Setup minimal todo UI"""
         # Header with period filters
         header = ThemedFrame(self, color_key="bg_primary")
         header.grid(row=0, column=0, sticky="ew", padx=30, pady=30)
@@ -95,7 +95,7 @@ class TodoModule(ThemedFrame):
         self.todos_scroll.grid_columnconfigure(0, weight=1)
     
     def get_period_text(self):
-        """get text for current period"""
+        """Get text for current period"""
         today = datetime.now()
         if self.filter_period == "Daily":
             return today.strftime("%A, %B %d, %Y")
@@ -128,7 +128,7 @@ class TodoModule(ThemedFrame):
                 )
     
     def load_todos(self):
-        """load and show todos for current period"""
+        """Load and display todos for current period"""
         # Clear existing
         for widget in self.todos_scroll.winfo_children():
             widget.destroy()
