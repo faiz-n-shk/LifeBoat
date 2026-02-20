@@ -20,3 +20,4 @@ pywin32-ctypes==0.2.3
 setuptools==82.0.0
 six==1.17.0
 tzdata==2025.3
+pyyaml==6.0.3

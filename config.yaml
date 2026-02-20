@@ -1,0 +1,189 @@
+# ============================================================================
+# Lifeboat Configuration File
+# ============================================================================
+# This file controls the appearance and behavior of Lifeboat.
+# Edit values below to customize your experience.
+# Changes take effect after restarting the application.
+# ============================================================================
+
+# Application Information
+app:
+  name: "Lifeboat"
+  version: "1.0.1"
+  author: "Lifeboat Team"
+
+# Window Settings
+window:
+  width: 1280 # Default window width in pixels
+  height: 720 # Default window height in pixels
+  min_width: 1024 # Minimum window width (prevents shrinking too small)
+  min_height: 768 # Minimum window height
+
+# UI Settings
+ui:
+  corner_radius: 6 # Roundness of buttons and widgets (0 = square, higher = rounder)
+  border_width: 1 # Thickness of borders around widgets in pixels
+
+# Font Settings
+fonts:
+  family: "Segoe UI" # Font family (e.g., "Arial", "Consolas", "Roboto")
+  size:
+    small: 11 # Small text (labels, hints)
+    normal: 13 # Normal text (most UI elements)
+    large: 16 # Large text (section headers)
+    xlarge: 20 # Extra large text (page titles)
+
+# Date/Time Formats
+# Format codes:
+#   %Y = 4-digit year (2024)    %y = 2-digit year (24)
+#   %m = month number (01-12)   %B = full month name (January)
+#   %b = short month (Jan)      %d = day of month (01-31)
+#   %H = hour 24h (00-23)       %I = hour 12h (01-12)
+#   %M = minute (00-59)         %p = AM/PM
+datetime:
+  date_format: "%Y-%m-%d" # Database format: 2024-01-15
+  time_format: "%H:%M" # Database format: 14:30
+  datetime_format: "%Y-%m-%d %H:%M" # Database format: 2024-01-15 14:30
+  display_date_format: "%B %d, %Y" # Display format: January 15, 2024
+  display_datetime_format: "%B %d, %Y %I:%M %p" # Display format: January 15, 2024 02:30 PM
+
+# ============================================================================
+# Default Themes
+# ============================================================================
+# Themes control the color scheme of the application.
+# You can customize existing themes or add new ones.
+# Color format: "#RRGGBB" (hexadecimal RGB values)
+#
+# Color Properties:
+#   bg_primary   = Main background color
+#   bg_secondary = Secondary background (panels, cards)
+#   bg_tertiary  = Tertiary background (hover states)
+#   fg_primary   = Main text color
+#   fg_secondary = Secondary text (descriptions, hints)
+#   accent       = Accent color (buttons, highlights)
+#   accent_hover = Accent color when hovering
+#   success      = Success/positive actions (green)
+#   warning      = Warning/caution (yellow/orange)
+#   danger       = Error/delete actions (red)
+#   border       = Border color for widgets
+# ============================================================================
+
+themes:
+  Dark:
+    bg_primary: "#1a1a1a" # Dark gray background
+    bg_secondary: "#2d2d2d" # Lighter gray for panels
+    bg_tertiary: "#3d3d3d" # Even lighter for hover
+    fg_primary: "#ffffff" # White text
+    fg_secondary: "#b0b0b0" # Gray text for descriptions
+    accent: "#0078d4" # Blue accent
+    accent_hover: "#106ebe" # Darker blue on hover
+    success: "#28a745" # Green for success
+    warning: "#ffc107" # Yellow for warnings
+    danger: "#dc3545" # Red for errors
+    border: "#4d4d4d" # Gray borders
+
+  Light:
+    bg_primary: "#ffffff" # White background
+    bg_secondary: "#f3f3f3" # Light gray for panels
+    bg_tertiary: "#e8e8e8" # Slightly darker for hover
+    fg_primary: "#000000" # Black text
+    fg_secondary: "#616161" # Dark gray for descriptions
+    accent: "#005fb8" # Blue accent (VS Code style)
+    accent_hover: "#004c99" # Darker blue on hover
+    success: "#16825d" # Green for success
+    warning: "#ca5010" # Orange for warnings
+    danger: "#d13438" # Red for errors
+    border: "#d4d4d4" # Light gray borders
+
+  "Catppuccin Mocha": # Quotes needed because of space in name
+    bg_primary: "#1e1e2e" # Deep purple-blue background
+    bg_secondary: "#313244" # Lighter purple for panels
+    bg_tertiary: "#45475a" # Even lighter for hover
+    fg_primary: "#cdd6f4" # Light blue-white text
+    fg_secondary: "#bac2de" # Slightly darker text
+    accent: "#89b4fa" # Soft blue accent
+    accent_hover: "#74c7ec" # Cyan on hover
+    success: "#a6e3a1" # Soft green
+    warning: "#f9e2af" # Soft yellow
+    danger: "#f38ba8" # Soft pink-red
+    border: "#585b70" # Gray-purple borders
+
+  Cyberpunk:
+    bg_primary: "#0a0e27" # Very dark blue background
+    bg_secondary: "#16213e" # Dark blue for panels
+    bg_tertiary: "#1a1a2e" # Slightly lighter for hover
+    fg_primary: "#00ff41" # Neon green text
+    fg_secondary: "#00d9ff" # Cyan text
+    accent: "#ff00ff" # Neon magenta accent
+    accent_hover: "#ff00aa" # Pink on hover
+    success: "#00ff41" # Neon green
+    warning: "#ffff00" # Neon yellow
+    danger: "#ff0055" # Neon red
+    border: "#00d9ff" # Cyan borders
+
+# ============================================================================
+# Categories
+# ============================================================================
+# Predefined categories for expenses and income.
+# You can add, remove, or rename categories as needed.
+# ============================================================================
+
+categories:
+  expenses:
+    - "Food & Dining" # Restaurants, takeout, food delivery
+    - "Transportation" # Gas, public transit, parking, car maintenance
+    - "Shopping" # Clothing, electronics, general shopping
+    - "Entertainment" # Movies, games, hobbies, subscriptions
+    - "Bills & Utilities" # Electricity, water, internet, phone
+    - "Healthcare" # Doctor visits, medicine, insurance
+    - "Education" # Courses, books, tuition
+    - "Travel" # Flights, hotels, vacation expenses
+    - "Personal Care" # Haircuts, cosmetics, gym
+    - "Groceries" # Supermarket, household items
+    - "Rent/Mortgage" # Housing payments
+    - "Insurance" # Car, health, life insurance
+    - "Investments" # Stocks, retirement contributions
+    - "Gifts & Donations" # Presents, charity
+    - "Other" # Miscellaneous expenses
+
+  income:
+    - "Salary" # Regular employment income
+    - "Freelance" # Contract work, side projects
+    - "Business" # Business revenue
+    - "Investments" # Dividends, capital gains
+    - "Gifts" # Money received as gifts
+    - "Refunds" # Tax refunds, purchase returns
+    - "Other" # Other income sources
+
+# ============================================================================
+# Task Settings
+# ============================================================================
+# Priority levels and status options for tasks.
+# ============================================================================
+
+tasks:
+  priorities:
+    - "Low" # Low priority tasks
+    - "Medium" # Medium priority tasks
+    - "High" # High priority tasks
+    - "Urgent" # Urgent tasks requiring immediate attention
+
+  statuses:
+    - "Not Started" # Task hasn't been started yet
+    - "In Progress" # Currently working on the task
+    - "Completed" # Task is finished
+    - "On Hold" # Task is paused/waiting
+    - "Cancelled" # Task was cancelled
+
+# ============================================================================
+# Calendar Settings
+# ============================================================================
+# Available calendar view modes.
+# ============================================================================
+
+calendar:
+  views:
+    - "Month" # Monthly calendar view
+    - "Week" # Weekly calendar view
+    - "Day" # Daily calendar view
+    - "Agenda" # List view of events

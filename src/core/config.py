@@ -1,29 +1,116 @@
 """
 Lifeboat - Configuration Module
-Handles app-wide configuration and constants
+Loads configuration from config.yaml
 """
-import os
+import yaml
 from pathlib import Path
 
-# App Information
-APP_NAME = "Lifeboat"
-APP_VERSION = "1.0.1"
-APP_AUTHOR = "Lifeboat Team"
+# ============================================================================
+# PATHS - Using Path Manager for custom locations
+# ============================================================================
 
-# Paths
 BASE_DIR = Path(__file__).parent.parent.parent
-DATABASE_PATH = BASE_DIR / "data" / "lifeboat.db"
+
+# Import path manager to get custom paths
+try:
+    from src.core.path_manager import path_manager
+    CONFIG_FILE = path_manager.get_config_path()
+    DATABASE_PATH = path_manager.get_database_path()
+except ImportError:
+    # Fallback if path_manager not available yet (first import)
+    CONFIG_FILE = BASE_DIR / "config.yaml"
+    DATABASE_PATH = BASE_DIR / "data" / "lifeboat.db"
+
 ASSETS_DIR = BASE_DIR / "assets"
-THEMES_DIR = BASE_DIR / "themes"
+THEMES_DIR = BASE_DIR / "themes"  # Not used - themes stored in database
 ICONS_DIR = ASSETS_DIR / "icons"
 DATA_DIR = BASE_DIR / "data"
 
-# Create directories if they don't exist
-for directory in [ASSETS_DIR, THEMES_DIR, ICONS_DIR, DATA_DIR]:
-    directory.mkdir(exist_ok=True)
+# Create required directories
+for directory in [ASSETS_DIR, ICONS_DIR, DATA_DIR]:
+    directory.mkdir(exist_ok=True, parents=True)
 
-# Default Theme Definitions
-DEFAULT_THEMES = {
+# ============================================================================
+# CONFIGURATION LOADER
+# ============================================================================
+
+def load_config():
+    """
+    Load configuration from config.yaml
+    Returns empty dict if file not found or invalid
+    """
+    try:
+        with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            config = yaml.safe_load(f)
+            if config is None:
+                print(f"Warning: {CONFIG_FILE} is empty. Using defaults.")
+                return {}
+            return config
+    except FileNotFoundError:
+        print(f"Warning: {CONFIG_FILE} not found. Using defaults.")
+        return {}
+    except yaml.YAMLError as e:
+        print(f"Error parsing YAML: {e}. Using defaults.")
+        return {}
+    except Exception as e:
+        print(f"Error loading config: {e}. Using defaults.")
+        return {}
+
+# Load configuration
+_config = load_config()
+
+# ============================================================================
+# APPLICATION INFORMATION
+# ============================================================================
+
+APP_NAME = _config.get('app', {}).get('name', 'Lifeboat')
+APP_VERSION = _config.get('app', {}).get('version', '1.1.0')
+APP_AUTHOR = _config.get('app', {}).get('author', 'Lifeboat Team')
+
+# ============================================================================
+# WINDOW SETTINGS
+# ============================================================================
+
+WINDOW_WIDTH = _config.get('window', {}).get('width', 1400)
+WINDOW_HEIGHT = _config.get('window', {}).get('height', 900)
+MIN_WINDOW_WIDTH = _config.get('window', {}).get('min_width', 1200)
+MIN_WINDOW_HEIGHT = _config.get('window', {}).get('min_height', 700)
+
+# ============================================================================
+# UI SETTINGS
+# ============================================================================
+
+CORNER_RADIUS = _config.get('ui', {}).get('corner_radius', 6)
+BORDER_WIDTH = _config.get('ui', {}).get('border_width', 1)
+
+# ============================================================================
+# FONT SETTINGS
+# ============================================================================
+
+FONT_FAMILY = _config.get('fonts', {}).get('family', 'Segoe UI')
+_font_sizes = _config.get('fonts', {}).get('size', {})
+FONT_SIZE_SMALL = _font_sizes.get('small', 11)
+FONT_SIZE_NORMAL = _font_sizes.get('normal', 13)
+FONT_SIZE_LARGE = _font_sizes.get('large', 16)
+FONT_SIZE_XLARGE = _font_sizes.get('xlarge', 20)
+
+# ============================================================================
+# DATE/TIME FORMATS
+# ============================================================================
+
+_datetime = _config.get('datetime', {})
+DATE_FORMAT = _datetime.get('date_format', '%Y-%m-%d')
+TIME_FORMAT = _datetime.get('time_format', '%H:%M')
+DATETIME_FORMAT = _datetime.get('datetime_format', '%Y-%m-%d %H:%M')
+DISPLAY_DATE_FORMAT = _datetime.get('display_date_format', '%B %d, %Y')
+DISPLAY_DATETIME_FORMAT = _datetime.get('display_datetime_format', '%B %d, %Y %I:%M %p')
+
+# ============================================================================
+# DEFAULT THEMES
+# ============================================================================
+
+# Fallback theme if config.yaml is missing or invalid
+_DEFAULT_DARK_THEME = {
     "Dark": {
         "bg_primary": "#1a1a1a",
         "bg_secondary": "#2d2d2d",
@@ -36,107 +123,47 @@ DEFAULT_THEMES = {
         "warning": "#ffc107",
         "danger": "#dc3545",
         "border": "#4d4d4d"
-    },
-    "Light": {
-        "bg_primary": "#ffffff",
-        "bg_secondary": "#f3f3f3",
-        "bg_tertiary": "#e8e8e8",
-        "fg_primary": "#000000",
-        "fg_secondary": "#616161",
-        "accent": "#005fb8",
-        "accent_hover": "#004c99",
-        "success": "#16825d",
-        "warning": "#ca5010",
-        "danger": "#d13438",
-        "border": "#d4d4d4"
-    },
-    "Catppuccin Mocha": {
-        "bg_primary": "#1e1e2e",
-        "bg_secondary": "#313244",
-        "bg_tertiary": "#45475a",
-        "fg_primary": "#cdd6f4",
-        "fg_secondary": "#bac2de",
-        "accent": "#89b4fa",
-        "accent_hover": "#74c7ec",
-        "success": "#a6e3a1",
-        "warning": "#f9e2af",
-        "danger": "#f38ba8",
-        "border": "#585b70"
-    },
-    "Cyberpunk": {
-        "bg_primary": "#0a0e27",
-        "bg_secondary": "#16213e",
-        "bg_tertiary": "#1a1a2e",
-        "fg_primary": "#00ff41",
-        "fg_secondary": "#00d9ff",
-        "accent": "#ff00ff",
-        "accent_hover": "#ff00aa",
-        "success": "#00ff41",
-        "warning": "#ffff00",
-        "danger": "#ff0055",
-        "border": "#00d9ff"
     }
 }
 
-# Window Settings
-WINDOW_WIDTH = 1400
-WINDOW_HEIGHT = 900
-MIN_WINDOW_WIDTH = 1200
-MIN_WINDOW_HEIGHT = 700
+DEFAULT_THEMES = _config.get('themes', _DEFAULT_DARK_THEME)
 
-# UI Settings
-CORNER_RADIUS = 6  # Reduced from default 10
-BORDER_WIDTH = 1
+# ============================================================================
+# CATEGORIES
+# ============================================================================
 
-# Font Settings
-FONT_FAMILY = "Segoe UI"
-FONT_SIZE_SMALL = 11
-FONT_SIZE_NORMAL = 13
-FONT_SIZE_LARGE = 16
-FONT_SIZE_XLARGE = 20
+_categories = _config.get('categories', {})
+EXPENSE_CATEGORIES = _categories.get('expenses', [
+    "Food & Dining", "Transportation", "Shopping", "Entertainment",
+    "Bills & Utilities", "Healthcare", "Education", "Travel",
+    "Personal Care", "Groceries", "Rent/Mortgage", "Insurance",
+    "Investments", "Gifts & Donations", "Other"
+])
+INCOME_CATEGORIES = _categories.get('income', [
+    "Salary", "Freelance", "Business", "Investments",
+    "Gifts", "Refunds", "Other"
+])
 
-# Date/Time Formats
-DATE_FORMAT = "%Y-%m-%d"
-TIME_FORMAT = "%H:%M"
-DATETIME_FORMAT = "%Y-%m-%d %H:%M"
-DISPLAY_DATE_FORMAT = "%B %d, %Y"
-DISPLAY_DATETIME_FORMAT = "%B %d, %Y %I:%M %p"
+# ============================================================================
+# TASK SETTINGS
+# ============================================================================
 
-# Expense Categories
-EXPENSE_CATEGORIES = [
-    "Food & Dining",
-    "Transportation",
-    "Shopping",
-    "Entertainment",
-    "Bills & Utilities",
-    "Healthcare",
-    "Education",
-    "Travel",
-    "Personal Care",
-    "Groceries",
-    "Rent/Mortgage",
-    "Insurance",
-    "Investments",
-    "Gifts & Donations",
-    "Other"
-]
+_tasks = _config.get('tasks', {})
+TASK_PRIORITIES = _tasks.get('priorities', ["Low", "Medium", "High", "Urgent"])
+TASK_STATUSES = _tasks.get('statuses', [
+    "Not Started", "In Progress", "Completed", "On Hold", "Cancelled"
+])
 
-# Income Categories
-INCOME_CATEGORIES = [
-    "Salary",
-    "Freelance",
-    "Business",
-    "Investments",
-    "Gifts",
-    "Refunds",
-    "Other"
-]
+# ============================================================================
+# CALENDAR SETTINGS
+# ============================================================================
 
-# Task Priority Levels
-TASK_PRIORITIES = ["Low", "Medium", "High", "Urgent"]
+_calendar = _config.get('calendar', {})
+CALENDAR_VIEWS = _calendar.get('views', ["Month", "Week", "Day", "Agenda"])
 
-# Task Status Options
-TASK_STATUSES = ["Not Started", "In Progress", "Completed", "On Hold", "Cancelled"]
+# ============================================================================
+# CLEANUP
+# ============================================================================
 
-# Calendar View Options
-CALENDAR_VIEWS = ["Month", "Week", "Day", "Agenda"]
+# Remove private variables from module namespace
+del _config, _font_sizes, _datetime, _categories, _tasks, _calendar, _DEFAULT_DARK_THEME
