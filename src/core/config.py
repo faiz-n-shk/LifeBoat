@@ -99,11 +99,22 @@ FONT_SIZE_XLARGE = _font_sizes.get('xlarge', 20)
 # ============================================================================
 
 _datetime = _config.get('datetime', {})
-DATE_FORMAT = _datetime.get('date_format', '%Y-%m-%d')
-TIME_FORMAT = _datetime.get('time_format', '%H:%M')
-DATETIME_FORMAT = _datetime.get('datetime_format', '%Y-%m-%d %H:%M')
-DISPLAY_DATE_FORMAT = _datetime.get('display_date_format', '%B %d, %Y')
-DISPLAY_DATETIME_FORMAT = _datetime.get('display_datetime_format', '%B %d, %Y %I:%M %p')
+DATE_FORMAT = _datetime.get('date_format', '%d-%m-%Y')
+TIME_FORMAT = _datetime.get('time_format', '%I:%M %p')
+DATETIME_FORMAT = _datetime.get('datetime_format', '%d-%m-%Y %I:%M %p')
+DISPLAY_DATE_FORMAT = _datetime.get('display_date_format', '%d %B %Y')
+DISPLAY_DATETIME_FORMAT = _datetime.get('display_datetime_format', '%d %B %Y %I:%M %p')
+TIME_MODE = _datetime.get('time_mode', '12hr')
+
+# ============================================================================
+# CURRENCY SETTINGS
+# ============================================================================
+
+_currency = _config.get('currency', {})
+CURRENCY_SYMBOL = _currency.get('symbol', '₹')
+CURRENCY_CODE = _currency.get('code', 'INR')
+CURRENCY_POSITION = _currency.get('position', 'prefix')
+CURRENCY_DECIMAL_PLACES = _currency.get('decimal_places', 2)
 
 # ============================================================================
 # DEFAULT THEMES
@@ -166,4 +177,4 @@ CALENDAR_VIEWS = _calendar.get('views', ["Month", "Week", "Day", "Agenda"])
 # ============================================================================
 
 # Remove private variables from module namespace
-del _config, _font_sizes, _datetime, _categories, _tasks, _calendar, _DEFAULT_DARK_THEME
+del _config, _font_sizes, _datetime, _currency, _categories, _tasks, _calendar, _DEFAULT_DARK_THEME

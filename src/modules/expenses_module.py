@@ -288,7 +288,7 @@ class ExpensesModule(ThemedFrame):
         if item.time:
             time_label = ThemedLabel(
                 date_time_frame,
-                text=item.time.strftime("%H:%M"),
+                text=utils.format_time(item.time),
                 font=(config.FONT_FAMILY, config.FONT_SIZE_SMALL),
                 color_key="fg_secondary"
             )

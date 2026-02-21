@@ -7,7 +7,7 @@ from src.ui.widgets import ThemedFrame, ThemedLabel, ThemedButton, ThemedEntry, 
 from src.core.theme_manager import theme_manager
 from src.core.database import Theme, Settings, db
 from src.core import config
-from src.features.settings import ConfigSettingsSection
+from src.features.settings import ConfigSettingsSection, LocaleSettingsSection
 
 class SettingsModule(ThemedFrame):
     """Settings and customization module"""
@@ -43,7 +43,11 @@ class SettingsModule(ThemedFrame):
         content.grid(row=1, column=0, sticky="nsew", padx=20, pady=(0, 20))
         content.grid_columnconfigure(0, weight=1)
         
-        # File Locations section (new)
+        # Locale Settings section (new)
+        locale_settings = LocaleSettingsSection(content)
+        locale_settings.create_section()
+        
+        # File Locations section
         config_settings = ConfigSettingsSection(content)
         config_settings.create_section()
         

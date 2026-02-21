@@ -134,10 +134,12 @@ class DatePicker(ThemedFrame):
 class TimePicker(ThemedFrame):
     """
     Time picker widget with hour and minute selectors
+    Adapts to 12hr/24hr mode based on config
     
     Usage:
         picker = TimePicker(parent, initial_time=datetime.now())
         hour, minute = picker.get_time()
+        # For 12hr mode, also returns: hour, minute, am_pm
     """
     
     def __init__(self, master, initial_time=None, **kwargs):
@@ -151,12 +153,28 @@ class TimePicker(ThemedFrame):
         """
         super().__init__(master, color_key="bg_secondary", **kwargs)
         
+        # Get time mode from config
+        self.time_mode = getattr(config, 'TIME_MODE', '12hr')
+        
         if initial_time:
             self.hour = initial_time.hour
             self.minute = initial_time.minute
         else:
             self.hour = 9
             self.minute = 0
+        
+        # For 12hr mode, convert to 12hr format
+        if self.time_mode == '12hr':
+            self.am_pm = 'AM' if self.hour < 12 else 'PM'
+            if self.hour == 0:
+                self.display_hour = 12
+            elif self.hour > 12:
+                self.display_hour = self.hour - 12
+            else:
+                self.display_hour = self.hour
+        else:
+            self.display_hour = self.hour
+            self.am_pm = None
         
         self.setup_ui()
     
@@ -175,7 +193,7 @@ class TimePicker(ThemedFrame):
         
         # Editable hour entry
         self.hour_entry = ThemedEntry(hour_btn_frame, width=60, justify="center")
-        self.hour_entry.insert(0, f"{self.hour:02d}")
+        self.hour_entry.insert(0, f"{self.display_hour:02d}")
         self.hour_entry.bind("<FocusOut>", self.validate_hour)
         self.hour_entry.bind("<Return>", self.validate_hour)
         self.hour_entry.pack(pady=5)
@@ -204,6 +222,25 @@ class TimePicker(ThemedFrame):
         self.minute_entry.pack(pady=5)
         
         ThemedButton(minute_btn_frame, text="▼", width=40, command=self.minute_down).pack()
+        
+        # AM/PM selector for 12hr mode
+        if self.time_mode == '12hr':
+            ampm_frame = ThemedFrame(self, color_key="bg_secondary")
+            ampm_frame.pack(side="left", padx=10)
+            
+            ThemedLabel(ampm_frame, text="Period").pack()
+            
+            ampm_btn_frame = ThemedFrame(ampm_frame, color_key="bg_secondary")
+            ampm_btn_frame.pack()
+            
+            ThemedButton(ampm_btn_frame, text="▲", width=40, command=self.toggle_ampm).pack()
+            
+            self.ampm_entry = ThemedEntry(ampm_btn_frame, width=60, justify="center")
+            self.ampm_entry.insert(0, self.am_pm)
+            self.ampm_entry.configure(state="readonly")
+            self.ampm_entry.pack(pady=5)
+            
+            ThemedButton(ampm_btn_frame, text="▼", width=40, command=self.toggle_ampm).pack()
     
     def validate_hour(self, event=None):
         """
@@ -214,13 +251,18 @@ class TimePicker(ThemedFrame):
         """
         try:
             hour = int(self.hour_entry.get())
-            if 0 <= hour <= 23:
-                self.hour = hour
+            if self.time_mode == '12hr':
+                if 1 <= hour <= 12:
+                    self.display_hour = hour
+            else:
+                if 0 <= hour <= 23:
+                    self.display_hour = hour
+                    self.hour = hour
             self.hour_entry.delete(0, "end")
-            self.hour_entry.insert(0, f"{self.hour:02d}")
+            self.hour_entry.insert(0, f"{self.display_hour:02d}")
         except:
             self.hour_entry.delete(0, "end")
-            self.hour_entry.insert(0, f"{self.hour:02d}")
+            self.hour_entry.insert(0, f"{self.display_hour:02d}")
     
     def validate_minute(self, event=None):
         """
@@ -241,15 +283,21 @@ class TimePicker(ThemedFrame):
     
     def hour_up(self):
         """Increment hour by 1"""
-        self.hour = (self.hour + 1) % 24
+        if self.time_mode == '12hr':
+            self.display_hour = (self.display_hour % 12) + 1
+        else:
+            self.display_hour = (self.display_hour + 1) % 24
         self.hour_entry.delete(0, "end")
-        self.hour_entry.insert(0, f"{self.hour:02d}")
+        self.hour_entry.insert(0, f"{self.display_hour:02d}")
     
     def hour_down(self):
         """Decrement hour by 1"""
-        self.hour = (self.hour - 1) % 24
+        if self.time_mode == '12hr':
+            self.display_hour = self.display_hour - 1 if self.display_hour > 1 else 12
+        else:
+            self.display_hour = (self.display_hour - 1) % 24
         self.hour_entry.delete(0, "end")
-        self.hour_entry.insert(0, f"{self.hour:02d}")
+        self.hour_entry.insert(0, f"{self.display_hour:02d}")
     
     def minute_up(self):
         """Increment minute by 5"""
@@ -263,13 +311,32 @@ class TimePicker(ThemedFrame):
         self.minute_entry.delete(0, "end")
         self.minute_entry.insert(0, f"{self.minute:02d}")
     
+    def toggle_ampm(self):
+        """Toggle between AM and PM"""
+        if self.time_mode == '12hr':
+            self.am_pm = 'PM' if self.am_pm == 'AM' else 'AM'
+            self.ampm_entry.configure(state="normal")
+            self.ampm_entry.delete(0, "end")
+            self.ampm_entry.insert(0, self.am_pm)
+            self.ampm_entry.configure(state="readonly")
+    
     def get_time(self):
         """
         Get selected time
         
         Returns:
-            tuple: (hour, minute) as integers
+            tuple: (hour, minute) as integers in 24-hour format
         """
         self.validate_hour()
         self.validate_minute()
-        return (self.hour, self.minute)
+        
+        if self.time_mode == '12hr':
+            # Convert 12hr to 24hr
+            hour_24 = self.display_hour
+            if self.am_pm == 'PM' and hour_24 != 12:
+                hour_24 += 12
+            elif self.am_pm == 'AM' and hour_24 == 12:
+                hour_24 = 0
+            return (hour_24, self.minute)
+        else:
+            return (self.display_hour, self.minute)

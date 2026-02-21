@@ -8,23 +8,39 @@ from typing import List, Tuple
 from src.core import config
 
 def format_date(date, format_string=None):
-    """Format a date object to string"""
+    """Format a date object to string using config settings"""
     if not date:
         return ""
     if format_string is None:
-        format_string = config.DISPLAY_DATE_FORMAT
+        format_string = config.DATE_FORMAT
     if isinstance(date, str):
-        date = datetime.strptime(date, config.DATE_FORMAT)
+        try:
+            date = datetime.strptime(date, config.DATE_FORMAT)
+        except:
+            return date
     return date.strftime(format_string)
 
+def format_time(time_obj, format_string=None):
+    """Format a time object to string using config settings"""
+    if not time_obj:
+        return ""
+    if format_string is None:
+        format_string = config.TIME_FORMAT
+    if isinstance(time_obj, str):
+        return time_obj
+    return time_obj.strftime(format_string)
+
 def format_datetime(dt, format_string=None):
-    """Format a datetime object to string"""
+    """Format a datetime object to string using config settings"""
     if not dt:
         return ""
     if format_string is None:
-        format_string = config.DISPLAY_DATETIME_FORMAT
+        format_string = config.DATETIME_FORMAT
     if isinstance(dt, str):
-        dt = datetime.strptime(dt, config.DATETIME_FORMAT)
+        try:
+            dt = datetime.strptime(dt, config.DATETIME_FORMAT)
+        except:
+            return dt
     return dt.strftime(format_string)
 
 def parse_date(date_string, format_string=None):
@@ -57,9 +73,21 @@ def get_date_range(start_date, end_date):
         current += timedelta(days=1)
     return dates
 
-def format_currency(amount, symbol='$'):
-    """Format amount as currency"""
-    return f"{symbol}{amount:,.2f}"
+def format_currency(amount, symbol=None):
+    """Format amount as currency using config settings"""
+    if symbol is None:
+        symbol = config.CURRENCY_SYMBOL
+    
+    # Format with decimal places from config
+    decimal_places = getattr(config, 'CURRENCY_DECIMAL_PLACES', 2)
+    formatted = f"{amount:,.{decimal_places}f}"
+    
+    # Apply position from config
+    position = getattr(config, 'CURRENCY_POSITION', 'prefix')
+    if position == 'suffix':
+        return f"{formatted}{symbol}"
+    else:
+        return f"{symbol}{formatted}"
 
 def calculate_percentage(part, whole):
     """Calculate percentage"""
