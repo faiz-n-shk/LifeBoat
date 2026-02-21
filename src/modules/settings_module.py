@@ -44,7 +44,7 @@ class SettingsModule(ThemedFrame):
         content.grid_columnconfigure(0, weight=1)
         
         # Locale Settings section (new)
-        locale_settings = LocaleSettingsSection(content)
+        locale_settings = LocaleSettingsSection(content, app_instance=self.app_instance)
         locale_settings.create_section()
         
         # File Locations section

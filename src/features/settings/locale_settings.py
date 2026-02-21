@@ -51,8 +51,9 @@ class LocaleSettingsSection:
         "After amount (100₹)": "suffix",
     }
     
-    def __init__(self, parent_frame):
+    def __init__(self, parent_frame, app_instance=None):
         self.parent = parent_frame
+        self.app_instance = app_instance
         self.section_frame = None
         self.config_path = path_manager.get_config_path()
     
@@ -334,7 +335,7 @@ class LocaleSettingsSection:
             "• Date format: DD-MM-YYYY\n"
             "• Time format: 12-hour\n"
             "• Currency: Indian Rupee (₹)\n\n"
-            "Application restart required."
+            "Changes will apply immediately."
         ):
             try:
                 # Load config
@@ -364,9 +365,16 @@ class LocaleSettingsSection:
                 with open(self.config_path, 'w', encoding='utf-8') as f:
                     yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
                 
+                # Reload config
+                config.reload_config()
+                
+                # Refresh all modules
+                if self.app_instance:
+                    self.app_instance.refresh_all_modules()
+                
                 messagebox.showinfo(
                     "Success",
-                    "Locale settings reset to defaults.\n\nPlease restart the application."
+                    "Locale settings reset to defaults and applied!"
                 )
                 
                 # Refresh UI
@@ -409,7 +417,7 @@ class LocaleSettingsSection:
                 'date_format': date_format,
                 'time_format': time_format,
                 'datetime_format': datetime_format,
-                'display_date_format': date_format.replace('%Y', '%Y').replace('%y', '%Y'),  # Keep year format
+                'display_date_format': date_format.replace('%Y', '%Y').replace('%y', '%Y'),
                 'display_datetime_format': display_datetime_format,
                 'time_mode': time_mode,
             }
@@ -425,9 +433,16 @@ class LocaleSettingsSection:
             with open(self.config_path, 'w', encoding='utf-8') as f:
                 yaml.dump(config_data, f, default_flow_style=False, allow_unicode=True, sort_keys=False)
             
+            # Reload config
+            config.reload_config()
+            
+            # Refresh all modules
+            if self.app_instance:
+                self.app_instance.refresh_all_modules()
+            
             messagebox.showinfo(
                 "Success",
-                "Locale settings updated successfully!\n\nPlease restart the application for changes to take effect."
+                "Locale settings updated and applied successfully!"
             )
             
         except Exception as e:

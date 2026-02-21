@@ -122,12 +122,19 @@ class PathManager:
     def restore_default_config(self):
         """
         Restore config from default template
-        Overwrites current config with default values
+        Recreates config.yaml with default values
         """
         try:
+            from src.core.config_template import create_default_config
             current_config = self.get_config_path()
-            shutil.copy2(self.default_config, current_config)
-            return True, "Config restored to default settings"
+            
+            # Delete existing config
+            if current_config.exists():
+                current_config.unlink()
+            
+            # Create fresh config from template
+            create_default_config(current_config)
+            return True, "Config restored to default settings. Please restart the app."
         except Exception as e:
             return False, f"Error restoring config: {e}"
     
@@ -138,20 +145,22 @@ class PathManager:
         """
         try:
             current_db = self.get_database_path()
+            template_path = current_db.parent / "default_settings.db"
             
-            # If template exists, copy it
-            if self.default_db_template.exists():
-                shutil.copy2(self.default_db_template, current_db)
-                return True, "Database restored from template"
-            else:
-                # Otherwise, backup current and create fresh
-                if current_db.exists():
-                    backup = current_db.with_suffix('.db.backup')
-                    shutil.copy2(current_db, backup)
-                    current_db.unlink()
-                
-                # Database will be recreated on next app start
-                return True, f"Database reset. Backup saved to: {backup}"
+            # Backup current database
+            if current_db.exists():
+                backup = current_db.with_suffix('.db.backup')
+                shutil.copy2(current_db, backup)
+                current_db.unlink()
+                print(f"Backup saved to: {backup}")
+            
+            # Delete old template if exists (might have outdated schema)
+            if template_path.exists():
+                template_path.unlink()
+                print("Removed old template")
+            
+            # Database will be recreated with current schema on next app start
+            return True, "Database reset. Please restart the app to complete."
         except Exception as e:
             return False, f"Error restoring database: {e}"
     

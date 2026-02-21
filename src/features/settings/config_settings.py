@@ -79,7 +79,9 @@ class ConfigSettingsSection:
             warning_frame,
             text="• Changing file locations requires restarting the application\n"
                  "• Original files remain in the app directory as backup\n"
-                 "• Use 'Restore Defaults' if files become corrupted",
+                 "• Use 'Restore Defaults' if files become corrupted\n"
+                 "• Always manually backup 'config.yaml' and 'lifeboat.db' file for safety."
+                 "• Automatic backups and restoration features will be implemented in future updates)",
             color_key="fg_secondary",
             justify="left"
         ).pack(anchor="w", padx=15, pady=(0, 10))

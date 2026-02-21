@@ -281,3 +281,13 @@ class LifeboatApp(ctk.CTk):
         """Recursively update theme for all widgets - REMOVED FOR PERFORMANCE"""
         # This method is no longer used to prevent lag
         pass
+    
+    def refresh_all_modules(self):
+        """Refresh all modules to apply config changes"""
+        # Reload current module to apply changes
+        if self.current_module and self.current_module_name:
+            current = self.current_module_name
+            self.current_module.destroy()
+            self.current_module = None
+            self.current_module_name = None
+            self.show_module(current)

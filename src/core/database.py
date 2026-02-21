@@ -126,20 +126,24 @@ class Settings(BaseModel):
 def initialize_database():
     """Initialize database and create tables"""
     import os
+    import shutil
+    from pathlib import Path
+
     db_exists = os.path.exists(DATABASE_PATH)
-    
+
     db.connect()
     db.execute_sql('PRAGMA journal_mode=WAL')
     db.execute_sql('PRAGMA synchronous=NORMAL')
     db.execute_sql('PRAGMA cache_size=10000')
     db.execute_sql('PRAGMA temp_store=MEMORY')
-    
+
     if not db_exists:
+        # Create fresh database with all tables and default data
         db.create_tables([
-            Theme, Event, Task, Expense, Income, 
+            Theme, Event, Task, Expense, Income,
             Note, Goal, Habit, HabitLog, Settings
         ])
-        
+
         with db.atomic():
             for theme_name, theme_colors in DEFAULT_THEMES.items():
                 Theme.create(
@@ -148,23 +152,38 @@ def initialize_database():
                     is_custom=False,
                     **theme_colors
                 )
-            
+
             default_settings = {
                 'first_run': 'true',
                 'currency_symbol': '$',
                 'date_format': DATE_FORMAT,
                 'week_start': 'Monday'
             }
-            
+
             for key, value in default_settings.items():
                 Settings.create(key=key, value=value)
+
+        # Close connection before copying
+        db.close()
+
+        # Create template copy for easy restore
+        try:
+            template_path = Path(DATABASE_PATH).parent / "default_settings.db"
+            shutil.copy2(DATABASE_PATH, template_path)
+            print(f"Created database template at: {template_path}")
+        except Exception as e:
+            print(f"Warning: Could not create database template: {e}")
+
+        # Reconnect for any further operations
+        db.connect()
     else:
         db.create_tables([
-            Theme, Event, Task, Expense, Income, 
+            Theme, Event, Task, Expense, Income,
             Note, Goal, Habit, HabitLog, Settings
         ], safe=True)
-    
+
     db.close()
+
 
 def get_active_theme():
     """Get the currently active theme"""
