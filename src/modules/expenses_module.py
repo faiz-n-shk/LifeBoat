@@ -273,14 +273,26 @@ class ExpensesModule(ThemedFrame):
             )
             desc_label.pack(anchor="w", pady=(2, 0))
         
-        # Date
+        # Date and Time
+        date_time_frame = ThemedFrame(item_frame, color_key="bg_secondary")
+        date_time_frame.grid(row=0, column=2, padx=15, pady=10)
+        
         date_label = ThemedLabel(
-            item_frame,
+            date_time_frame,
             text=utils.format_date(item.date),
             font=(config.FONT_FAMILY, config.FONT_SIZE_SMALL),
             color_key="fg_secondary"
         )
-        date_label.grid(row=0, column=2, padx=15, pady=10)
+        date_label.pack(anchor="e")
+        
+        if item.time:
+            time_label = ThemedLabel(
+                date_time_frame,
+                text=item.time.strftime("%H:%M"),
+                font=(config.FONT_FAMILY, config.FONT_SIZE_SMALL),
+                color_key="fg_secondary"
+            )
+            time_label.pack(anchor="e", pady=(2, 0))
         
         # Edit button
         ThemedButton(
@@ -432,12 +444,12 @@ class ExpensesModule(ThemedFrame):
         """Show add/edit expense/income dialog"""
         dialog = ctk.CTkToplevel(self)
         dialog.title(f"{'Edit' if item else 'Add'} {self.view_mode.capitalize()[:-1]}")
-        dialog.geometry("500x600")
+        dialog.geometry("500x700")
         dialog.transient(self)
         dialog.grab_set()
         
-        # Import DatePicker
-        from src.modules.calendar_module import DatePicker
+        # Import DatePicker and TimePicker
+        from src.ui.pickers import DatePicker, TimePicker
         
         scroll_frame = ctk.CTkScrollableFrame(
             dialog,
@@ -472,6 +484,15 @@ class ExpensesModule(ThemedFrame):
         date_picker = DatePicker(scroll_frame, initial_date=initial_date)
         date_picker.pack(fill="x", pady=(0, 15))
         
+        # Time Picker
+        ThemedLabel(scroll_frame, text="Time:").pack(anchor="w", pady=(0, 5))
+        if item and item.time:
+            initial_time = datetime.combine(datetime.today(), item.time)
+        else:
+            initial_time = datetime.now()
+        time_picker = TimePicker(scroll_frame, initial_time=initial_time)
+        time_picker.pack(pady=(0, 15))
+        
         # Buttons
         btn_frame = ThemedFrame(scroll_frame, color_key="bg_primary")
         btn_frame.pack(fill="x", pady=(20, 0))
@@ -490,6 +511,8 @@ class ExpensesModule(ThemedFrame):
                     return
                 
                 date = date_picker.get_date().date()
+                hour, minute = time_picker.get_time()
+                time_obj = datetime.strptime(f"{hour:02d}:{minute:02d}", "%H:%M").time()
                 description = desc_entry.get().strip()
                 
                 if item:
@@ -498,6 +521,7 @@ class ExpensesModule(ThemedFrame):
                     item.category = category_combo.get()
                     item.description = description if description else None
                     item.date = date
+                    item.time = time_obj
                     item.save()
                 else:
                     # Create new item
@@ -506,14 +530,16 @@ class ExpensesModule(ThemedFrame):
                             amount=amount,
                             category=category_combo.get(),
                             description=description if description else None,
-                            date=date
+                            date=date,
+                            time=time_obj
                         )
                     else:
                         Income.create(
                             amount=amount,
                             category=category_combo.get(),
                             description=description if description else None,
-                            date=date
+                            date=date,
+                            time=time_obj
                         )
                 
                 self.load_data()

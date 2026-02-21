@@ -64,6 +64,7 @@ class Expense(BaseModel):
     category = CharField()
     description = TextField(null=True)
     date = DateField()
+    time = TimeField(null=True)  # Time of expense
     payment_method = CharField(null=True)
     is_recurring = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.now)
@@ -74,6 +75,7 @@ class Income(BaseModel):
     category = CharField()
     description = TextField(null=True)
     date = DateField()
+    time = TimeField(null=True)  # Time of income
     source = CharField(null=True)
     is_recurring = BooleanField(default=False)
     created_at = DateTimeField(default=datetime.now)

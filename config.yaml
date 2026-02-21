@@ -9,7 +9,7 @@
 # Application Information
 app:
   name: "Lifeboat"
-  version: "1.0.1"
+  version: "1.0.2"
   author: "Lifeboat Team"
 
 # Window Settings
