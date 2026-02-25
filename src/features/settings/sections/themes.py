@@ -32,6 +32,7 @@ class ThemesSection(QWidget):
         
         # Themes container (no scroll, just list)
         self.themes_container = QWidget()
+        self.themes_container.setObjectName("settings-section")
         self.themes_layout = QVBoxLayout(self.themes_container)
         self.themes_layout.setSpacing(10)
         self.themes_layout.setAlignment(Qt.AlignmentFlag.AlignTop)

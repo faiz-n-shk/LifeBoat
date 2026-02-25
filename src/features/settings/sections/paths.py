@@ -42,6 +42,17 @@ class PathsSection(QWidget):
         )
         layout.addWidget(self.config_section)
         
+        # Themes file section
+        self.themes_section = self.create_path_section(
+            "Themes File (themes.yaml)",
+            paths_info['themes']['current'],
+            paths_info['themes']['is_custom'],
+            self.on_browse_themes,
+            self.on_reset_themes,
+            None
+        )
+        layout.addWidget(self.themes_section)
+        
         # Database file section
         self.database_section = self.create_path_section(
             "Database File (lifeboat.db)",
@@ -150,12 +161,13 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "changed config path", directory)
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application for changes to take effect."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Config Path Changed",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
             else:
                 QMessageBox.critical(self, "Error", message)
     
@@ -173,12 +185,37 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "changed database path", directory)
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application for changes to take effect."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Database Path Changed",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
+            else:
+                QMessageBox.critical(self, "Error", message)
+    
+    def on_browse_themes(self):
+        """Browse for custom themes directory"""
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Directory for Themes File"
+        )
+        
+        if directory:
+            success, message = path_manager.set_custom_themes_path(directory)
+            if success:
+                # Log path change
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "changed themes path", directory)
+                
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Themes Path Changed",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
+                )
             else:
                 QMessageBox.critical(self, "Error", message)
     
@@ -200,12 +237,13 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "reset config path", "To default location")
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Config Reset",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
             else:
                 QMessageBox.critical(self, "Error", message)
     
@@ -227,12 +265,41 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "reset database path", "To default location")
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Database Reset",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
+            else:
+                QMessageBox.critical(self, "Error", message)
+    
+    def on_reset_themes(self):
+        """Reset themes to default location"""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Reset",
+            "Reset themes file to default location?\n\n"
+            "Your custom themes file will remain in its current location.\n"
+            "The app will use the default themes after restart.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            success, message = path_manager.reset_themes_to_default()
+            if success:
+                # Log reset
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "reset themes path", "To default location")
+                
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Themes Reset",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
+                )
             else:
                 QMessageBox.critical(self, "Error", message)
     
@@ -316,12 +383,13 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "changed logs path", directory)
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application for changes to take effect."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Logs Path Changed",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
             else:
                 QMessageBox.critical(self, "Error", message)
     
@@ -343,14 +411,35 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "reset logs path", "To default location")
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}\n\nPlease restart the application."
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Logs Reset",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
-                self.refresh_ui()
             else:
                 QMessageBox.critical(self, "Error", message)
+    
+    def show_restart_dialog(self, title, message):
+        """Show dialog with Restart Now and Restart Later options"""
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(title)
+        msg_box.setText(message)
+        msg_box.setIcon(QMessageBox.Icon.Information)
+        
+        restart_now_btn = msg_box.addButton("Restart Now", QMessageBox.ButtonRole.AcceptRole)
+        restart_later_btn = msg_box.addButton("Restart Later", QMessageBox.ButtonRole.RejectRole)
+        
+        msg_box.exec()
+        
+        if msg_box.clickedButton() == restart_now_btn:
+            # Trigger restart
+            from src.core.config import config
+            config.signals.restart_requested.emit()
+        else:
+            # Just refresh UI
+            self.refresh_ui()
     
     def refresh_ui(self):
         """Refresh UI to show updated paths"""
