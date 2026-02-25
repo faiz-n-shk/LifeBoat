@@ -43,6 +43,7 @@ class NavigationSidebar(QWidget):
             ("Dashboard", "📊"),
             ("Calendar", "📅"),
             ("Tasks", "☑"),
+            ("Todos", "✓"),
             ("Expenses", "💰"),
             ("Goals", "🎯"),
             ("Habits", "🔄"),
@@ -146,6 +147,7 @@ class NavigationSidebar(QWidget):
         # Invisible spacer widget to balance the buttons on the left (20px + 4px spacing + 20px = 44px)
         self.spacer_widget = QWidget()
         self.spacer_widget.setFixedWidth(44)
+        self.spacer_widget.setStyleSheet("background: transparent;")
         bottom_layout.addWidget(self.spacer_widget)
         
         # Check config to show/hide debug buttons (after all widgets are created)

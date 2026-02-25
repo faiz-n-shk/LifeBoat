@@ -462,9 +462,35 @@ class DashboardView(QWidget):
                 self.habits_total_ring.set_progress(0, animate=should_animate)
                 self.habits_today_ring.set_progress(0, animate=should_animate)
             
-            # Todo rings (placeholders for future feature)
-            self.todo_total_ring.set_progress(0, animate=should_animate)
-            self.todo_today_ring.set_progress(0, animate=should_animate)
+            # Todo rings
+            from src.models.todo import Todo
+            total_todos = Todo.select().count()
+            active_todos = Todo.select().where(Todo.completed == False).count()
+            completed_todos = Todo.select().where(Todo.completed == True).count()
+            today_todos = Todo.select().where(
+                (Todo.completed == False) & 
+                (Todo.due_date == today)
+            ).count()
+            
+            # Total progress (completed / total)
+            if total_todos > 0:
+                total_progress = (completed_todos / total_todos * 100)
+                self.todo_total_ring.set_progress(total_progress, animate=should_animate)
+            else:
+                self.todo_total_ring.set_progress(0, animate=should_animate)
+            
+            # Today progress (completed today / due today)
+            today_total = Todo.select().where(Todo.due_date == today).count()
+            today_completed = Todo.select().where(
+                (Todo.completed == True) & 
+                (Todo.due_date == today)
+            ).count()
+            
+            if today_total > 0:
+                today_progress = (today_completed / today_total * 100)
+                self.todo_today_ring.set_progress(today_progress, animate=should_animate)
+            else:
+                self.todo_today_ring.set_progress(0, animate=should_animate)
             
             # Load expense data for pie chart
             first_day = datetime.now().replace(day=1).date()

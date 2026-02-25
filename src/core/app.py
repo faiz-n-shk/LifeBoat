@@ -20,12 +20,12 @@ class LifeboatApp(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        # Load theme before creating UI
+        theme_manager.load_theme()
+        
         # Set window properties
         self.setWindowTitle(f"{APP_NAME} {APP_VERSION}")
         self.setup_window()
-        
-        # Load theme
-        theme_manager.load_theme()
         
         # Create main window UI
         self.main_window = MainWindow(self)

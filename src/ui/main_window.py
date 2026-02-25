@@ -54,6 +54,11 @@ class MainWindow(QWidget):
         tasks = TasksView()
         self.content.register_feature("Tasks", tasks)
         
+        # Todos
+        from src.features.todos.view import TodosView
+        todos = TodosView()
+        self.content.register_feature("Todos", todos)
+        
         # Expenses
         from src.features.expenses.view import ExpensesView
         expenses = ExpensesView()

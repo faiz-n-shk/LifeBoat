@@ -9,6 +9,7 @@ from src.models.habit import Habit, HabitLog
 from src.models.note import Note
 from src.models.theme import Theme
 from src.models.settings import Settings
+from src.models.todo import Todo
 
 __all__ = [
     'Event',
@@ -21,4 +22,5 @@ __all__ = [
     'Note',
     'Theme',
     'Settings',
+    'Todo',
 ]

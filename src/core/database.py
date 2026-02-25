@@ -27,7 +27,7 @@ def initialize_database():
     import shutil
     from src.models import (
         Event, Task, Expense, Income, Goal, 
-        Habit, HabitLog, Note, Theme, Settings
+        Habit, HabitLog, Note, Theme, Settings, Todo
     )
     
     db_exists = os.path.exists(DATABASE_PATH)
@@ -46,7 +46,7 @@ def initialize_database():
         # Create all tables
         db.create_tables([
             Event, Task, Expense, Income, Goal,
-            Habit, HabitLog, Note, Theme, Settings
+            Habit, HabitLog, Note, Theme, Settings, Todo
         ])
         
         # Create default themes
@@ -83,7 +83,7 @@ def initialize_database():
         # Ensure tables exist (safe mode)
         db.create_tables([
             Event, Task, Expense, Income, Goal,
-            Habit, HabitLog, Note, Theme, Settings
+            Habit, HabitLog, Note, Theme, Settings, Todo
         ], safe=True)
         
         # Run migrations for existing databases
