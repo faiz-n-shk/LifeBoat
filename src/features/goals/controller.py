@@ -87,8 +87,11 @@ class GoalsController:
             goal = Goal.get_by_id(goal_id)
             goal.progress = max(0, min(100, progress))
             
+            # Update completed status based on progress
             if goal.progress >= 100:
                 goal.completed = True
+            else:
+                goal.completed = False
             
             goal.updated_at = datetime.now()
             goal.save()

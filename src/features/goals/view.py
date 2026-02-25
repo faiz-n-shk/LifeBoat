@@ -192,7 +192,34 @@ class GoalsView(QWidget):
     
     def update_progress(self, goal_id, new_progress):
         """Update goal progress"""
-        self.controller.update_progress(goal_id, new_progress)
+        result = self.controller.update_progress(goal_id, new_progress)
+        if result:
+            # Find the goal item and update it directly without reloading
+            for goal_item in self.goal_items:
+                if goal_item.goal.id == goal_id:
+                    # Update the goal object
+                    goal_item.goal.progress = new_progress
+                    goal_item.goal.completed = result.completed
+                    
+                    # Update the display directly
+                    goal_item._progress = new_progress
+                    goal_item._target_progress = new_progress
+                    goal_item.update()
+                    
+                    # Check if goal should be hidden based on current filter
+                    filter_text = self.filter_combo.currentText()
+                    should_hide = False
+                    
+                    if filter_text == "Active" and result.completed:
+                        should_hide = True
+                    elif filter_text == "Completed" and not result.completed:
+                        should_hide = True
+                    
+                    if should_hide:
+                        # Reload to apply filter
+                        self.load_data()
+                    
+                    break
     
     def refresh(self):
         """Refresh view"""

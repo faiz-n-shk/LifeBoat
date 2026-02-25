@@ -81,9 +81,11 @@ class GoalItem(QFrame):
             container_width = self.progress_bar_container.width() - 2
             
             if self._progress >= 100:
+                # Always fill completely at 100%
                 fill_width = container_width
             elif self._progress > 0:
-                fill_width = max(4, int((self._progress / 100) * container_width))
+                # Calculate proportional width, ensure at least 4px visible
+                fill_width = max(4, round((self._progress / 100) * container_width))
             else:
                 fill_width = 0
             
