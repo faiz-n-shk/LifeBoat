@@ -44,6 +44,11 @@ class MainWindow(QWidget):
         dashboard = DashboardView()
         self.content.register_feature("Dashboard", dashboard)
         
+        # Calendar
+        from src.features.calendar.view import CalendarView
+        calendar_view = CalendarView()
+        self.content.register_feature("Calendar", calendar_view)
+        
         # Tasks
         from src.features.tasks.view import TasksView
         tasks = TasksView()
@@ -78,6 +83,10 @@ class MainWindow(QWidget):
     
     def on_appearance_changed(self):
         """Handle appearance settings change"""
+        # Reload theme with new font settings
+        from src.core.theme_manager import theme_manager
+        theme_manager.load_theme()
+        
         # Refresh all registered features to apply new theme/font
         self.content.refresh_all_features()
     

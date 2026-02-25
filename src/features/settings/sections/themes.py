@@ -40,7 +40,6 @@ class ThemesSection(QWidget):
         
         # Create custom theme button
         create_btn = QPushButton("+ Create Custom Theme")
-        create_btn.setFixedWidth(180)
         create_btn.clicked.connect(self.on_create_theme)
         layout.addWidget(create_btn)
         
@@ -113,7 +112,6 @@ class ThemesSection(QWidget):
             layout.addWidget(active_label)
         else:
             apply_btn = QPushButton("Apply")
-            apply_btn.setFixedWidth(80)
             apply_btn.clicked.connect(lambda: self.on_apply_theme("System"))
             layout.addWidget(apply_btn)
         
@@ -179,24 +177,20 @@ class ThemesSection(QWidget):
             actions_layout.addWidget(active_label)
         else:
             apply_btn = QPushButton("Apply")
-            apply_btn.setFixedWidth(80)
             apply_btn.clicked.connect(lambda: self.on_apply_theme(theme.name))
             actions_layout.addWidget(apply_btn)
         
         if theme.is_custom:
             edit_btn = QPushButton("Edit")
-            edit_btn.setFixedWidth(60)
             edit_btn.clicked.connect(lambda: self.on_edit_theme(theme))
             actions_layout.addWidget(edit_btn)
             
             delete_btn = QPushButton("Delete")
             delete_btn.setProperty("class", "danger-button")
-            delete_btn.setFixedWidth(60)
             delete_btn.clicked.connect(lambda: self.on_delete_theme(theme))
             actions_layout.addWidget(delete_btn)
         else:
             customize_btn = QPushButton("Customize")
-            customize_btn.setFixedWidth(100)
             customize_btn.clicked.connect(lambda: self.on_customize_theme(theme))
             actions_layout.addWidget(customize_btn)
         
@@ -404,7 +398,6 @@ class ColorPickerInput(QWidget):
         
         # Pick button
         pick_btn = QPushButton("Pick Color")
-        pick_btn.setFixedWidth(100)
         pick_btn.clicked.connect(self.on_pick_color)
         layout.addWidget(pick_btn)
         

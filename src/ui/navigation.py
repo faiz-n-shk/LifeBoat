@@ -37,7 +37,7 @@ class NavigationSidebar(QWidget):
         nav_items = [
             ("Dashboard", "📊"),
             ("Calendar", "📅"),
-            ("Tasks", "✓"),
+            ("Tasks", "☑"),
             ("Expenses", "💰"),
             ("Goals", "🎯"),
             ("Habits", "🔄"),

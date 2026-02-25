@@ -4,7 +4,7 @@ Handles theme loading, switching, and OS theme detection
 """
 import sys
 from pathlib import Path
-from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 from PyQt6.QtWidgets import QApplication
 
 from src.core.config import config
@@ -22,6 +22,12 @@ class ThemeManager(QObject):
         super().__init__()
         self.current_theme = None
         self.os_theme_mode = False
+        self.last_detected_os_theme = None
+        
+        # Timer to check for OS theme changes
+        self.os_theme_timer = QTimer()
+        self.os_theme_timer.timeout.connect(self.check_os_theme_change)
+        self.os_theme_timer.setInterval(2000)  # Check every 2 seconds
     
     def load_theme(self, theme_name: str = None) -> bool:
         """
@@ -40,8 +46,15 @@ class ThemeManager(QObject):
         if theme_name == "System":
             self.os_theme_mode = True
             theme_name = self.detect_os_theme()
+            self.last_detected_os_theme = theme_name
+            # Start monitoring OS theme changes
+            if not self.os_theme_timer.isActive():
+                self.os_theme_timer.start()
         else:
             self.os_theme_mode = False
+            # Stop monitoring if not in system mode
+            if self.os_theme_timer.isActive():
+                self.os_theme_timer.stop()
         
         # Generate stylesheet from database theme
         stylesheet = self.generate_stylesheet(theme_name)
@@ -73,12 +86,15 @@ class ThemeManager(QObject):
             db.close()
             
             # Generate modern QSS stylesheet from theme colors
+            font_family = config.get('appearance.font_family', 'Segoe UI')
+            font_size = config.get('appearance.font_size', 13)
+            
             stylesheet = f"""
 /* {theme_name} Theme - Generated Stylesheet */
 
 * {{
-    font-family: "Segoe UI", Arial, sans-serif;
-    font-size: 10pt;
+    font-family: "{font_family}", Arial, sans-serif;
+    font-size: {font_size}pt;
 }}
 
 /* Main Window */
@@ -128,9 +144,10 @@ QPushButton {{
     color: {theme.fg_primary};
     border: none;
     border-radius: 6px;
-    padding: 8px 16px;
+    padding: 0.6em 1.2em;  /* Use em units to scale with font size */
     font-weight: 500;
-    min-height: 32px;
+    min-height: 2.4em;  /* Scale with font size */
+    min-width: 5em;  /* Minimum width scales with font */
 }}
 
 QPushButton:hover {{
@@ -166,7 +183,7 @@ QPushButton:checkable:hover {{
 }}
 
 /* Input Fields */
-QLineEdit, QTextEdit, QPlainTextEdit {{
+QLineEdit, QPlainTextEdit {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
     border: 1px solid {theme.border};
@@ -176,13 +193,31 @@ QLineEdit, QTextEdit, QPlainTextEdit {{
     selection-color: {theme.fg_primary};
 }}
 
-QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
+QTextEdit {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 2px solid {theme.border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    selection-background-color: {theme.accent};
+    selection-color: {theme.fg_primary};
+}}
+
+QLineEdit:focus, QPlainTextEdit:focus {{
     border: 2px solid {theme.accent};
     padding: 7px 11px;
 }}
 
-QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {{
+QTextEdit:focus {{
+    border: 2px solid {theme.accent};
+}}
+
+QLineEdit:hover, QPlainTextEdit:hover {{
     border: 1px solid {theme.accent};
+}}
+
+QTextEdit:hover {{
+    border: 2px solid {theme.accent};
 }}
 
 /* ComboBox */
@@ -319,7 +354,7 @@ QCheckBox::indicator:hover {{
 QCheckBox::indicator:checked {{
     background-color: {theme.accent};
     border-color: {theme.accent};
-    image: none;
+    image: url(assets/icons/check.svg);
 }}
 
 /* RadioButton */
@@ -453,18 +488,6 @@ QDateEdit::down-arrow {{
     height: 12px;
 }}
 
-/* TimeEdit - no dropdown button */
-QTimeEdit::drop-down {{
-    width: 0px;
-    border: none;
-}}
-
-QTimeEdit::down-arrow {{
-    image: none;
-    width: 0px;
-    height: 0px;
-}}
-
 /* DateTimeEdit dropdown button */
 QDateTimeEdit::drop-down {{
     subcontrol-origin: border;
@@ -484,6 +507,46 @@ QDateTimeEdit::down-arrow {{
     image: url(assets/icons/calendar.svg);
     width: 12px;
     height: 12px;
+}}
+
+/* TimeEdit - up/down buttons instead of dropdown (MUST come after QDateEdit/QDateTimeEdit) */
+QTimeEdit::up-button {{
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom: 1px solid {theme.border};
+    border-top-right-radius: 5px;
+    width: 16px;
+}}
+
+QTimeEdit::up-button:hover {{
+    background-color: {theme.accent};
+}}
+
+QTimeEdit::down-button {{
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom-right-radius: 5px;
+    width: 16px;
+}}
+
+QTimeEdit::down-button:hover {{
+    background-color: {theme.accent};
+}}
+
+QTimeEdit::up-arrow {{
+    image: url(assets/icons/arrow-up.svg);
+    width: 10px;
+    height: 10px;
+}}
+
+QTimeEdit::down-arrow {{
+    image: url(assets/icons/arrow-down.svg);
+    width: 10px;
+    height: 10px;
 }}
 
 /* Calendar Widget */
@@ -525,17 +588,43 @@ QCalendarWidget QSpinBox {{
     padding: 4px;
 }}
 
-QCalendarWidget QSpinBox::up-button,
-QCalendarWidget QSpinBox::down-button {{
-    width: 0px;
-    border: none;
+QCalendarWidget QSpinBox::up-button {{
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom: 1px solid {theme.border};
+    border-top-right-radius: 3px;
+    width: 16px;
 }}
 
-QCalendarWidget QSpinBox::up-arrow,
+QCalendarWidget QSpinBox::up-button:hover {{
+    background-color: {theme.accent};
+}}
+
+QCalendarWidget QSpinBox::down-button {{
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom-right-radius: 3px;
+    width: 16px;
+}}
+
+QCalendarWidget QSpinBox::down-button:hover {{
+    background-color: {theme.accent};
+}}
+
+QCalendarWidget QSpinBox::up-arrow {{
+    image: url(assets/icons/arrow-up.svg);
+    width: 10px;
+    height: 10px;
+}}
+
 QCalendarWidget QSpinBox::down-arrow {{
-    image: none;
-    width: 0px;
-    height: 0px;
+    image: url(assets/icons/arrow-down.svg);
+    width: 10px;
+    height: 10px;
 }}
 
 QCalendarWidget QToolButton::menu-indicator {{
@@ -786,6 +875,15 @@ QLabel[class="accent-label"] {{
         
         # Default to Dark
         return "Dark"
+    
+    def check_os_theme_change(self):
+        """Check if OS theme has changed and update if needed"""
+        if self.os_theme_mode:
+            current_os_theme = self.detect_os_theme()
+            if current_os_theme != self.last_detected_os_theme:
+                print(f"OS theme changed from {self.last_detected_os_theme} to {current_os_theme}")
+                self.last_detected_os_theme = current_os_theme
+                self.load_theme("System")
     
     def set_theme(self, theme_name: str) -> bool:
         """

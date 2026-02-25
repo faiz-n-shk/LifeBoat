@@ -106,19 +106,15 @@ class PathsSection(QWidget):
         btn_layout = QHBoxLayout()
         
         browse_btn = QPushButton("Browse...")
-        browse_btn.setFixedWidth(100)
         browse_btn.clicked.connect(on_browse)
         btn_layout.addWidget(browse_btn)
         
         if is_custom:
             reset_btn = QPushButton("Reset to Default")
-            reset_btn.setFixedWidth(120)
             reset_btn.clicked.connect(on_reset)
             btn_layout.addWidget(reset_btn)
         
         restore_btn = QPushButton("Restore Defaults")
-        restore_btn.setProperty("class", "warning-button")
-        restore_btn.setFixedWidth(130)
         restore_btn.clicked.connect(on_restore)
         btn_layout.addWidget(restore_btn)
         

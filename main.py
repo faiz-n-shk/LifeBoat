@@ -23,6 +23,16 @@ def main():
     app.setApplicationName("Lifeboat")
     app.setOrganizationName("Fayz212")
     
+    # Load custom fonts from assets/fonts
+    from PyQt6.QtGui import QFontDatabase
+    import os
+    fonts_dir = "assets/fonts"
+    if os.path.exists(fonts_dir):
+        for filename in os.listdir(fonts_dir):
+            if filename.lower().endswith(('.ttf', '.otf')):
+                font_path = os.path.join(fonts_dir, filename)
+                QFontDatabase.addApplicationFont(font_path)
+    
     # Initialize configuration and database
     ensure_config_exists()
     initialize_database()

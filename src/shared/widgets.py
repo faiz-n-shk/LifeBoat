@@ -46,7 +46,7 @@ class TimePicker(QWidget):
         """Setup time picker UI"""
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(10)
+        layout.setSpacing(5)  # before 10, now 5
         
         # Hour selector
         hour_container = self.create_selector(

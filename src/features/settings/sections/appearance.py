@@ -3,9 +3,12 @@ Appearance Settings Section
 """
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QComboBox, QPushButton, QSpinBox, QCheckBox
+    QComboBox, QPushButton, QSpinBox, QCheckBox, QFileDialog, QMessageBox
 )
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QFontDatabase
+import os
+import shutil
 
 from src.core.config import config
 
@@ -29,14 +32,17 @@ class AppearanceSection(QWidget):
         font_layout.addWidget(font_label)
         
         self.font_combo = QComboBox()
-        self.font_combo.addItems([
-            "Segoe UI", "Arial", "Helvetica", "Calibri",
-            "Verdana", "Tahoma", "Consolas"
-        ])
+        self.load_available_fonts()
         current_font = config.get('appearance.font_family', 'Segoe UI')
-        self.font_combo.setCurrentText(current_font)
+        if current_font in [self.font_combo.itemText(i) for i in range(self.font_combo.count())]:
+            self.font_combo.setCurrentText(current_font)
         self.font_combo.currentTextChanged.connect(self.on_font_changed)
         font_layout.addWidget(self.font_combo, 1)
+        
+        # Import font button
+        import_btn = QPushButton("Import Font")
+        import_btn.clicked.connect(self.on_import_font)
+        font_layout.addWidget(import_btn)
         
         layout.addLayout(font_layout)
         
@@ -47,7 +53,7 @@ class AppearanceSection(QWidget):
         size_layout.addWidget(size_label)
         
         self.size_spin = QSpinBox()
-        self.size_spin.setRange(10, 20)
+        self.size_spin.setRange(5, 20)  # min max font size
         self.size_spin.setValue(config.get('appearance.font_size', 13))
         self.size_spin.valueChanged.connect(self.on_size_changed)
         size_layout.addWidget(self.size_spin)
@@ -117,3 +123,100 @@ class AppearanceSection(QWidget):
                 "Error",
                 "Failed to save appearance settings."
             )
+    
+    def load_available_fonts(self):
+        """Load system fonts and custom fonts from assets/fonts"""
+        fonts = set()
+        
+        # Add default system fonts
+        default_fonts = [
+            "Segoe UI", "Arial", "Helvetica", "Calibri",
+            "Verdana", "Tahoma", "Consolas", "Times New Roman",
+            "Courier New", "Georgia"
+        ]
+        fonts.update(default_fonts)
+        
+        # Load custom fonts from assets/fonts directory
+        fonts_dir = "assets/fonts"
+        if os.path.exists(fonts_dir):
+            for filename in os.listdir(fonts_dir):
+                if filename.lower().endswith(('.ttf', '.otf')):
+                    font_path = os.path.join(fonts_dir, filename)
+                    font_id = QFontDatabase.addApplicationFont(font_path)
+                    if font_id != -1:
+                        font_families = QFontDatabase.applicationFontFamilies(font_id)
+                        fonts.update(font_families)
+        
+        # Sort and add to combo box
+        sorted_fonts = sorted(fonts)
+        self.font_combo.addItems(sorted_fonts)
+    
+    def on_import_font(self):
+        """Import a custom font file"""
+        file_path, _ = QFileDialog.getOpenFileName(
+            self,
+            "Select Font File",
+            "",
+            "Font Files (*.ttf *.otf);;All Files (*)"
+        )
+        
+        if file_path:
+            try:
+                # Create fonts directory if it doesn't exist
+                fonts_dir = "assets/fonts"
+                os.makedirs(fonts_dir, exist_ok=True)
+                
+                # Copy font file to assets/fonts
+                filename = os.path.basename(file_path)
+                dest_path = os.path.join(fonts_dir, filename)
+                
+                if os.path.exists(dest_path):
+                    reply = QMessageBox.question(
+                        self,
+                        "Font Exists",
+                        f"Font '{filename}' already exists. Replace it?",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    if reply != QMessageBox.StandardButton.Yes:
+                        return
+                
+                shutil.copy2(file_path, dest_path)
+                
+                # Load the font
+                font_id = QFontDatabase.addApplicationFont(dest_path)
+                if font_id != -1:
+                    font_families = QFontDatabase.applicationFontFamilies(font_id)
+                    if font_families:
+                        font_name = font_families[0]
+                        
+                        # Add to combo box if not already there
+                        if self.font_combo.findText(font_name) == -1:
+                            self.font_combo.addItem(font_name)
+                        
+                        # Select the new font
+                        self.font_combo.setCurrentText(font_name)
+                        self.apply_btn.setEnabled(True)
+                        
+                        QMessageBox.information(
+                            self,
+                            "Success",
+                            f"Font '{font_name}' imported successfully!\n\nClick 'Apply Changes' to use it."
+                        )
+                    else:
+                        QMessageBox.warning(
+                            self,
+                            "Error",
+                            "Failed to load font family from file."
+                        )
+                else:
+                    QMessageBox.warning(
+                        self,
+                        "Error",
+                        "Failed to load font file. The file may be corrupted or invalid."
+                    )
+            except Exception as e:
+                QMessageBox.critical(
+                    self,
+                    "Error",
+                    f"Failed to import font: {str(e)}"
+                )
