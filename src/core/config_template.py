@@ -105,6 +105,10 @@ notes:
   view_mode: "Grid"  # Auto, Grid, List, or Compact
   tag_filter: "All Tags"
   pinned_filter: false
+
+# Advanced Settings
+advanced:
+  show_debug_buttons: false  # Show reload/restart buttons in navigation
 """
 
 

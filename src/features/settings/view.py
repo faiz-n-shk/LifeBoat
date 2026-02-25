@@ -12,6 +12,7 @@ from src.features.settings.sections.appearance import AppearanceSection
 from src.features.settings.sections.locale import LocaleSection
 from src.features.settings.sections.themes import ThemesSection
 from src.features.settings.sections.paths import PathsSection
+from src.features.settings.sections.advanced import AdvancedSection
 from src.features.settings.sections.about import AboutSection
 
 
@@ -77,6 +78,7 @@ class SettingsView(QWidget):
         self.themes_section = ThemesSection()
         self.locale_section = LocaleSection()
         self.paths_section = PathsSection()
+        self.advanced_section = AdvancedSection()
         self.about_section = AboutSection()
         
         # Create sections and store references
@@ -85,6 +87,7 @@ class SettingsView(QWidget):
             ("Themes", self.themes_section),
             ("Locale & Format", self.locale_section),
             ("File Locations", self.paths_section),
+            ("Advanced", self.advanced_section),
             ("About", self.about_section)
         ]
         
@@ -191,6 +194,10 @@ class SettingsView(QWidget):
         if hasattr(self.locale_section, 'apply_btn') and self.locale_section.apply_btn.isEnabled():
             has_changes = True
         
+        # Check advanced section
+        if hasattr(self.advanced_section, 'apply_btn') and self.advanced_section.apply_btn.isEnabled():
+            has_changes = True
+        
         if not has_changes:
             return True
         
@@ -224,6 +231,8 @@ class SettingsView(QWidget):
                 self.appearance_section.on_apply()
             if hasattr(self.locale_section, 'apply_btn') and self.locale_section.apply_btn.isEnabled():
                 self.locale_section.on_apply()
+            if hasattr(self.advanced_section, 'apply_btn') and self.advanced_section.apply_btn.isEnabled():
+                self.advanced_section.on_apply()
             return True
         elif clicked == discard_btn:
             # Discard changes from all sections
@@ -231,6 +240,8 @@ class SettingsView(QWidget):
                 self.appearance_section.on_cancel()
             if hasattr(self.locale_section, 'on_cancel'):
                 self.locale_section.on_cancel()
+            if hasattr(self.advanced_section, 'on_cancel'):
+                self.advanced_section.on_cancel()
             return True
         else:
             # Cancel navigation

@@ -27,3 +27,7 @@ six==1.17.0
 
 # OS Theme Detection
 darkdetect==0.8.0
+
+# Markdown rendering
+markdown==3.10.2
+pygments==2.19.2

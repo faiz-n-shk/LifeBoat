@@ -160,6 +160,10 @@ class AppearanceSection(QWidget):
     
     def on_apply(self):
         """Apply appearance changes"""
+        # Store scroll position before applying changes
+        scroll_area = self.get_scroll_area()
+        scroll_pos = scroll_area.verticalScrollBar().value() if scroll_area else 0
+        
         # Save to config
         config.set('appearance.font_family', self.font_combo.currentText())
         config.set('appearance.font_size', self.size_spin.value())
@@ -182,6 +186,11 @@ class AppearanceSection(QWidget):
             # Emit signal to reload UI
             config.signals.appearance_changed.emit()
             
+            # Restore scroll position after UI refresh
+            if scroll_area:
+                from PyQt6.QtCore import QTimer
+                QTimer.singleShot(50, lambda: scroll_area.verticalScrollBar().setValue(scroll_pos))
+            
             self.apply_btn.setEnabled(False)
             self.cancel_btn.setEnabled(False)
             
@@ -199,6 +208,16 @@ class AppearanceSection(QWidget):
                 "Error",
                 "Failed to save appearance settings."
             )
+    
+    def get_scroll_area(self):
+        """Find the parent scroll area widget"""
+        from PyQt6.QtWidgets import QScrollArea
+        widget = self.parent()
+        while widget:
+            if isinstance(widget.parent(), QScrollArea):
+                return widget.parent()
+            widget = widget.parent()
+        return None
     
     def on_cancel(self):
         """Cancel appearance changes and revert to saved values"""

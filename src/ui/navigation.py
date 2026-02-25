@@ -78,13 +78,13 @@ class NavigationSidebar(QWidget):
             danger_color = theme.danger
         
         # Reload button (small, circular, warning color)
-        reload_btn = QPushButton()
-        reload_btn.setIcon(QIcon("assets/icons/reload.svg"))
-        reload_btn.setFixedSize(20, 20)
-        reload_btn.setIconSize(QSize(16, 16))
-        reload_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        reload_btn.setToolTip("Reload")
-        reload_btn.setStyleSheet(f"""
+        self.reload_btn = QPushButton()
+        self.reload_btn.setIcon(QIcon("assets/icons/reload.svg"))
+        self.reload_btn.setFixedSize(20, 20)
+        self.reload_btn.setIconSize(QSize(16, 16))
+        self.reload_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.reload_btn.setToolTip("Reload")
+        self.reload_btn.setStyleSheet(f"""
             QPushButton {{
                 border-radius: 10px;
                 padding: 0px;
@@ -101,17 +101,17 @@ class NavigationSidebar(QWidget):
                 opacity: 0.8;
             }}
         """)
-        reload_btn.clicked.connect(self.on_reload)
-        bottom_layout.addWidget(reload_btn, 0, Qt.AlignmentFlag.AlignLeft)
+        self.reload_btn.clicked.connect(self.on_reload)
+        bottom_layout.addWidget(self.reload_btn, 0, Qt.AlignmentFlag.AlignLeft)
         
         # Restart button (small, circular, danger color)
-        restart_btn = QPushButton()
-        restart_btn.setIcon(QIcon("assets/icons/restart.svg"))
-        restart_btn.setFixedSize(20, 20)
-        restart_btn.setIconSize(QSize(16, 16))
-        restart_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        restart_btn.setToolTip("Restart")
-        restart_btn.setStyleSheet(f"""
+        self.restart_btn = QPushButton()
+        self.restart_btn.setIcon(QIcon("assets/icons/restart.svg"))
+        self.restart_btn.setFixedSize(20, 20)
+        self.restart_btn.setIconSize(QSize(16, 16))
+        self.restart_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        self.restart_btn.setToolTip("Restart")
+        self.restart_btn.setStyleSheet(f"""
             QPushButton {{
                 border-radius: 10px;
                 padding: 0px;
@@ -128,8 +128,8 @@ class NavigationSidebar(QWidget):
                 opacity: 0.8;
             }}
         """)
-        restart_btn.clicked.connect(self.on_restart)
-        bottom_layout.addWidget(restart_btn, 0, Qt.AlignmentFlag.AlignLeft)
+        self.restart_btn.clicked.connect(self.on_restart)
+        bottom_layout.addWidget(self.restart_btn, 0, Qt.AlignmentFlag.AlignLeft)
         
         # Spacer to push version to center
         bottom_layout.addStretch()
@@ -144,9 +144,16 @@ class NavigationSidebar(QWidget):
         bottom_layout.addStretch()
         
         # Invisible spacer widget to balance the buttons on the left (20px + 4px spacing + 20px = 44px)
-        spacer_widget = QWidget()
-        spacer_widget.setFixedWidth(44)
-        bottom_layout.addWidget(spacer_widget)
+        self.spacer_widget = QWidget()
+        self.spacer_widget.setFixedWidth(44)
+        bottom_layout.addWidget(self.spacer_widget)
+        
+        # Check config to show/hide debug buttons (after all widgets are created)
+        from src.core.config import config
+        show_debug = config.get('advanced.show_debug_buttons', False)
+        self.reload_btn.setVisible(show_debug)
+        self.restart_btn.setVisible(show_debug)
+        self.spacer_widget.setVisible(show_debug)
         
         layout.addLayout(bottom_layout)
         
@@ -201,3 +208,14 @@ class NavigationSidebar(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             self.restart_requested.emit()
+    
+    def update_debug_buttons_visibility(self):
+        """Update debug buttons visibility based on config"""
+        from src.core.config import config
+        show_debug = config.get('advanced.show_debug_buttons', False)
+        if hasattr(self, 'reload_btn'):
+            self.reload_btn.setVisible(show_debug)
+        if hasattr(self, 'restart_btn'):
+            self.restart_btn.setVisible(show_debug)
+        if hasattr(self, 'spacer_widget'):
+            self.spacer_widget.setVisible(show_debug)

@@ -170,6 +170,9 @@ class ExpensePieChart(QWidget):
     
     def draw_legend(self, painter, width, height):
         """Draw legend below chart"""
+        from src.core.config import config
+        currency_symbol = config.get('currency.symbol', '$')
+        
         legend_y = height - 70
         legend_x = 10
         
@@ -192,7 +195,7 @@ class ExpensePieChart(QWidget):
             
             # Category name and amount
             percentage = (amount / self.total * 100) if self.total > 0 else 0
-            text = f"{category}: ${amount:.0f} ({percentage:.0f}%)"
+            text = f"{category}: {currency_symbol}{amount:.0f} ({percentage:.0f}%)"
             
             painter.setPen(QColor(200, 200, 200))
             painter.drawText(int(x + 18), int(y + 10), text)

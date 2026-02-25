@@ -89,6 +89,7 @@ class MainWindow(QWidget):
         from src.core.config import config
         config.signals.appearance_changed.connect(self.on_appearance_changed)
         config.signals.locale_changed.connect(self.on_locale_changed)
+        config.signals.advanced_changed.connect(self.on_advanced_changed)
 
     
     def on_navigate(self, feature_name: str):
@@ -164,3 +165,8 @@ class MainWindow(QWidget):
         """Handle locale settings change"""
         # Refresh all registered features to apply new formats
         self.content.refresh_all_features()
+    
+    def on_advanced_changed(self):
+        """Handle advanced settings change"""
+        # Update debug buttons visibility in navigation
+        self.navigation.update_debug_buttons_visibility()

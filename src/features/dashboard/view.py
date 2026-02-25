@@ -193,8 +193,11 @@ class DashboardView(QWidget):
         stats_grid = QGridLayout()
         stats_grid.setSpacing(10)
         
+        from src.core.config import config
+        currency_symbol = config.get('currency.symbol', '$')
+        
         self.notes_stat = self.create_stat_item("📝 Notes", "0")
-        self.expenses_stat = self.create_stat_item("💰 Expenses This Month", "$0")
+        self.expenses_stat = self.create_stat_item("💰 Expenses This Month", f"{currency_symbol}0")
         self.events_week_stat = self.create_stat_item("📅 Events This Week", "0")
         self.overdue_stat = self.create_stat_item("⚠️ Overdue Tasks", "0")
         
@@ -504,7 +507,25 @@ class DashboardView(QWidget):
     
     def refresh(self):
         """Refresh view to apply config changes"""
+        # Mark as initial load to trigger animations
         self.initial_load = True
+        
+        # Reset widgets to 0 state before loading
+        from src.core.config import config
+        if config.get('appearance.enable_animations', True):
+            self.tasks_ring._progress = 0
+            self.tasks_ring._target_progress = 0
+            self.goals_ring._progress = 0
+            self.goals_ring._target_progress = 0
+            self.habits_ring._progress = 0
+            self.habits_ring._target_progress = 0
+            self.expense_chart._animation_progress = 0
+            
+            self.tasks_ring.update()
+            self.goals_ring.update()
+            self.habits_ring.update()
+            self.expense_chart.update()
+        
         self.load_data_with_animation()
     
     def showEvent(self, event):

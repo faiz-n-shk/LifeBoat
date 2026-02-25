@@ -152,6 +152,10 @@ class LocaleSection(QWidget):
     
     def on_apply(self):
         """Apply locale changes"""
+        # Store scroll position before applying changes
+        scroll_area = self.get_scroll_area()
+        scroll_pos = scroll_area.verticalScrollBar().value() if scroll_area else 0
+        
         symbol = self.currency_combo.currentText()
         code = get_currency_code(symbol)
         
@@ -167,6 +171,11 @@ class LocaleSection(QWidget):
         if config.save():
             # Emit signal to reload formatters and UI
             config.signals.locale_changed.emit()
+            
+            # Restore scroll position after UI refresh
+            if scroll_area:
+                from PyQt6.QtCore import QTimer
+                QTimer.singleShot(50, lambda: scroll_area.verticalScrollBar().setValue(scroll_pos))
             
             self.apply_btn.setEnabled(False)
             self.cancel_btn.setEnabled(False)
@@ -185,6 +194,16 @@ class LocaleSection(QWidget):
                 "Error",
                 "Failed to save locale settings."
             )
+    
+    def get_scroll_area(self):
+        """Find the parent scroll area widget"""
+        from PyQt6.QtWidgets import QScrollArea
+        widget = self.parent()
+        while widget:
+            if isinstance(widget.parent(), QScrollArea):
+                return widget.parent()
+            widget = widget.parent()
+        return None
     
     def on_cancel(self):
         """Cancel locale changes and revert to saved values"""

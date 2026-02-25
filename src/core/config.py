@@ -28,6 +28,7 @@ class ConfigSignals(QObject):
     config_reloaded = pyqtSignal()
     appearance_changed = pyqtSignal()
     locale_changed = pyqtSignal()
+    advanced_changed = pyqtSignal()
 
 
 class Config:

@@ -127,6 +127,8 @@ class NoteViewer(BaseDialog):
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding
         )
+        self.content_viewer.setWordWrapMode(QTextOption.WrapMode.WordWrap)
+        self.content_viewer.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
         
         # Apply theme styling
         self._apply_content_styling()
@@ -184,57 +186,288 @@ class NoteViewer(BaseDialog):
             self.content_viewer.setPlainText(self.note.content)
     
     def _markdown_to_html(self, text):
-        """Convert markdown to HTML (basic implementation)"""
-        import re
+        """Convert markdown to HTML using proper markdown library"""
+        # Get theme colors
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
         
-        # Escape HTML special characters first
-        html = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        # Default colors (fallback)
+        bg_primary = "#36393f"
+        bg_secondary = "#2f3136"
+        bg_tertiary = "#202225"
+        fg_primary = "#dcddde"
+        fg_secondary = "#b9bbbe"
+        border_color = "#202225"
+        accent_color = "#5865f2"
         
-        # Code blocks (must be before inline code)
-        html = re.sub(r'```(.+?)```', r'<pre style="background: rgba(50,50,50,0.5); padding: 10px; border-radius: 5px; overflow-x: auto;"><code>\1</code></pre>', html, flags=re.DOTALL)
+        try:
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+            bg_primary = theme_obj.bg_primary
+            bg_secondary = theme_obj.bg_secondary
+            bg_tertiary = theme_obj.bg_tertiary
+            fg_primary = theme_obj.fg_primary
+            fg_secondary = theme_obj.fg_secondary
+            border_color = theme_obj.border
+            accent_color = theme_obj.accent
+            db.close()
+        except:
+            pass
         
-        # Inline code
-        html = re.sub(r'`(.+?)`', r'<code style="background: rgba(50,50,50,0.5); padding: 2px 6px; border-radius: 3px;">\1</code>', html)
-        
-        # Headers (must be on their own line)
-        html = re.sub(r'^### (.+)$', r'<h3 style="color: #6495ED; margin-top: 16px; margin-bottom: 8px;">\1</h3>', html, flags=re.MULTILINE)
-        html = re.sub(r'^## (.+)$', r'<h2 style="color: #6495ED; margin-top: 20px; margin-bottom: 10px;">\1</h2>', html, flags=re.MULTILINE)
-        html = re.sub(r'^# (.+)$', r'<h1 style="color: #6495ED; margin-top: 24px; margin-bottom: 12px;">\1</h1>', html, flags=re.MULTILINE)
-        
-        # Bold (non-greedy)
-        html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
-        html = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html)
-        
-        # Italic (non-greedy, but not inside words)
-        html = re.sub(r'(?<!\w)\*(.+?)\*(?!\w)', r'<em>\1</em>', html)
-        html = re.sub(r'(?<!\w)_(.+?)_(?!\w)', r'<em>\1</em>', html)
-        
-        # Strikethrough
-        html = re.sub(r'~~(.+?)~~', r'<del>\1</del>', html)
-        
-        # Links
-        html = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2" style="color: #6495ED; text-decoration: underline;">\1</a>', html)
-        
-        # Unordered lists
-        html = re.sub(r'^[\*\-] (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
-        html = re.sub(r'(<li>.+</li>\n?)+', r'<ul style="margin: 10px 0; padding-left: 30px;">\g<0></ul>', html)
-        
-        # Ordered lists
-        html = re.sub(r'^\d+\. (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
-        # Find consecutive <li> tags and wrap in <ol>
-        html = re.sub(r'(<li>.+</li>\n?)+', lambda m: f'<ol style="margin: 10px 0; padding-left: 30px;">{m.group(0)}</ol>' if '<ul' not in m.group(0) else m.group(0), html)
-        
-        # Blockquotes
-        html = re.sub(r'^&gt; (.+)$', r'<blockquote style="border-left: 4px solid #6495ED; padding-left: 16px; margin: 10px 0; color: #AAA;">\1</blockquote>', html, flags=re.MULTILINE)
-        
-        # Horizontal rule
-        html = re.sub(r'^---$', r'<hr style="border: none; border-top: 2px solid rgba(100,100,100,0.3); margin: 20px 0;">', html, flags=re.MULTILINE)
-        
-        # Line breaks (double newline = paragraph break)
-        html = html.replace('\n\n', '<br><br>')
-        html = html.replace('\n', '<br>')
-        
-        return f'<div style="font-size: 11pt; line-height: 1.8; color: #DDD;">{html}</div>'
+        try:
+            import re
+            
+            # Escape HTML in text first
+            def escape_html(text):
+                return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+            
+            # Process code blocks FIRST before any other markdown
+            def process_code_blocks(text):
+                # Match fenced code blocks with optional language
+                pattern = r'```(\w*)\n(.*?)```'
+                
+                def replace_code_block(match):
+                    lang = match.group(1)
+                    code = match.group(2).rstrip('\n')  # Remove trailing newline
+                    # Escape HTML in code
+                    code_escaped = escape_html(code)
+                    return f'<pre><code>{code_escaped}</code></pre>'
+                
+                return re.sub(pattern, replace_code_block, text, flags=re.DOTALL)
+            
+            # Process inline code
+            def process_inline_code(text):
+                # Match inline code `code`
+                pattern = r'`([^`]+)`'
+                def replace_inline(match):
+                    code = escape_html(match.group(1))
+                    return f'<code>{code}</code>'
+                return re.sub(pattern, replace_inline, text)
+            
+            # Process the text
+            html_content = text
+            
+            # 1. Process code blocks first (so they don't get affected by other processing)
+            html_content = process_code_blocks(html_content)
+            
+            # 2. Process inline code
+            html_content = process_inline_code(html_content)
+            
+            # 3. Process headers
+            html_content = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', html_content, flags=re.MULTILINE)
+            html_content = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', html_content, flags=re.MULTILINE)
+            html_content = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', html_content, flags=re.MULTILINE)
+            
+            # 4. Process bold and italic
+            html_content = re.sub(r'\*\*\*(.+?)\*\*\*', r'<strong><em>\1</em></strong>', html_content)
+            html_content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html_content)
+            html_content = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html_content)
+            html_content = re.sub(r'___(.+?)___', r'<strong><em>\1</em></strong>', html_content)
+            html_content = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html_content)
+            html_content = re.sub(r'_(.+?)_', r'<em>\1</em>', html_content)
+            
+            # 5. Process links
+            html_content = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', html_content)
+            
+            # 6. Process lists
+            html_content = re.sub(r'^\* (.+)$', r'<li>\1</li>', html_content, flags=re.MULTILINE)
+            html_content = re.sub(r'^\- (.+)$', r'<li>\1</li>', html_content, flags=re.MULTILINE)
+            html_content = re.sub(r'(<li>.*</li>)', r'<ul>\1</ul>', html_content, flags=re.DOTALL)
+            
+            # 7. Process paragraphs (but NOT inside pre blocks)
+            lines = html_content.split('\n')
+            processed_lines = []
+            in_pre = False
+            
+            for line in lines:
+                if '<pre>' in line:
+                    in_pre = True
+                    processed_lines.append(line)
+                elif '</pre>' in line:
+                    in_pre = False
+                    processed_lines.append(line)
+                elif in_pre:
+                    processed_lines.append(line)
+                elif line.strip() and not line.startswith('<'):
+                    processed_lines.append(f'<p>{line}</p>')
+                else:
+                    processed_lines.append(line)
+            
+            html_content = '\n'.join(processed_lines)
+            
+            # Wrap with theme-aware styling
+            styled_html = f'''
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    * {{
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }}
+    
+    body {{
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
+        font-size: 16px;
+        line-height: 1.6;
+        color: {fg_primary};
+        background-color: transparent;
+        padding: 16px;
+        word-wrap: break-word;
+    }}
+    
+    h1, h2, h3, h4, h5, h6 {{
+        margin-top: 24px;
+        margin-bottom: 16px;
+        font-weight: 600;
+        line-height: 1.25;
+        color: {fg_primary};
+    }}
+    
+    h1 {{
+        font-size: 2em;
+        padding-bottom: 0.3em;
+        border-bottom: 2px solid {border_color};
+    }}
+    
+    h2 {{
+        font-size: 1.5em;
+        padding-bottom: 0.3em;
+        border-bottom: 1px solid {border_color};
+    }}
+    
+    h3 {{ font-size: 1.25em; }}
+    
+    p {{
+        margin-top: 0;
+        margin-bottom: 16px;
+        color: {fg_primary};
+    }}
+    
+    a {{
+        color: {accent_color};
+        text-decoration: none;
+    }}
+    
+    a:hover {{
+        text-decoration: underline;
+    }}
+    
+    code {{
+        padding: 0.2em 0.4em;
+        margin: 0;
+        font-size: 85%;
+        background-color: {bg_tertiary};
+        border-radius: 3px;
+        font-family: "Consolas", "Courier New", "Courier", monospace;
+        color: {fg_primary};
+        border: 1px solid {border_color};
+    }}
+    
+    pre {{
+        padding: 12px;
+        overflow-x: auto;
+        font-size: 14px;
+        line-height: 1.4;
+        background-color: {bg_tertiary};
+        border: 1px solid {border_color};
+        border-radius: 4px;
+        margin: 8px 0 16px 0;
+        font-family: "Consolas", "Courier New", "Courier", monospace;
+    }}
+    
+    pre code {{
+        padding: 0;
+        margin: 0;
+        background-color: transparent;
+        border: none;
+        font-size: 14px;
+        color: {fg_primary};
+        display: block;
+        white-space: pre;
+        line-height: 1.4;
+    }}
+    
+    ul, ol {{
+        padding-left: 2em;
+        margin-top: 0;
+        margin-bottom: 16px;
+        color: {fg_primary};
+    }}
+    
+    li {{
+        margin-top: 0.25em;
+        color: {fg_primary};
+    }}
+    
+    strong {{
+        font-weight: 700;
+        color: {fg_primary};
+    }}
+    
+    em {{
+        font-style: italic;
+    }}
+    
+    blockquote {{
+        padding: 8px 16px;
+        color: {fg_secondary};
+        border-left: 4px solid {border_color};
+        margin-top: 0;
+        margin-bottom: 16px;
+        background-color: {bg_secondary};
+        border-radius: 0 4px 4px 0;
+    }}
+    
+    hr {{
+        height: 1px;
+        padding: 0;
+        margin: 24px 0;
+        background-color: {border_color};
+        border: 0;
+    }}
+</style>
+</head>
+<body>
+{html_content}
+</body>
+</html>
+            '''
+            
+            return styled_html
+            
+        except Exception as e:
+            # Fallback
+            return f'''
+<!DOCTYPE html>
+<html>
+<head>
+<style>
+    body {{
+        font-family: monospace;
+        padding: 16px;
+        color: {fg_primary};
+        background-color: transparent;
+    }}
+    pre {{
+        background: {bg_tertiary};
+        border: 1px solid {border_color};
+        padding: 16px;
+        border-radius: 4px;
+        overflow-x: auto;
+        white-space: pre;
+        color: {fg_primary};
+    }}
+</style>
+</head>
+<body>
+    <p style="color: #f04747;">Error: {str(e)}</p>
+    <pre>{text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')}</pre>
+</body>
+</html>
+            '''
     
     def _apply_content_styling(self):
         """Apply theme styling to content viewer"""
