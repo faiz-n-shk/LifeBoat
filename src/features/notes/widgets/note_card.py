@@ -223,7 +223,7 @@ class NoteCard(QFrame):
         main_layout.setContentsMargins(12, 10, 12, 10)
         main_layout.setSpacing(12)
         
-        # Left side: Title and content
+        # Left side: Title only
         left_layout = QVBoxLayout()
         left_layout.setSpacing(6)
         
@@ -248,20 +248,7 @@ class NoteCard(QFrame):
             title_layout.addWidget(pin_icon)
         
         left_layout.addLayout(title_layout)
-        
-        # Content preview
-        content_preview = self.note.content[:150]
-        if len(self.note.content) > 150:
-            content_preview += "..."
-        
-        content_label = QLabel(content_preview)
-        content_label.setWordWrap(True)
-        content_label.setProperty("class", "secondary-text")
-        content_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
-        font = QFont()
-        font.setPointSize(9)
-        content_label.setFont(font)
-        left_layout.addWidget(content_label, 1)
+        left_layout.addStretch()
         
         main_layout.addLayout(left_layout, 3)
         
@@ -342,19 +329,7 @@ class NoteCard(QFrame):
             title_layout.addWidget(pin_icon)
         
         main_layout.addLayout(title_layout)
-        
-        # Content preview (one line)
-        content_preview = self.note.content[:60]
-        if len(self.note.content) > 60:
-            content_preview += "..."
-        
-        content_label = QLabel(content_preview)
-        content_label.setWordWrap(False)
-        content_label.setProperty("class", "secondary-text")
-        font = QFont()
-        font.setPointSize(8)
-        content_label.setFont(font)
-        main_layout.addWidget(content_label)
+        main_layout.addStretch()
         
         # Footer
         footer_layout = QHBoxLayout()

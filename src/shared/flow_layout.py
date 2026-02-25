@@ -72,6 +72,12 @@ class FlowLayout(QLayout):
         line_height = 0
         spacing = self.spacing()
         
+        # First pass: calculate row heights and group items by row
+        rows = []
+        current_row = []
+        current_row_height = 0
+        current_x = x
+        
         for item in self.item_list:
             widget = item.widget()
             space_x = spacing + widget.style().layoutSpacing(
@@ -79,23 +85,68 @@ class FlowLayout(QLayout):
                 QSizePolicy.ControlType.PushButton,
                 Qt.Orientation.Horizontal
             )
-            space_y = spacing + widget.style().layoutSpacing(
-                QSizePolicy.ControlType.PushButton,
-                QSizePolicy.ControlType.PushButton,
-                Qt.Orientation.Vertical
-            )
             
-            next_x = x + item.sizeHint().width() + space_x
-            if next_x - space_x > rect.right() and line_height > 0:
-                x = rect.x()
-                y = y + line_height + space_y
-                next_x = x + item.sizeHint().width() + space_x
-                line_height = 0
+            item_width = item.sizeHint().width()
+            item_height = item.sizeHint().height()
+            next_x = current_x + item_width + space_x
             
-            if not test_only:
-                item.setGeometry(QRect(QPoint(x, y), item.sizeHint()))
-            
-            x = next_x
-            line_height = max(line_height, item.sizeHint().height())
+            # Check if we need to wrap to next row
+            if next_x - space_x > rect.right() and len(current_row) > 0:
+                # Save current row
+                rows.append((current_row, current_row_height))
+                # Start new row
+                current_row = [(item, item_width, item_height)]
+                current_row_height = item_height
+                current_x = x + item_width + space_x
+            else:
+                # Add to current row
+                current_row.append((item, item_width, item_height))
+                current_row_height = max(current_row_height, item_height)
+                current_x = next_x
         
-        return y + line_height - rect.y()
+        # Don't forget the last row
+        if current_row:
+            rows.append((current_row, current_row_height))
+        
+        # Second pass: position items with consistent row heights
+        if not test_only:
+            current_y = y
+            
+            for row_items, row_height in rows:
+                current_x = x
+                
+                for item, item_width, item_height in row_items:
+                    widget = item.widget()
+                    space_x = spacing + widget.style().layoutSpacing(
+                        QSizePolicy.ControlType.PushButton,
+                        QSizePolicy.ControlType.PushButton,
+                        Qt.Orientation.Horizontal
+                    )
+                    
+                    # Set geometry with consistent row height
+                    item.setGeometry(QRect(QPoint(current_x, current_y), QSize(item_width, row_height)))
+                    current_x += item_width + space_x
+                
+                space_y = spacing + widget.style().layoutSpacing(
+                    QSizePolicy.ControlType.PushButton,
+                    QSizePolicy.ControlType.PushButton,
+                    Qt.Orientation.Vertical
+                )
+                current_y += row_height + space_y
+            
+            return current_y - rect.y()
+        else:
+            # Calculate total height for test mode
+            total_height = 0
+            for row_items, row_height in rows:
+                if total_height > 0:
+                    widget = row_items[0][0].widget()
+                    space_y = spacing + widget.style().layoutSpacing(
+                        QSizePolicy.ControlType.PushButton,
+                        QSizePolicy.ControlType.PushButton,
+                        Qt.Orientation.Vertical
+                    )
+                    total_height += space_y
+                total_height += row_height
+            
+            return total_height
