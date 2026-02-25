@@ -125,6 +125,47 @@ def run_migrations():
             print("Running migration: Setting default frequency values...")
             db.execute_sql("UPDATE habit SET frequency = 'Daily' WHERE frequency IS NULL")
             print("Migration completed: frequency defaults set")
+        
+        # Migration 5: Update Matrix theme colors for better visibility
+        try:
+            print("Running migration: Updating Matrix theme colors...")
+            # Import Theme model inside migration
+            from src.models.theme import Theme as ThemeModel
+            matrix_theme = ThemeModel.get_or_none(ThemeModel.name == "Matrix")
+            if matrix_theme:
+                # Only update if colors haven't been updated yet
+                if matrix_theme.bg_tertiary == "#0f3d0f":
+                    matrix_theme.bg_tertiary = "#0a0a0a"
+                    matrix_theme.fg_secondary = "#33ff66"
+                    matrix_theme.save()
+                    print("Migration completed: Matrix theme colors updated")
+                else:
+                    print("Matrix theme already updated, skipping...")
+        except Exception as e:
+            print(f"Matrix theme migration error: {e}")
+        
+        # Migration 6: Update Light theme for better appearance
+        try:
+            print("Running migration: Updating Light theme colors...")
+            from src.models.theme import Theme as ThemeModel
+            light_theme = ThemeModel.get_or_none(ThemeModel.name == "Light")
+            if light_theme:
+                # Only update if colors haven't been updated yet (check old bg_primary)
+                if light_theme.bg_primary == "#ffffff":
+                    light_theme.bg_primary = "#f5f5f5"
+                    light_theme.bg_secondary = "#ffffff"
+                    light_theme.bg_tertiary = "#e8e8e8"
+                    light_theme.fg_primary = "#1e1e1e"
+                    light_theme.fg_secondary = "#424242"
+                    light_theme.accent = "#0078d4"
+                    light_theme.accent_hover = "#106ebe"
+                    light_theme.border = "#d0d0d0"
+                    light_theme.save()
+                    print("Migration completed: Light theme colors updated")
+                else:
+                    print("Light theme already updated, skipping...")
+        except Exception as e:
+            print(f"Light theme migration error: {e}")
     except Exception as e:
         print(f"Migration error: {e}")
 
@@ -146,17 +187,17 @@ def get_default_themes():
             "border": "#4d4d4d"
         },
         "Light": {
-            "bg_primary": "#ffffff",
-            "bg_secondary": "#f3f3f3",
+            "bg_primary": "#f5f5f5",
+            "bg_secondary": "#ffffff",
             "bg_tertiary": "#e8e8e8",
-            "fg_primary": "#000000",
-            "fg_secondary": "#616161",
-            "accent": "#005fb8",
-            "accent_hover": "#004c99",
+            "fg_primary": "#1e1e1e",
+            "fg_secondary": "#424242",
+            "accent": "#0078d4",
+            "accent_hover": "#106ebe",
             "success": "#16825d",
             "warning": "#ca5010",
             "danger": "#d13438",
-            "border": "#d4d4d4"
+            "border": "#d0d0d0"
         },
         "Catppuccin Mocha": {
             "bg_primary": "#1e1e2e",
@@ -187,9 +228,9 @@ def get_default_themes():
         "Matrix": {
             "bg_primary": "#0d0208",
             "bg_secondary": "#1a1a1a",
-            "bg_tertiary": "#0f3d0f",
+            "bg_tertiary": "#0a0a0a",
             "fg_primary": "#00ff41",
-            "fg_secondary": "#00cc33",
+            "fg_secondary": "#33ff66",
             "accent": "#00ff41",
             "accent_hover": "#00cc33",
             "success": "#00ff41",

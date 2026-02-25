@@ -180,6 +180,18 @@ class ExpensePieChart(QWidget):
         font.setPointSize(9)
         painter.setFont(font)
         
+        # Get theme color for text
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
+        try:
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+            text_color = QColor(theme_obj.fg_primary)
+            db.close()
+        except:
+            text_color = QColor(200, 200, 200)
+        
         col_width = width / 2
         row = 0
         col = 0
@@ -197,7 +209,7 @@ class ExpensePieChart(QWidget):
             percentage = (amount / self.total * 100) if self.total > 0 else 0
             text = f"{category}: {currency_symbol}{amount:.0f} ({percentage:.0f}%)"
             
-            painter.setPen(QColor(200, 200, 200))
+            painter.setPen(text_color)
             painter.drawText(int(x + 18), int(y + 10), text)
             
             col += 1
@@ -210,6 +222,20 @@ class ExpensePieChart(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
+        # Get theme color for text
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
+        try:
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+            text_color = QColor(theme_obj.fg_secondary)
+            circle_color = QColor(theme_obj.bg_tertiary)
+            db.close()
+        except:
+            text_color = QColor(150, 150, 150)
+            circle_color = QColor(60, 60, 60, 50)
+        
         # Draw placeholder circle
         width = self.width()
         height = self.height()
@@ -219,13 +245,21 @@ class ExpensePieChart(QWidget):
         
         rect = QRectF(x, y, size, size)
         
-        painter.setBrush(QBrush(QColor(60, 60, 60, 50)))
-        painter.setPen(QPen(QColor(80, 80, 80), 2))
+        painter.setBrush(QBrush(circle_color))
+        painter.setPen(QPen(text_color, 2))
         painter.drawEllipse(rect)
         
         # Draw text
         font = QFont()
         font.setPointSize(11)
+        painter.setFont(font)
+        painter.setPen(text_color)
+        
+        y = y + size + 20
+        size = 40
+        
+        text_rect = QRectF(0, y, width, size)
+        painter.drawText(text_rect, Qt.AlignmentFlag.AlignCenter, "No expenses\nthis month")
         painter.setFont(font)
         painter.setPen(QColor(150, 150, 150))
         

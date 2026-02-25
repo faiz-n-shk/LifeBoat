@@ -1,20 +1,20 @@
 """
 Note Viewer
-Read-only viewer for notes with markdown support
+Read-only viewer for notes
 """
 from PyQt6.QtWidgets import (
     QVBoxLayout, QHBoxLayout, QLabel, QPushButton, 
-    QTextEdit, QCheckBox, QSizePolicy, QScrollArea, QFrame
+    QTextBrowser, QCheckBox, QSizePolicy, QScrollArea, QFrame
 )
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QTextDocument, QTextOption
+from PyQt6.QtGui import QFont, QTextDocument
 
 from src.shared.dialogs import BaseDialog
 from src.shared.formatters import format_datetime
 
 
 class NoteViewer(BaseDialog):
-    """Read-only viewer for notes with markdown rendering"""
+    """Read-only viewer for notes"""
     
     edit_requested = pyqtSignal(int)
     delete_requested = pyqtSignal(int)
@@ -23,7 +23,6 @@ class NoteViewer(BaseDialog):
     def __init__(self, parent=None, note=None, controller=None):
         self.note = note
         self.controller = controller
-        self.markdown_mode = False
         
         super().__init__(parent, note.title if note else "Note", width=700, height=600)
         self.setup_content()
@@ -108,32 +107,51 @@ class NoteViewer(BaseDialog):
             tags_layout.addStretch()
             self.layout.addLayout(tags_layout)
         
-        # Markdown toggle
-        toggle_layout = QHBoxLayout()
-        toggle_layout.addStretch()
-        
-        self.markdown_toggle = QCheckBox("📝 Render Markdown")
-        self.markdown_toggle.setChecked(False)
-        self.markdown_toggle.stateChanged.connect(self.toggle_markdown)
-        toggle_layout.addWidget(self.markdown_toggle)
-        
-        self.layout.addLayout(toggle_layout)
-        
-        # Content viewer
-        self.content_viewer = QTextEdit()
+        # Content viewer - Use QTextBrowser for better HTML rendering
+        from PyQt6.QtWidgets import QTextBrowser
+        self.content_viewer = QTextBrowser()
         self.content_viewer.setReadOnly(True)
         self.content_viewer.setPlainText(self.note.content)
         self.content_viewer.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding
         )
-        self.content_viewer.setWordWrapMode(QTextOption.WrapMode.WordWrap)
-        self.content_viewer.setLineWrapMode(QTextEdit.LineWrapMode.WidgetWidth)
+        self.content_viewer.setOpenExternalLinks(True)
         
         # Apply theme styling
         self._apply_content_styling()
         
         self.layout.addWidget(self.content_viewer, 1)
+    
+    def _apply_content_styling(self):
+        """Apply theme styling to content viewer"""
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
+        
+        theme = theme_manager.current_theme
+        if theme:
+            try:
+                db.connect(reuse_if_open=True)
+                theme_obj = Theme.get(Theme.name == theme)
+                self.content_viewer.setStyleSheet(f"""
+                    QTextBrowser {{
+                        background-color: {theme_obj.bg_secondary};
+                        color: {theme_obj.fg_primary};
+                        border: 2px solid {theme_obj.border};
+                        border-radius: 6px;
+                        padding: 12px 16px;
+                        font-size: 11pt;
+                        line-height: 1.6;
+                    }}
+                    QTextBrowser::corner {{
+                        background-color: {theme_obj.bg_tertiary};
+                        border: 1px solid {theme_obj.border};
+                    }}
+                """)
+                db.close()
+            except:
+                pass
     
     def add_action_buttons(self):
         """Add action buttons at the bottom"""
@@ -172,332 +190,6 @@ class NoteViewer(BaseDialog):
         actions_layout.addWidget(close_btn)
         
         self.layout.addLayout(actions_layout)
-    
-    def toggle_markdown(self, state):
-        """Toggle between plain text and markdown rendering"""
-        self.markdown_mode = state == Qt.CheckState.Checked.value
-        
-        if self.markdown_mode:
-            # Render as markdown
-            html = self._markdown_to_html(self.note.content)
-            self.content_viewer.setHtml(html)
-        else:
-            # Show plain text
-            self.content_viewer.setPlainText(self.note.content)
-    
-    def _markdown_to_html(self, text):
-        """Convert markdown to HTML using proper markdown library"""
-        # Get theme colors
-        from src.core.theme_manager import theme_manager
-        from src.models.theme import Theme
-        from src.core.database import db
-        
-        # Default colors (fallback)
-        bg_primary = "#36393f"
-        bg_secondary = "#2f3136"
-        bg_tertiary = "#202225"
-        fg_primary = "#dcddde"
-        fg_secondary = "#b9bbbe"
-        border_color = "#202225"
-        accent_color = "#5865f2"
-        
-        try:
-            db.connect(reuse_if_open=True)
-            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
-            bg_primary = theme_obj.bg_primary
-            bg_secondary = theme_obj.bg_secondary
-            bg_tertiary = theme_obj.bg_tertiary
-            fg_primary = theme_obj.fg_primary
-            fg_secondary = theme_obj.fg_secondary
-            border_color = theme_obj.border
-            accent_color = theme_obj.accent
-            db.close()
-        except:
-            pass
-        
-        try:
-            import re
-            
-            # Escape HTML in text first
-            def escape_html(text):
-                return text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
-            
-            # Process code blocks FIRST before any other markdown
-            def process_code_blocks(text):
-                # Match fenced code blocks with optional language
-                pattern = r'```(\w*)\n(.*?)```'
-                
-                def replace_code_block(match):
-                    lang = match.group(1)
-                    code = match.group(2).rstrip('\n')  # Remove trailing newline
-                    # Escape HTML in code
-                    code_escaped = escape_html(code)
-                    return f'<pre><code>{code_escaped}</code></pre>'
-                
-                return re.sub(pattern, replace_code_block, text, flags=re.DOTALL)
-            
-            # Process inline code
-            def process_inline_code(text):
-                # Match inline code `code`
-                pattern = r'`([^`]+)`'
-                def replace_inline(match):
-                    code = escape_html(match.group(1))
-                    return f'<code>{code}</code>'
-                return re.sub(pattern, replace_inline, text)
-            
-            # Process the text
-            html_content = text
-            
-            # 1. Process code blocks first (so they don't get affected by other processing)
-            html_content = process_code_blocks(html_content)
-            
-            # 2. Process inline code
-            html_content = process_inline_code(html_content)
-            
-            # 3. Process headers
-            html_content = re.sub(r'^### (.*?)$', r'<h3>\1</h3>', html_content, flags=re.MULTILINE)
-            html_content = re.sub(r'^## (.*?)$', r'<h2>\1</h2>', html_content, flags=re.MULTILINE)
-            html_content = re.sub(r'^# (.*?)$', r'<h1>\1</h1>', html_content, flags=re.MULTILINE)
-            
-            # 4. Process bold and italic
-            html_content = re.sub(r'\*\*\*(.+?)\*\*\*', r'<strong><em>\1</em></strong>', html_content)
-            html_content = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html_content)
-            html_content = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html_content)
-            html_content = re.sub(r'___(.+?)___', r'<strong><em>\1</em></strong>', html_content)
-            html_content = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html_content)
-            html_content = re.sub(r'_(.+?)_', r'<em>\1</em>', html_content)
-            
-            # 5. Process links
-            html_content = re.sub(r'\[([^\]]+)\]\(([^\)]+)\)', r'<a href="\2">\1</a>', html_content)
-            
-            # 6. Process lists
-            html_content = re.sub(r'^\* (.+)$', r'<li>\1</li>', html_content, flags=re.MULTILINE)
-            html_content = re.sub(r'^\- (.+)$', r'<li>\1</li>', html_content, flags=re.MULTILINE)
-            html_content = re.sub(r'(<li>.*</li>)', r'<ul>\1</ul>', html_content, flags=re.DOTALL)
-            
-            # 7. Process paragraphs (but NOT inside pre blocks)
-            lines = html_content.split('\n')
-            processed_lines = []
-            in_pre = False
-            
-            for line in lines:
-                if '<pre>' in line:
-                    in_pre = True
-                    processed_lines.append(line)
-                elif '</pre>' in line:
-                    in_pre = False
-                    processed_lines.append(line)
-                elif in_pre:
-                    processed_lines.append(line)
-                elif line.strip() and not line.startswith('<'):
-                    processed_lines.append(f'<p>{line}</p>')
-                else:
-                    processed_lines.append(line)
-            
-            html_content = '\n'.join(processed_lines)
-            
-            # Wrap with theme-aware styling
-            styled_html = f'''
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-    * {{
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-    }}
-    
-    body {{
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans", Helvetica, Arial, sans-serif;
-        font-size: 16px;
-        line-height: 1.6;
-        color: {fg_primary};
-        background-color: transparent;
-        padding: 16px;
-        word-wrap: break-word;
-    }}
-    
-    h1, h2, h3, h4, h5, h6 {{
-        margin-top: 24px;
-        margin-bottom: 16px;
-        font-weight: 600;
-        line-height: 1.25;
-        color: {fg_primary};
-    }}
-    
-    h1 {{
-        font-size: 2em;
-        padding-bottom: 0.3em;
-        border-bottom: 2px solid {border_color};
-    }}
-    
-    h2 {{
-        font-size: 1.5em;
-        padding-bottom: 0.3em;
-        border-bottom: 1px solid {border_color};
-    }}
-    
-    h3 {{ font-size: 1.25em; }}
-    
-    p {{
-        margin-top: 0;
-        margin-bottom: 16px;
-        color: {fg_primary};
-    }}
-    
-    a {{
-        color: {accent_color};
-        text-decoration: none;
-    }}
-    
-    a:hover {{
-        text-decoration: underline;
-    }}
-    
-    code {{
-        padding: 0.2em 0.4em;
-        margin: 0;
-        font-size: 85%;
-        background-color: {bg_tertiary};
-        border-radius: 3px;
-        font-family: "Consolas", "Courier New", "Courier", monospace;
-        color: {fg_primary};
-        border: 1px solid {border_color};
-    }}
-    
-    pre {{
-        padding: 12px;
-        overflow-x: auto;
-        font-size: 14px;
-        line-height: 1.4;
-        background-color: {bg_tertiary};
-        border: 1px solid {border_color};
-        border-radius: 4px;
-        margin: 8px 0 16px 0;
-        font-family: "Consolas", "Courier New", "Courier", monospace;
-    }}
-    
-    pre code {{
-        padding: 0;
-        margin: 0;
-        background-color: transparent;
-        border: none;
-        font-size: 14px;
-        color: {fg_primary};
-        display: block;
-        white-space: pre;
-        line-height: 1.4;
-    }}
-    
-    ul, ol {{
-        padding-left: 2em;
-        margin-top: 0;
-        margin-bottom: 16px;
-        color: {fg_primary};
-    }}
-    
-    li {{
-        margin-top: 0.25em;
-        color: {fg_primary};
-    }}
-    
-    strong {{
-        font-weight: 700;
-        color: {fg_primary};
-    }}
-    
-    em {{
-        font-style: italic;
-    }}
-    
-    blockquote {{
-        padding: 8px 16px;
-        color: {fg_secondary};
-        border-left: 4px solid {border_color};
-        margin-top: 0;
-        margin-bottom: 16px;
-        background-color: {bg_secondary};
-        border-radius: 0 4px 4px 0;
-    }}
-    
-    hr {{
-        height: 1px;
-        padding: 0;
-        margin: 24px 0;
-        background-color: {border_color};
-        border: 0;
-    }}
-</style>
-</head>
-<body>
-{html_content}
-</body>
-</html>
-            '''
-            
-            return styled_html
-            
-        except Exception as e:
-            # Fallback
-            return f'''
-<!DOCTYPE html>
-<html>
-<head>
-<style>
-    body {{
-        font-family: monospace;
-        padding: 16px;
-        color: {fg_primary};
-        background-color: transparent;
-    }}
-    pre {{
-        background: {bg_tertiary};
-        border: 1px solid {border_color};
-        padding: 16px;
-        border-radius: 4px;
-        overflow-x: auto;
-        white-space: pre;
-        color: {fg_primary};
-    }}
-</style>
-</head>
-<body>
-    <p style="color: #f04747;">Error: {str(e)}</p>
-    <pre>{text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')}</pre>
-</body>
-</html>
-            '''
-    
-    def _apply_content_styling(self):
-        """Apply theme styling to content viewer"""
-        from src.core.theme_manager import theme_manager
-        from src.models.theme import Theme
-        from src.core.database import db
-        
-        theme = theme_manager.current_theme
-        if theme:
-            try:
-                db.connect(reuse_if_open=True)
-                theme_obj = Theme.get(Theme.name == theme)
-                self.content_viewer.setStyleSheet(f"""
-                    QTextEdit {{
-                        background-color: {theme_obj.bg_secondary};
-                        color: {theme_obj.fg_primary};
-                        border: 2px solid {theme_obj.border};
-                        border-radius: 6px;
-                        padding: 12px 16px;
-                        font-size: 11pt;
-                        line-height: 1.6;
-                    }}
-                    QTextEdit::corner {{
-                        background-color: {theme_obj.bg_tertiary};
-                        border: 1px solid {theme_obj.border};
-                    }}
-                """)
-                db.close()
-            except:
-                pass
     
     def on_pin_toggle(self):
         """Handle pin toggle"""

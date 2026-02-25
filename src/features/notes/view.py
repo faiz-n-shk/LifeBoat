@@ -30,6 +30,7 @@ class NotesView(QWidget):
         self.saved_pinned_filter = config.get('notes.pinned_filter', False)
         
         self.setup_ui()
+        self.update_tag_filter()  # Load tags on initialization
         self.restore_filter_state()
         self.load_notes()
     
@@ -97,6 +98,9 @@ class NotesView(QWidget):
         self.pinned_btn.setMinimumWidth(100)
         self.pinned_btn.clicked.connect(self.on_filter_changed)
         controls_layout.addWidget(self.pinned_btn)
+        
+        # Apply initial styling
+        self.update_pinned_button_style()
         
         layout.addLayout(controls_layout)
         
@@ -309,4 +313,25 @@ class NotesView(QWidget):
     def refresh(self):
         """Refresh view"""
         self.update_tag_filter()
+        self.update_pinned_button_style()
         self.load_notes()
+    
+    def update_pinned_button_style(self):
+        """Update pinned button styling based on current theme"""
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
+        
+        try:
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+            self.pinned_btn.setStyleSheet(f"""
+                QPushButton:checked {{
+                    background-color: {theme_obj.success};
+                    color: {theme_obj.bg_primary};
+                    font-weight: bold;
+                }}
+            """)
+            db.close()
+        except:
+            pass

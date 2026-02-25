@@ -141,7 +141,7 @@ QMainWindow, QWidget {{
 /* Buttons */
 QPushButton {{
     background-color: {theme.accent};
-    color: {theme.fg_primary};
+    color: {theme.bg_primary};
     border: none;
     border-radius: 6px;
     padding: 0.6em 1.2em;  /* Use em units to scale with font size */
@@ -152,10 +152,12 @@ QPushButton {{
 
 QPushButton:hover {{
     background-color: {theme.accent_hover};
+    color: {theme.bg_primary};
 }}
 
 QPushButton:pressed {{
     background-color: {theme.accent};
+    color: {theme.bg_primary};
     padding: 9px 15px 7px 17px;
 }}
 
@@ -173,7 +175,7 @@ QPushButton:checkable {{
 
 QPushButton:checked {{
     background-color: {theme.accent};
-    color: {theme.fg_primary};
+    color: {theme.bg_primary};
     border: 2px solid {theme.accent};
     font-weight: bold;
 }}
