@@ -1,207 +1,161 @@
 """
-Lifeboat - Database Module
-Handles all database operations using Peewee ORM
+Database Management
+SQLite database with Peewee ORM
 """
 from peewee import *
 from datetime import datetime
-from src.core.config import DATABASE_PATH, DEFAULT_THEMES, DATE_FORMAT
+from pathlib import Path
+
+from src.core.config import DATA_DIR
+
+# Database path
+DATABASE_PATH = DATA_DIR / "lifeboat.db"
 
 # Initialize database
 db = SqliteDatabase(DATABASE_PATH)
 
+
 class BaseModel(Model):
-    """Base model class for all database models"""
+    """Base model for all database models"""
     class Meta:
         database = db
 
-class Theme(BaseModel):
-    """Theme storage model"""
-    name = CharField(unique=True)
-    bg_primary = CharField()
-    bg_secondary = CharField()
-    bg_tertiary = CharField()
-    fg_primary = CharField()
-    fg_secondary = CharField()
-    accent = CharField()
-    accent_hover = CharField()
-    success = CharField()
-    warning = CharField()
-    danger = CharField()
-    border = CharField()
-    is_active = BooleanField(default=False)
-    is_custom = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.now)
-
-class Event(BaseModel):
-    """Calendar events model"""
-    title = CharField()
-    description = TextField(null=True)
-    start_date = DateTimeField()
-    end_date = DateTimeField(null=True)
-    all_day = BooleanField(default=False)
-    location = CharField(null=True)
-    reminder_minutes = IntegerField(null=True)
-    color = CharField(default="#0078d4")
-    created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
-
-class Task(BaseModel):
-    """Tasks and todo items model"""
-    title = CharField()
-    description = TextField(null=True)
-    priority = CharField(default="Medium")
-    status = CharField(default="Not Started")
-    due_date = DateTimeField(null=True)
-    completed = BooleanField(default=False)
-    completed_at = DateTimeField(null=True)
-    tags = CharField(null=True)
-    created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
-
-class Expense(BaseModel):
-    """Expense tracking model"""
-    amount = DecimalField(decimal_places=2)
-    category = CharField()
-    description = TextField(null=True)
-    date = DateField()
-    time = TimeField(null=True)  # Time of expense
-    payment_method = CharField(null=True)
-    is_recurring = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.now)
-
-class Income(BaseModel):
-    """Income tracking model"""
-    amount = DecimalField(decimal_places=2)
-    category = CharField()
-    description = TextField(null=True)
-    date = DateField()
-    time = TimeField(null=True)  # Time of income
-    source = CharField(null=True)
-    is_recurring = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.now)
-
-class Note(BaseModel):
-    """Notes model"""
-    title = CharField()
-    content = TextField()
-    tags = CharField(null=True)
-    pinned = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
-
-class Goal(BaseModel):
-    """Goals tracking model"""
-    title = CharField()
-    description = TextField(null=True)
-    target_date = DateField(null=True)
-    progress = IntegerField(default=0)
-    category = CharField(null=True)
-    completed = BooleanField(default=False)
-    created_at = DateTimeField(default=datetime.now)
-    updated_at = DateTimeField(default=datetime.now)
-
-class Habit(BaseModel):
-    """Habit tracking model"""
-    name = CharField()
-    description = TextField(null=True)
-    frequency = CharField(default="Daily")
-    target_count = IntegerField(default=1)
-    color = CharField(default="#0078d4")
-    created_at = DateTimeField(default=datetime.now)
-
-class HabitLog(BaseModel):
-    """Habit completion log"""
-    habit = ForeignKeyField(Habit, backref='logs')
-    date = DateField()
-    completed = BooleanField(default=True)
-    notes = TextField(null=True)
-    created_at = DateTimeField(default=datetime.now)
-
-class Settings(BaseModel):
-    """App settings model"""
-    key = CharField(unique=True)
-    value = TextField()
-    updated_at = DateTimeField(default=datetime.now)
 
 def initialize_database():
     """Initialize database and create tables"""
     import os
     import shutil
-    from pathlib import Path
-
+    from src.models import (
+        Event, Task, Expense, Income, Goal, 
+        Habit, HabitLog, Note, Theme, Settings
+    )
+    
     db_exists = os.path.exists(DATABASE_PATH)
-
+    
     db.connect()
+    
+    # Enable SQLite optimizations
     db.execute_sql('PRAGMA journal_mode=WAL')
     db.execute_sql('PRAGMA synchronous=NORMAL')
     db.execute_sql('PRAGMA cache_size=10000')
     db.execute_sql('PRAGMA temp_store=MEMORY')
-
+    
     if not db_exists:
-        # Create fresh database with all tables and default data
+        print("Creating fresh database...")
+        
+        # Create all tables
         db.create_tables([
-            Theme, Event, Task, Expense, Income,
-            Note, Goal, Habit, HabitLog, Settings
+            Event, Task, Expense, Income, Goal,
+            Habit, HabitLog, Note, Theme, Settings
         ])
-
+        
+        # Create default themes
+        default_themes = get_default_themes()
         with db.atomic():
-            for theme_name, theme_colors in DEFAULT_THEMES.items():
+            for theme_name, theme_colors in default_themes.items():
                 Theme.create(
                     name=theme_name,
                     is_active=theme_name == "Dark",
                     is_custom=False,
                     **theme_colors
                 )
-
-            default_settings = {
-                'first_run': 'true',
-                'currency_symbol': '$',
-                'date_format': DATE_FORMAT,
-                'week_start': 'Monday'
-            }
-
-            for key, value in default_settings.items():
-                Settings.create(key=key, value=value)
-
+            
+            # Create default settings
+            Settings.create(key='first_run', value='true')
+            Settings.create(key='currency_symbol', value='₹')
+            Settings.create(key='week_start', value='Monday')
+        
+        print("Database created with default data")
+        
         # Close connection before copying
         db.close()
-
-        # Create template copy for easy restore
+        
+        # Create template for restore
         try:
-            template_path = Path(DATABASE_PATH).parent / "default_settings.db"
+            template_path = DATABASE_PATH.parent / "default_settings.db"
             shutil.copy2(DATABASE_PATH, template_path)
             print(f"Created database template at: {template_path}")
         except Exception as e:
             print(f"Warning: Could not create database template: {e}")
-
-        # Reconnect for any further operations
+        
         db.connect()
     else:
+        # Ensure tables exist (safe mode)
         db.create_tables([
-            Theme, Event, Task, Expense, Income,
-            Note, Goal, Habit, HabitLog, Settings
+            Event, Task, Expense, Income, Goal,
+            Habit, HabitLog, Note, Theme, Settings
         ], safe=True)
-
+    
     db.close()
+    print("Database initialized")
 
 
-def get_active_theme():
-    """Get the currently active theme"""
-    try:
-        return Theme.get(Theme.is_active == True)
-    except:
-        try:
-            theme = Theme.get(Theme.name == "Dark")
-            theme.is_active = True
-            theme.save()
-            return theme
-        except:
-            return None
-
-def set_active_theme(theme_name):
-    """Set a theme as active"""
-    Theme.update(is_active=False).execute()
-    theme = Theme.get(Theme.name == theme_name)
-    theme.is_active = True
-    theme.save()
-    return theme
+def get_default_themes():
+    """Get default theme definitions"""
+    return {
+        "Dark": {
+            "bg_primary": "#1a1a1a",
+            "bg_secondary": "#2d2d2d",
+            "bg_tertiary": "#3d3d3d",
+            "fg_primary": "#ffffff",
+            "fg_secondary": "#b0b0b0",
+            "accent": "#0078d4",
+            "accent_hover": "#106ebe",
+            "success": "#28a745",
+            "warning": "#ffc107",
+            "danger": "#dc3545",
+            "border": "#4d4d4d"
+        },
+        "Light": {
+            "bg_primary": "#ffffff",
+            "bg_secondary": "#f3f3f3",
+            "bg_tertiary": "#e8e8e8",
+            "fg_primary": "#000000",
+            "fg_secondary": "#616161",
+            "accent": "#005fb8",
+            "accent_hover": "#004c99",
+            "success": "#16825d",
+            "warning": "#ca5010",
+            "danger": "#d13438",
+            "border": "#d4d4d4"
+        },
+        "Catppuccin Mocha": {
+            "bg_primary": "#1e1e2e",
+            "bg_secondary": "#313244",
+            "bg_tertiary": "#45475a",
+            "fg_primary": "#cdd6f4",
+            "fg_secondary": "#bac2de",
+            "accent": "#89b4fa",
+            "accent_hover": "#74c7ec",
+            "success": "#a6e3a1",
+            "warning": "#f9e2af",
+            "danger": "#f38ba8",
+            "border": "#585b70"
+        },
+        "Cyberpunk": {
+            "bg_primary": "#0a0e27",
+            "bg_secondary": "#16213e",
+            "bg_tertiary": "#1a1a2e",
+            "fg_primary": "#00ff41",
+            "fg_secondary": "#00d9ff",
+            "accent": "#ff00ff",
+            "accent_hover": "#ff00aa",
+            "success": "#00ff41",
+            "warning": "#ffff00",
+            "danger": "#ff0055",
+            "border": "#00d9ff"
+        },
+        "Matrix": {
+            "bg_primary": "#0d0208",
+            "bg_secondary": "#1a1a1a",
+            "bg_tertiary": "#0f3d0f",
+            "fg_primary": "#00ff41",
+            "fg_secondary": "#00cc33",
+            "accent": "#00ff41",
+            "accent_hover": "#00cc33",
+            "success": "#00ff41",
+            "warning": "#39ff14",
+            "danger": "#ff0000",
+            "border": "#003b00"
+        }
+    }

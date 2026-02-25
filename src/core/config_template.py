@@ -1,32 +1,27 @@
 """
-Lifeboat - Default Configuration Template
+Default Configuration Template
 Used to create config.yaml if it doesn't exist
 """
 
-DEFAULT_CONFIG_YAML = """# Lifeboat Configuration File
+DEFAULT_CONFIG_YAML = """# Lifeboat 2.0 Configuration
 # This file is auto-generated. Modify values as needed.
-# DO NOT change app name, version, or author - these are managed internally.
 
 # Window Settings
 window:
   width: 1280
   height: 720
   min_width: 1024
-  min_height: 768
+  min_height: 700
+  remember_size: true
+  remember_position: true
 
-# UI Settings
-ui:
-  corner_radius: 6
-  border_width: 1
-
-# Font Settings
-fonts:
-  family: "Segoe UI"
-  size:
-    small: 11
-    normal: 13
-    large: 16
-    xlarge: 20
+# Appearance
+appearance:
+  theme: "Dark"
+  font_family: "Segoe UI"
+  font_size: 13
+  animation_duration: 200  # milliseconds
+  enable_animations: true
 
 # Date/Time Formats
 datetime:
@@ -36,6 +31,7 @@ datetime:
   display_date_format: "%d %B %Y"
   display_datetime_format: "%d %B %Y %I:%M %p"
   time_mode: "12hr"  # 12hr or 24hr
+  week_start: "Monday"
 
 # Currency Settings
 currency:
@@ -94,10 +90,15 @@ calendar:
     - "Week"
     - "Day"
     - "Agenda"
+  default_view: "Month"
 
-# Theme settings are managed through the UI
-# Custom themes are stored in the database
+# Dashboard Settings
+dashboard:
+  show_summary: true
+  show_recent_items: true
+  recent_items_count: 5
 """
+
 
 def create_default_config(config_path):
     """
@@ -107,7 +108,7 @@ def create_default_config(config_path):
         config_path: Path object where config should be created
     
     Returns:
-        bool: True if created successfully, False otherwise
+        bool: True if created successfully
     """
     try:
         config_path.parent.mkdir(parents=True, exist_ok=True)

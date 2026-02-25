@@ -1,116 +1,784 @@
 """
-Lifeboat - Theme Manager
-Handles theme creation, editing, and application
+Theme Manager
+Handles theme loading, switching, and OS theme detection
 """
-import customtkinter as ctk
-from src.core.config import DEFAULT_THEMES
+import sys
+from pathlib import Path
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QApplication
 
-class ThemeManager:
+from src.core.config import config
+from src.models.theme import Theme
+from src.core.database import db
+
+
+class ThemeManager(QObject):
     """Manages application themes"""
     
+    # Signal emitted when theme changes
+    theme_changed = pyqtSignal(str)  # theme_name
+    
     def __init__(self):
+        super().__init__()
         self.current_theme = None
-        self._callbacks = []
+        self.os_theme_mode = False
     
-    def register_callback(self, callback):
-        """Register a callback to be called when theme changes"""
-        self._callbacks.append(callback)
-    
-    def load_active_theme(self):
-        """Load the currently active theme"""
-        from src.core.database import get_active_theme
-        try:
-            self.current_theme = get_active_theme()
-        except:
-            self.current_theme = None
-        return self.current_theme
-    
-    def get_color(self, color_key):
-        """Get a color value from current theme"""
-        if not self.current_theme:
-            default_colors = DEFAULT_THEMES.get("Dark", {})
-            return default_colors.get(color_key, "#000000")
-        return getattr(self.current_theme, color_key, "#000000")
-    
-    def apply_theme(self, theme_name):
-        """Apply a theme to the application"""
-        from src.core.database import set_active_theme
-        self.current_theme = set_active_theme(theme_name)
+    def load_theme(self, theme_name: str = None) -> bool:
+        """
+        Load and apply a theme
         
-        if theme_name == "Light":
-            ctk.set_appearance_mode("light")
+        Args:
+            theme_name: Name of theme to load, or None to use config
+        
+        Returns:
+            bool: True if theme loaded successfully
+        """
+        if theme_name is None:
+            theme_name = config.get('appearance.theme', 'Dark')
+        
+        # Check for OS theme mode
+        if theme_name == "System":
+            self.os_theme_mode = True
+            theme_name = self.detect_os_theme()
         else:
-            ctk.set_appearance_mode("dark")
+            self.os_theme_mode = False
         
-        # Notify all registered callbacks
-        for callback in self._callbacks:
-            try:
-                callback()
-            except:
-                pass
+        # Generate stylesheet from database theme
+        stylesheet = self.generate_stylesheet(theme_name)
+        if stylesheet:
+            app = QApplication.instance()
+            if app:
+                app.setStyleSheet(stylesheet)
+                self.current_theme = theme_name
+                self.theme_changed.emit(theme_name)
+                print(f"Applied theme: {theme_name}")
+                return True
         
-        return self.current_theme
-    
-    def create_custom_theme(self, colors, base_theme_name=None):
-        """Create a new custom theme"""
-        from src.core.database import Theme
-        custom_count = Theme.select().where(Theme.is_custom == True).count()
-        theme_name = f"CustomTheme-{custom_count + 1}"
-        
-        theme = Theme.create(
-            name=theme_name,
-            is_custom=True,
-            **colors
-        )
-        
-        return theme
-    
-    def update_theme(self, theme_name, colors):
-        """Update an existing theme"""
-        from src.core.database import Theme
-        theme = Theme.get(Theme.name == theme_name)
-        
-        if not theme.is_custom:
-            return self.create_custom_theme(colors, theme_name)
-        
-        for key, value in colors.items():
-            setattr(theme, key, value)
-        theme.save()
-        
-        return theme
-    
-    def delete_theme(self, theme_name):
-        """Delete a custom theme"""
-        from src.core.database import Theme
-        theme = Theme.get(Theme.name == theme_name)
-        if theme.is_custom:
-            theme.delete_instance()
-            return True
+        print(f"Failed to apply theme: {theme_name}")
         return False
     
-    def get_all_themes(self):
-        """Get all available themes"""
-        from src.core.database import Theme
-        return list(Theme.select().order_by(Theme.is_custom, Theme.name))
+    def generate_stylesheet(self, theme_name: str) -> str:
+        """
+        Generate modern stylesheet from theme in database
+        
+        Args:
+            theme_name: Name of theme
+        
+        Returns:
+            str: Generated stylesheet
+        """
+        try:
+            db.connect(reuse_if_open=True)
+            theme = Theme.get(Theme.name == theme_name)
+            db.close()
+            
+            # Generate modern QSS stylesheet from theme colors
+            stylesheet = f"""
+/* {theme_name} Theme - Generated Stylesheet */
+
+* {{
+    font-family: "Segoe UI", Arial, sans-serif;
+    font-size: 13px;
+}}
+
+/* Main Window */
+QMainWindow, QWidget {{
+    background-color: {theme.bg_primary};
+    color: {theme.fg_primary};
+}}
+
+/* Navigation Sidebar */
+#navigation {{
+    background-color: {theme.bg_secondary};
+    border-right: 1px solid {theme.border};
+}}
+
+#app-title {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    font-size: 20px;
+    font-weight: bold;
+    border-bottom: 1px solid {theme.border};
+}}
+
+#nav-button {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+    border: none;
+    border-left: 3px solid transparent;
+    text-align: left;
+    padding-left: 20px;
+    font-size: 14px;
+}}
+
+#nav-button:hover {{
+    background-color: {theme.bg_tertiary};
+}}
+
+#nav-button[active="true"] {{
+    background-color: {theme.bg_tertiary};
+    border-left: 3px solid {theme.accent};
+    color: {theme.accent};
+    font-weight: bold;
+}}
+
+/* Buttons */
+QPushButton {{
+    background-color: {theme.accent};
+    color: {theme.fg_primary};
+    border: none;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-weight: 500;
+    min-height: 32px;
+}}
+
+QPushButton:hover {{
+    background-color: {theme.accent_hover};
+}}
+
+QPushButton:pressed {{
+    background-color: {theme.accent};
+    padding: 9px 15px 7px 17px;
+}}
+
+QPushButton:disabled {{
+    background-color: {theme.bg_tertiary};
+    color: {theme.fg_secondary};
+}}
+
+/* Input Fields */
+QLineEdit, QTextEdit, QPlainTextEdit {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    selection-background-color: {theme.accent};
+    selection-color: {theme.fg_primary};
+}}
+
+QLineEdit:focus, QTextEdit:focus, QPlainTextEdit:focus {{
+    border: 2px solid {theme.accent};
+    padding: 7px 11px;
+}}
+
+QLineEdit:hover, QTextEdit:hover, QPlainTextEdit:hover {{
+    border: 1px solid {theme.accent};
+}}
+
+/* ComboBox */
+QComboBox {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 32px;
+}}
+
+QComboBox:hover {{
+    border: 1px solid {theme.accent};
+}}
+
+QComboBox:focus {{
+    border: 2px solid {theme.accent};
+}}
+
+QComboBox::drop-down {{
+    border: none;
+    width: 30px;
+}}
+
+QComboBox::down-arrow {{
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid {theme.fg_primary};
+    margin-right: 10px;
+}}
+
+QComboBox QAbstractItemView {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    selection-background-color: {theme.accent};
+    selection-color: {theme.fg_primary};
+    outline: none;
+    padding: 4px;
+}}
+
+QComboBox QAbstractItemView::item {{
+    padding: 8px 12px;
+    border-radius: 4px;
+    min-height: 32px;
+}}
+
+QComboBox QAbstractItemView::item:hover {{
+    background-color: {theme.bg_tertiary};
+}}
+
+QComboBox QAbstractItemView::item:selected {{
+    background-color: {theme.accent};
+}}
+
+/* SpinBox */
+QSpinBox, QDoubleSpinBox {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 32px;
+}}
+
+QSpinBox:focus, QDoubleSpinBox:focus {{
+    border: 2px solid {theme.accent};
+}}
+
+QSpinBox:hover, QDoubleSpinBox:hover {{
+    border: 1px solid {theme.accent};
+}}
+
+QSpinBox::up-button, QDoubleSpinBox::up-button {{
+    background-color: transparent;
+    border: none;
+    width: 20px;
+}}
+
+QSpinBox::down-button, QDoubleSpinBox::down-button {{
+    background-color: transparent;
+    border: none;
+    width: 20px;
+}}
+
+QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-bottom: 6px solid {theme.fg_primary};
+}}
+
+QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
+    image: none;
+    border-left: 4px solid transparent;
+    border-right: 4px solid transparent;
+    border-top: 6px solid {theme.fg_primary};
+}}
+
+/* CheckBox */
+QCheckBox {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+    spacing: 8px;
+}}
+
+QCheckBox::indicator {{
+    width: 20px;
+    height: 20px;
+    border: 2px solid {theme.border};
+    border-radius: 4px;
+    background-color: {theme.bg_secondary};
+}}
+
+QCheckBox::indicator:hover {{
+    border: 2px solid {theme.accent};
+}}
+
+QCheckBox::indicator:checked {{
+    background-color: {theme.accent};
+    border-color: {theme.accent};
+    image: none;
+}}
+
+/* RadioButton */
+QRadioButton {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+    spacing: 8px;
+}}
+
+QRadioButton::indicator {{
+    width: 20px;
+    height: 20px;
+    border: 2px solid {theme.border};
+    border-radius: 10px;
+    background-color: {theme.bg_secondary};
+}}
+
+QRadioButton::indicator:hover {{
+    border: 2px solid {theme.accent};
+}}
+
+QRadioButton::indicator:checked {{
+    background-color: {theme.accent};
+    border-color: {theme.accent};
+}}
+
+/* ScrollBar Vertical */
+QScrollBar:vertical {{
+    background-color: {theme.bg_primary};
+    width: 14px;
+    border: none;
+    margin: 0px;
+}}
+
+QScrollBar::handle:vertical {{
+    background-color: {theme.border};
+    border-radius: 7px;
+    min-height: 30px;
+    margin: 2px;
+}}
+
+QScrollBar::handle:vertical:hover {{
+    background-color: {theme.fg_secondary};
+}}
+
+QScrollBar::handle:vertical:pressed {{
+    background-color: {theme.accent};
+}}
+
+QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
+    height: 0px;
+}}
+
+QScrollBar::add-page:vertical, QScrollBar::sub-page:vertical {{
+    background: none;
+}}
+
+/* ScrollBar Horizontal */
+QScrollBar:horizontal {{
+    background-color: {theme.bg_primary};
+    height: 14px;
+    border: none;
+    margin: 0px;
+}}
+
+QScrollBar::handle:horizontal {{
+    background-color: {theme.border};
+    border-radius: 7px;
+    min-width: 30px;
+    margin: 2px;
+}}
+
+QScrollBar::handle:horizontal:hover {{
+    background-color: {theme.fg_secondary};
+}}
+
+QScrollBar::handle:horizontal:pressed {{
+    background-color: {theme.accent};
+}}
+
+QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
+    width: 0px;
+}}
+
+QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
+    background: none;
+}}
+
+/* ScrollArea */
+QScrollArea {{
+    background-color: transparent;
+    border: none;
+}}
+
+/* DateEdit, TimeEdit, DateTimeEdit */
+QDateEdit, QTimeEdit, QDateTimeEdit {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    padding: 8px 12px;
+    min-height: 32px;
+}}
+
+QDateEdit:focus, QTimeEdit:focus, QDateTimeEdit:focus {{
+    border: 2px solid {theme.accent};
+}}
+
+QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {{
+    border: 1px solid {theme.accent};
+}}
+
+QDateEdit::drop-down, QTimeEdit::drop-down, QDateTimeEdit::drop-down {{
+    border: none;
+    width: 30px;
+}}
+
+QDateEdit::down-arrow, QTimeEdit::down-arrow, QDateTimeEdit::down-arrow {{
+    image: none;
+    border-left: 5px solid transparent;
+    border-right: 5px solid transparent;
+    border-top: 7px solid {theme.fg_primary};
+    margin-right: 10px;
+}}
+
+/* Calendar Widget */
+QCalendarWidget {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 8px;
+}}
+
+QCalendarWidget QToolButton {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+    border: none;
+    border-radius: 4px;
+    padding: 6px;
+    margin: 2px;
+}}
+
+QCalendarWidget QToolButton:hover {{
+    background-color: {theme.bg_tertiary};
+}}
+
+QCalendarWidget QToolButton:pressed {{
+    background-color: {theme.accent};
+}}
+
+QCalendarWidget QMenu {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+}}
+
+QCalendarWidget QSpinBox {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 4px;
+    padding: 4px;
+}}
+
+QCalendarWidget QAbstractItemView {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    selection-background-color: {theme.accent};
+    selection-color: {theme.fg_primary};
+    border: none;
+}}
+
+/* Dialog */
+QDialog {{
+    background-color: {theme.bg_primary};
+    color: {theme.fg_primary};
+}}
+
+/* MessageBox */
+QMessageBox {{
+    background-color: {theme.bg_primary};
+    color: {theme.fg_primary};
+}}
+
+QMessageBox QPushButton {{
+    min-width: 80px;
+    padding: 8px 16px;
+}}
+
+/* TabWidget */
+QTabWidget::pane {{
+    border: 1px solid {theme.border};
+    background-color: {theme.bg_primary};
+    border-radius: 8px;
+    top: -1px;
+}}
+
+QTabBar::tab {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_secondary};
+    border: 1px solid {theme.border};
+    border-bottom: none;
+    padding: 10px 20px;
+    margin-right: 2px;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+}}
+
+QTabBar::tab:selected {{
+    background-color: {theme.accent};
+    color: {theme.fg_primary};
+}}
+
+QTabBar::tab:hover:!selected {{
+    background-color: {theme.bg_tertiary};
+}}
+
+/* Menu */
+QMenu {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 6px;
+    padding: 4px;
+}}
+
+QMenu::item {{
+    padding: 8px 24px;
+    border-radius: 4px;
+}}
+
+QMenu::item:selected {{
+    background-color: {theme.accent};
+}}
+
+QMenu::separator {{
+    height: 1px;
+    background-color: {theme.border};
+    margin: 4px 8px;
+}}
+
+/* ToolTip */
+QToolTip {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_primary};
+    border: 1px solid {theme.border};
+    border-radius: 4px;
+    padding: 6px 10px;
+}}
+
+/* Frames */
+QFrame {{
+    background-color: transparent;
+    border: none;
+}}
+
+/* Labels */
+QLabel {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+}}
+
+/* Custom Components */
+#settings-section {{
+    background-color: {theme.bg_secondary};
+    border: 1px solid {theme.border};
+    border-radius: 8px;
+    padding: 20px;
+}}
+
+#summary-card {{
+    background-color: {theme.bg_secondary};
+    border: 1px solid {theme.border};
+    border-radius: 8px;
+    padding: 20px;
+}}
+"""
+            return stylesheet
+            
+        except Exception as e:
+            print(f"Error generating stylesheet: {e}")
+            import traceback
+            traceback.print_exc()
+            return ""
     
-    def export_theme(self, theme_name):
-        """Export theme as dictionary"""
-        from src.core.database import Theme
-        theme = Theme.get(Theme.name == theme_name)
-        return {
-            'name': theme.name,
-            'bg_primary': theme.bg_primary,
-            'bg_secondary': theme.bg_secondary,
-            'bg_tertiary': theme.bg_tertiary,
-            'fg_primary': theme.fg_primary,
-            'fg_secondary': theme.fg_secondary,
-            'accent': theme.accent,
-            'accent_hover': theme.accent_hover,
-            'success': theme.success,
-            'warning': theme.warning,
-            'danger': theme.danger,
-            'border': theme.border
-        }
+    def detect_os_theme(self) -> str:
+        """
+        Detect OS theme (dark or light)
+        
+        Returns:
+            str: "Dark" or "Light"
+        """
+        try:
+            # Try using darkdetect if available
+            import darkdetect
+            is_dark = darkdetect.isDark()
+            return "Dark" if is_dark else "Light"
+        except ImportError:
+            # Fallback: Try Qt palette detection
+            app = QApplication.instance()
+            if app:
+                palette = app.palette()
+                bg_color = palette.window().color()
+                # If background is dark (luminance < 128), use dark theme
+                luminance = (0.299 * bg_color.red() + 
+                           0.587 * bg_color.green() + 
+                           0.114 * bg_color.blue())
+                return "Dark" if luminance < 128 else "Light"
+        
+        # Default to Dark
+        return "Dark"
+    
+    def set_theme(self, theme_name: str) -> bool:
+        """
+        Set and save theme
+        
+        Args:
+            theme_name: Name of theme to set
+        
+        Returns:
+            bool: True if successful
+        """
+        # Update config
+        config.set('appearance.theme', theme_name)
+        config.save()
+        
+        # Load theme
+        return self.load_theme(theme_name)
+    
+    def get_available_themes(self) -> list:
+        """Get list of available themes"""
+        try:
+            db.connect(reuse_if_open=True)
+            themes = [theme.name for theme in Theme.select()]
+            db.close()
+            
+            # Add System option
+            return ["System"] + themes
+        except Exception as e:
+            print(f"Error getting themes: {e}")
+            return ["System", "Dark", "Light"]
+    
+    def get_all_themes(self) -> list:
+        """Get all theme objects from database"""
+        try:
+            db.connect(reuse_if_open=True)
+            themes = list(Theme.select())
+            db.close()
+            return themes
+        except Exception as e:
+            print(f"Error getting themes: {e}")
+            return []
+    
+    def get_theme_by_name(self, name: str):
+        """Get theme object by name"""
+        try:
+            db.connect(reuse_if_open=True)
+            theme = Theme.get(Theme.name == name)
+            db.close()
+            return theme
+        except Exception as e:
+            print(f"Error getting theme: {e}")
+            return None
+    
+    def create_custom_theme(self, colors: dict, base_name: str = None) -> bool:
+        """
+        Create a custom theme
+        
+        Args:
+            colors: Dictionary of color values
+            base_name: Base theme name (for naming custom theme)
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            db.connect(reuse_if_open=True)
+            
+            # Generate custom theme name
+            if base_name:
+                custom_name = f"Custom {base_name}"
+            else:
+                custom_name = "Custom Theme"
+            
+            # Check if name exists, add number if needed
+            counter = 1
+            original_name = custom_name
+            while Theme.select().where(Theme.name == custom_name).exists():
+                custom_name = f"{original_name} {counter}"
+                counter += 1
+            
+            # Create theme with all required fields
+            Theme.create(
+                name=custom_name,
+                is_custom=True,
+                is_active=False,
+                bg_primary=colors.get('bg_primary', '#1a1a1a'),
+                bg_secondary=colors.get('bg_secondary', '#2d2d2d'),
+                bg_tertiary=colors.get('bg_tertiary', '#3d3d3d'),
+                fg_primary=colors.get('fg_primary', '#ffffff'),
+                fg_secondary=colors.get('fg_secondary', '#b0b0b0'),
+                accent=colors.get('accent', '#0078d4'),
+                accent_hover=colors.get('accent_hover', '#106ebe'),
+                success=colors.get('success', '#28a745'),
+                warning=colors.get('warning', '#ffc107'),
+                danger=colors.get('danger', '#dc3545'),
+                border=colors.get('border', '#4d4d4d')
+            )
+            
+            db.close()
+            print(f"Created custom theme: {custom_name}")
+            return True
+        except Exception as e:
+            print(f"Error creating custom theme: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def update_theme(self, theme_name: str, colors: dict) -> bool:
+        """
+        Update an existing theme
+        
+        Args:
+            theme_name: Name of theme to update
+            colors: Dictionary of color values
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            db.connect(reuse_if_open=True)
+            
+            theme = Theme.get(Theme.name == theme_name)
+            
+            # Update all color fields
+            theme.bg_primary = colors.get('bg_primary', theme.bg_primary)
+            theme.bg_secondary = colors.get('bg_secondary', theme.bg_secondary)
+            theme.bg_tertiary = colors.get('bg_tertiary', theme.bg_tertiary)
+            theme.fg_primary = colors.get('fg_primary', theme.fg_primary)
+            theme.fg_secondary = colors.get('fg_secondary', theme.fg_secondary)
+            theme.accent = colors.get('accent', theme.accent)
+            theme.accent_hover = colors.get('accent_hover', theme.accent_hover)
+            theme.success = colors.get('success', theme.success)
+            theme.warning = colors.get('warning', theme.warning)
+            theme.danger = colors.get('danger', theme.danger)
+            theme.border = colors.get('border', theme.border)
+            
+            theme.save()
+            
+            db.close()
+            print(f"Updated theme: {theme_name}")
+            return True
+        except Exception as e:
+            print(f"Error updating theme: {e}")
+            import traceback
+            traceback.print_exc()
+            return False
+    
+    def delete_theme(self, theme_name: str) -> bool:
+        """
+        Delete a custom theme
+        
+        Args:
+            theme_name: Name of theme to delete
+        
+        Returns:
+            bool: True if successful
+        """
+        try:
+            db.connect(reuse_if_open=True)
+            
+            theme = Theme.get(Theme.name == theme_name)
+            if theme.is_custom:
+                theme.delete_instance()
+                db.close()
+                return True
+            
+            db.close()
+            return False
+        except Exception as e:
+            print(f"Error deleting theme: {e}")
+            return False
+    
+    def get_active_theme(self) -> str:
+        """Get currently active theme name"""
+        if self.os_theme_mode:
+            return "System"
+        return self.current_theme or "Dark"
+
 
 # Global theme manager instance
 theme_manager = ThemeManager()

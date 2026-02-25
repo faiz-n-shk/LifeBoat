@@ -1,10 +1,11 @@
 """
-Lifeboat - Path Manager
+Path Manager
 Manages custom paths for config and database files
 """
 import json
 import shutil
 from pathlib import Path
+
 
 class PathManager:
     """Manages custom file paths for config and database"""
@@ -178,6 +179,7 @@ class PathManager:
                 'is_custom': 'database_path' in self.custom_paths
             }
         }
+
 
 # Global instance
 path_manager = PathManager()

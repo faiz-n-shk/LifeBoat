@@ -1,8 +1,6 @@
 """
-Lifeboat - Settings Features Package
-Settings-related feature modules
+Settings Feature
 """
-from src.features.settings.config_settings import ConfigSettingsSection
-from src.features.settings.locale_settings import LocaleSettingsSection
+from src.features.settings.view import SettingsView
 
-__all__ = ['ConfigSettingsSection', 'LocaleSettingsSection']
+__all__ = ['SettingsView']

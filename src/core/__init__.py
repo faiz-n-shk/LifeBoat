@@ -1,1 +1,3 @@
-"""Core application components"""
+"""
+Core application logic
+"""
