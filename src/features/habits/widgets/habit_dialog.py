@@ -40,7 +40,14 @@ class HabitDialog(BaseDialog):
         self.layout.addWidget(self.target_label)
         
         self.target_input = QComboBox()
-        self.target_input.addItems(["1 Week (7 days)", "1 Month (31 days)", "Custom"])
+        self.target_input.addItems([
+            "1 Week (7 days)", 
+            "1 Month (31 days)", 
+            "3 Months (90 days)",
+            "6 Months (180 days)",
+            "1 Year (365 days)",
+            "Custom"
+        ])
         self.target_input.currentTextChanged.connect(self.on_target_changed)
         self.layout.addWidget(self.target_input)
         
@@ -49,7 +56,7 @@ class HabitDialog(BaseDialog):
         self.custom_days_input.setMinimum(1)
         self.custom_days_input.setMaximum(365)
         self.custom_days_input.setValue(7)
-        self.custom_days_input.setSuffix(" days")
+        self.custom_days_input.setSuffix(" days (max 365)")
         self.custom_days_input.setVisible(False)
         self.custom_days_input.valueChanged.connect(self.on_custom_days_changed)
         self.layout.addWidget(self.custom_days_input)
@@ -89,7 +96,7 @@ class HabitDialog(BaseDialog):
     def update_ui_for_type(self, habit_type):
         """Update UI based on habit type"""
         if habit_type == "Good":
-            self.target_label.setText("Goal Duration (to build habit):")
+            self.target_label.setText("Goal Duration (to build good habits or unbuild bad ones):")
             if not self.habit:
                 self.selected_color = "#28a745"
                 self.update_color_preview(self.selected_color)
@@ -110,6 +117,12 @@ class HabitDialog(BaseDialog):
                 self.custom_days = 7
             elif "31" in text:
                 self.custom_days = 31
+            elif "90" in text:
+                self.custom_days = 90
+            elif "180" in text:
+                self.custom_days = 180
+            elif "365" in text:
+                self.custom_days = 365
     
     def on_custom_days_changed(self, value):
         """Handle custom days value change"""
@@ -145,6 +158,12 @@ class HabitDialog(BaseDialog):
             self.target_input.setCurrentText("1 Week (7 days)")
         elif self.habit.target_days == 31:
             self.target_input.setCurrentText("1 Month (31 days)")
+        elif self.habit.target_days == 90:
+            self.target_input.setCurrentText("3 Months (90 days)")
+        elif self.habit.target_days == 180:
+            self.target_input.setCurrentText("6 Months (180 days)")
+        elif self.habit.target_days == 365:
+            self.target_input.setCurrentText("1 Year (365 days)")
         else:
             self.target_input.setCurrentText("Custom")
             self.custom_days_input.setValue(self.habit.target_days)

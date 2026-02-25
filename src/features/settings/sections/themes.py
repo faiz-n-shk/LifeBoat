@@ -227,12 +227,21 @@ class ThemesSection(QWidget):
         dialog = ThemeEditorDialog(self, theme)
         if dialog.exec():
             colors = dialog.get_colors()
+            new_name = colors.get('name', theme.name)
+            
             if theme_manager.update_theme(theme.name, colors):
-                # If editing active theme, reload it
-                if theme.name == theme_manager.get_active_theme():
-                    theme_manager.load_theme(theme.name)
+                # If editing active theme, reload it with new name
+                if theme.name == theme_manager.get_active_theme() or new_name == theme_manager.get_active_theme():
+                    theme_manager.load_theme(new_name)
                     config.signals.appearance_changed.emit()
                 self.load_themes()
+            else:
+                from PyQt6.QtWidgets import QMessageBox
+                QMessageBox.warning(
+                    self,
+                    "Error",
+                    "Failed to update theme. The name might already exist."
+                )
     
     def on_customize_theme(self, theme):
         """Create a custom theme based on an existing one"""
@@ -287,7 +296,7 @@ class ThemeEditorDialog(QDialog):
             self.setWindowTitle("Create Custom Theme")
         
         self.setMinimumWidth(500)
-        self.setMinimumHeight(650)
+        self.setMinimumHeight(700)
         
         layout = QVBoxLayout(self)
         layout.setSpacing(20)
@@ -306,6 +315,24 @@ class ThemeEditorDialog(QDialog):
         font.setBold(True)
         title.setFont(font)
         layout.addWidget(title)
+        
+        # Theme name input
+        name_layout = QHBoxLayout()
+        name_label = QLabel("Theme Name:")
+        name_label.setFixedWidth(120)
+        name_layout.addWidget(name_label)
+        
+        self.name_input = QLineEdit()
+        if self.base_theme and not self.is_new:
+            # Editing existing theme - allow renaming
+            self.name_input.setText(self.base_theme.name)
+        else:
+            # Creating new theme
+            self.name_input.setPlaceholderText("Enter theme name...")
+            if self.base_theme:
+                self.name_input.setText(f"{self.base_theme.name} Custom")
+        name_layout.addWidget(self.name_input)
+        layout.addLayout(name_layout)
         
         # Scroll area for color pickers
         from PyQt6.QtWidgets import QScrollArea
@@ -359,8 +386,10 @@ class ThemeEditorDialog(QDialog):
         self.setLayout(layout)
     
     def get_colors(self):
-        """Get color values from inputs"""
-        return {field: input.get_color() for field, input in self.color_inputs.items()}
+        """Get color values and theme name from inputs"""
+        colors = {field: input.get_color() for field, input in self.color_inputs.items()}
+        colors['name'] = self.name_input.text().strip()
+        return colors
 
 
 class ColorPickerInput(QWidget):

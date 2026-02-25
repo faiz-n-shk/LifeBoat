@@ -109,20 +109,30 @@ class DashboardView(QWidget):
         section_title.setFont(font)
         progress_layout.addWidget(section_title)
         
-        # Progress rings row
-        rings_layout = QHBoxLayout()
-        rings_layout.setSpacing(20)
+        # Progress rings in 2x3 grid
+        rings_grid = QGridLayout()
+        rings_grid.setSpacing(15)
+        rings_grid.setHorizontalSpacing(20)
         
+        # Top row: Tasks, Todo Total, Todo Today
         self.tasks_ring = ProgressRing("Tasks Completed")
+        self.todo_total_ring = ProgressRing("Todo Progress")
+        self.todo_today_ring = ProgressRing("Todo Today")
+        
+        rings_grid.addWidget(self.tasks_ring, 0, 0)
+        rings_grid.addWidget(self.todo_total_ring, 0, 1)
+        rings_grid.addWidget(self.todo_today_ring, 0, 2)
+        
+        # Bottom row: Goals, Habits Total, Habits Today
         self.goals_ring = ProgressRing("Goals Progress")
-        self.habits_ring = ProgressRing("Habits Streak")
+        self.habits_total_ring = ProgressRing("Habits Streak")
+        self.habits_today_ring = ProgressRing("Habits Today")
         
-        rings_layout.addWidget(self.tasks_ring)
-        rings_layout.addWidget(self.goals_ring)
-        rings_layout.addWidget(self.habits_ring)
-        rings_layout.addStretch()
+        rings_grid.addWidget(self.goals_ring, 1, 0)
+        rings_grid.addWidget(self.habits_total_ring, 1, 1)
+        rings_grid.addWidget(self.habits_today_ring, 1, 2)
         
-        progress_layout.addLayout(rings_layout)
+        progress_layout.addLayout(rings_grid)
         charts_row.addWidget(progress_section, 1)
         
         # Expense chart section (right)
@@ -307,14 +317,23 @@ class DashboardView(QWidget):
             self.tasks_ring._target_progress = 0
             self.goals_ring._progress = 0
             self.goals_ring._target_progress = 0
-            self.habits_ring._progress = 0
-            self.habits_ring._target_progress = 0
+            self.habits_total_ring._progress = 0
+            self.habits_total_ring._target_progress = 0
+            self.habits_today_ring._progress = 0
+            self.habits_today_ring._target_progress = 0
+            self.todo_total_ring._progress = 0
+            self.todo_total_ring._target_progress = 0
+            self.todo_today_ring._progress = 0
+            self.todo_today_ring._target_progress = 0
             self.expense_chart._animation_progress = 0
             
             # Force update to show 0 state
             self.tasks_ring.update()
             self.goals_ring.update()
-            self.habits_ring.update()
+            self.habits_total_ring.update()
+            self.habits_today_ring.update()
+            self.todo_total_ring.update()
+            self.todo_today_ring.update()
             self.expense_chart.update()
         
         # Load data which will trigger animations
@@ -370,8 +389,83 @@ class DashboardView(QWidget):
             else:
                 self.goals_ring.set_progress(0, animate=should_animate)
             
-            # Calculate habit streak (placeholder - would need streak tracking)
-            self.habits_ring.set_progress(75, animate=should_animate)  # Placeholder
+            # Calculate habit streak (average current streak / target days)
+            from src.models.habit import HabitLog
+            habits = Habit.select()
+            if habits.count() > 0:
+                total_streak_percent = 0
+                today_success = 0
+                today = datetime.now().date()
+                
+                for habit in habits:
+                    is_bad_habit = habit.habit_type == "Bad"
+                    
+                    # Calculate current streak (limit to 365 days to prevent infinite loop)
+                    current_streak = 0
+                    check_date = today
+                    max_days_to_check = min(365, habit.target_days * 2)  # Reasonable limit
+                    days_checked = 0
+                    
+                    while days_checked < max_days_to_check:
+                        # Don't check dates before habit was created
+                        if check_date < habit.start_date:
+                            break
+                        
+                        log = HabitLog.select().where(
+                            (HabitLog.habit == habit) & (HabitLog.date == check_date)
+                        ).first()
+                        
+                        # For good habits: streak continues if completed
+                        # For bad habits: streak continues if NOT completed (avoided)
+                        if is_bad_habit:
+                            # Bad habit: check if NOT done (no log or not completed)
+                            if not log or not log.completed:
+                                current_streak += 1
+                                check_date = check_date - timedelta(days=1)
+                                days_checked += 1
+                            else:
+                                break  # Did the bad habit, streak broken
+                        else:
+                            # Good habit: check if done
+                            if log and log.completed:
+                                current_streak += 1
+                                check_date = check_date - timedelta(days=1)
+                                days_checked += 1
+                            else:
+                                break  # Didn't do the good habit, streak broken
+                    
+                    # Calculate percentage for this habit
+                    streak_percent = (current_streak / habit.target_days * 100) if habit.target_days > 0 else 0
+                    total_streak_percent += min(streak_percent, 100)
+                    
+                    # Check if successful today
+                    today_log = HabitLog.select().where(
+                        (HabitLog.habit == habit) & (HabitLog.date == today)
+                    ).first()
+                    
+                    # For good habits: success = completed
+                    # For bad habits: success = NOT completed (avoided)
+                    if is_bad_habit:
+                        if not today_log or not today_log.completed:
+                            today_success += 1
+                    else:
+                        if today_log and today_log.completed:
+                            today_success += 1
+                
+                # Set total habits progress (average streak)
+                avg_streak = total_streak_percent / habits.count()
+                self.habits_total_ring.set_progress(avg_streak, animate=should_animate)
+                
+                # Set today's success rate
+                today_percent = (today_success / habits.count() * 100) if habits.count() > 0 else 0
+                self.habits_today_ring.set_progress(today_percent, animate=should_animate)
+            else:
+                self.habits_total_ring.set_progress(0, animate=should_animate)
+                self.habits_today_ring.set_progress(0, animate=should_animate)
+            
+            # Todo rings (placeholders for future feature)
+            self.todo_total_ring.set_progress(0, animate=should_animate)
+            self.todo_today_ring.set_progress(0, animate=should_animate)
             
             # Load expense data for pie chart
             first_day = datetime.now().replace(day=1).date()
@@ -517,13 +611,22 @@ class DashboardView(QWidget):
             self.tasks_ring._target_progress = 0
             self.goals_ring._progress = 0
             self.goals_ring._target_progress = 0
-            self.habits_ring._progress = 0
-            self.habits_ring._target_progress = 0
+            self.habits_total_ring._progress = 0
+            self.habits_total_ring._target_progress = 0
+            self.habits_today_ring._progress = 0
+            self.habits_today_ring._target_progress = 0
+            self.todo_total_ring._progress = 0
+            self.todo_total_ring._target_progress = 0
+            self.todo_today_ring._progress = 0
+            self.todo_today_ring._target_progress = 0
             self.expense_chart._animation_progress = 0
             
             self.tasks_ring.update()
             self.goals_ring.update()
-            self.habits_ring.update()
+            self.habits_total_ring.update()
+            self.habits_today_ring.update()
+            self.todo_total_ring.update()
+            self.todo_today_ring.update()
             self.expense_chart.update()
         
         self.load_data_with_animation()
@@ -541,14 +644,23 @@ class DashboardView(QWidget):
                 self.tasks_ring._target_progress = 0
                 self.goals_ring._progress = 0
                 self.goals_ring._target_progress = 0
-                self.habits_ring._progress = 0
-                self.habits_ring._target_progress = 0
+                self.habits_total_ring._progress = 0
+                self.habits_total_ring._target_progress = 0
+                self.habits_today_ring._progress = 0
+                self.habits_today_ring._target_progress = 0
+                self.todo_total_ring._progress = 0
+                self.todo_total_ring._target_progress = 0
+                self.todo_today_ring._progress = 0
+                self.todo_today_ring._target_progress = 0
                 self.expense_chart._animation_progress = 0
                 
                 # Immediate update to show 0 state
                 self.tasks_ring.update()
                 self.goals_ring.update()
-                self.habits_ring.update()
+                self.habits_total_ring.update()
+                self.habits_today_ring.update()
+                self.todo_total_ring.update()
+                self.todo_today_ring.update()
                 self.expense_chart.update()
             
             # Mark as initial load to trigger animations

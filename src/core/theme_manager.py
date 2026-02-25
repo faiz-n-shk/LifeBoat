@@ -3,11 +3,13 @@ Theme Manager
 Handles theme loading, switching, and OS theme detection
 """
 import sys
+import yaml
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 from PyQt6.QtWidgets import QApplication
 
 from src.core.config import config
+from src.core.path_manager import path_manager
 from src.models.theme import Theme
 from src.core.database import db
 
@@ -28,6 +30,31 @@ class ThemeManager(QObject):
         self.os_theme_timer = QTimer()
         self.os_theme_timer.timeout.connect(self.check_os_theme_change)
         self.os_theme_timer.setInterval(2000)  # Check every 2 seconds
+    
+    def _load_themes_yaml(self):
+        """Load custom themes from themes.yaml"""
+        try:
+            themes_path = path_manager.get_themes_path()
+            if not themes_path.exists():
+                return []
+            
+            with open(themes_path, 'r', encoding='utf-8') as f:
+                data = yaml.safe_load(f)
+                return data.get('custom_themes', []) if data else []
+        except Exception as e:
+            print(f"Error loading themes.yaml: {e}")
+            return []
+    
+    def _save_themes_yaml(self, themes_list):
+        """Save custom themes to themes.yaml"""
+        try:
+            themes_path = path_manager.get_themes_path()
+            with open(themes_path, 'w', encoding='utf-8') as f:
+                yaml.dump({'custom_themes': themes_list}, f, default_flow_style=False, sort_keys=False)
+            return True
+        except Exception as e:
+            print(f"Error saving themes.yaml: {e}")
+            return False
     
     def load_theme(self, theme_name: str = None) -> bool:
         """
@@ -72,7 +99,7 @@ class ThemeManager(QObject):
     
     def generate_stylesheet(self, theme_name: str) -> str:
         """
-        Generate modern stylesheet from theme in database
+        Generate modern stylesheet from theme (checks themes.yaml first, then database)
         
         Args:
             theme_name: Name of theme
@@ -81,9 +108,22 @@ class ThemeManager(QObject):
             str: Generated stylesheet
         """
         try:
-            db.connect(reuse_if_open=True)
-            theme = Theme.get(Theme.name == theme_name)
-            db.close()
+            # First check themes.yaml for custom themes
+            yaml_themes = self._load_themes_yaml()
+            theme_data = next((t for t in yaml_themes if t.get('name') == theme_name), None)
+            
+            if theme_data:
+                # Use theme from YAML - create a simple object
+                class ThemeObj:
+                    def __init__(self, data):
+                        for key, value in data.items():
+                            setattr(self, key, value)
+                theme = ThemeObj(theme_data)
+            else:
+                # Fall back to database
+                db.connect(reuse_if_open=True)
+                theme = Theme.get(Theme.name == theme_name)
+                db.close()
             
             # Generate modern QSS stylesheet from theme colors
             font_family = config.get('appearance.font_family', 'Segoe UI')
@@ -918,19 +958,47 @@ QLabel[class="accent-label"] {{
             return ["System", "Dark", "Light"]
     
     def get_all_themes(self) -> list:
-        """Get all theme objects from database"""
+        """Get all theme objects from database and themes.yaml"""
         try:
+            # Get built-in themes from database
             db.connect(reuse_if_open=True)
-            themes = list(Theme.select())
+            db_themes = list(Theme.select().where(Theme.is_custom == False))
             db.close()
-            return themes
+            
+            # Get custom themes from YAML
+            yaml_themes_data = self._load_themes_yaml()
+            
+            # Convert YAML themes to Theme-like objects
+            yaml_themes = []
+            for theme_data in yaml_themes_data:
+                theme_obj = type('Theme', (), {
+                    'name': theme_data.get('name', 'Unnamed'),
+                    'is_custom': True,
+                    **theme_data
+                })()
+                yaml_themes.append(theme_obj)
+            
+            return db_themes + yaml_themes
         except Exception as e:
             print(f"Error getting themes: {e}")
             return []
     
     def get_theme_by_name(self, name: str):
-        """Get theme object by name"""
+        """Get theme object by name (checks themes.yaml first, then database)"""
         try:
+            # First check themes.yaml
+            yaml_themes = self._load_themes_yaml()
+            theme_data = next((t for t in yaml_themes if t.get('name') == name), None)
+            
+            if theme_data:
+                # Return theme-like object from YAML
+                return type('Theme', (), {
+                    'name': theme_data.get('name', 'Unnamed'),
+                    'is_custom': True,
+                    **theme_data
+                })()
+            
+            # Fall back to database
             db.connect(reuse_if_open=True)
             theme = Theme.get(Theme.name == name)
             db.close()
@@ -941,52 +1009,57 @@ QLabel[class="accent-label"] {{
     
     def create_custom_theme(self, colors: dict, base_name: str = None) -> bool:
         """
-        Create a custom theme
+        Create a custom theme in themes.yaml
         
         Args:
-            colors: Dictionary of color values
-            base_name: Base theme name (for naming custom theme)
+            colors: Dictionary of color values (including 'name' key)
+            base_name: Base theme name (for naming custom theme, deprecated)
         
         Returns:
             bool: True if successful
         """
         try:
-            db.connect(reuse_if_open=True)
-            
-            # Generate custom theme name
-            if base_name:
+            # Get custom name from colors dict, or generate one
+            if 'name' in colors and colors['name']:
+                custom_name = colors['name']
+            elif base_name:
                 custom_name = f"Custom {base_name}"
             else:
                 custom_name = "Custom Theme"
             
+            # Load existing themes
+            themes_list = self._load_themes_yaml()
+            
             # Check if name exists, add number if needed
             counter = 1
             original_name = custom_name
-            while Theme.select().where(Theme.name == custom_name).exists():
+            existing_names = [t.get('name') for t in themes_list]
+            while custom_name in existing_names:
                 custom_name = f"{original_name} {counter}"
                 counter += 1
             
-            # Create theme with all required fields
-            Theme.create(
-                name=custom_name,
-                is_custom=True,
-                is_active=False,
-                bg_primary=colors.get('bg_primary', '#1a1a1a'),
-                bg_secondary=colors.get('bg_secondary', '#2d2d2d'),
-                bg_tertiary=colors.get('bg_tertiary', '#3d3d3d'),
-                fg_primary=colors.get('fg_primary', '#ffffff'),
-                fg_secondary=colors.get('fg_secondary', '#b0b0b0'),
-                accent=colors.get('accent', '#0078d4'),
-                accent_hover=colors.get('accent_hover', '#106ebe'),
-                success=colors.get('success', '#28a745'),
-                warning=colors.get('warning', '#ffc107'),
-                danger=colors.get('danger', '#dc3545'),
-                border=colors.get('border', '#4d4d4d')
-            )
+            # Create theme dict
+            new_theme = {
+                'name': custom_name,
+                'bg_primary': colors.get('bg_primary', '#1a1a1a'),
+                'bg_secondary': colors.get('bg_secondary', '#2d2d2d'),
+                'bg_tertiary': colors.get('bg_tertiary', '#3d3d3d'),
+                'fg_primary': colors.get('fg_primary', '#ffffff'),
+                'fg_secondary': colors.get('fg_secondary', '#b0b0b0'),
+                'accent': colors.get('accent', '#0078d4'),
+                'accent_hover': colors.get('accent_hover', '#106ebe'),
+                'success': colors.get('success', '#28a745'),
+                'warning': colors.get('warning', '#ffc107'),
+                'danger': colors.get('danger', '#dc3545'),
+                'border': colors.get('border', '#4d4d4d')
+            }
             
-            db.close()
-            print(f"Created custom theme: {custom_name}")
-            return True
+            themes_list.append(new_theme)
+            
+            if self._save_themes_yaml(themes_list):
+                print(f"Created custom theme: {custom_name}")
+                return True
+            return False
         except Exception as e:
             print(f"Error creating custom theme: {e}")
             import traceback
@@ -995,47 +1068,69 @@ QLabel[class="accent-label"] {{
     
     def update_theme(self, theme_name: str, colors: dict) -> bool:
         """
-        Update an existing theme
+        Update an existing theme in themes.yaml
         
         Args:
             theme_name: Name of theme to update
-            colors: Dictionary of color values
+            colors: Dictionary of color values (including optional 'name' key for renaming)
         
         Returns:
             bool: True if successful
         """
         try:
-            db.connect(reuse_if_open=True)
+            themes_list = self._load_themes_yaml()
             
-            theme = Theme.get(Theme.name == theme_name)
+            # Find the theme
+            theme_index = next((i for i, t in enumerate(themes_list) if t.get('name') == theme_name), None)
+            
+            if theme_index is None:
+                print(f"Theme '{theme_name}' not found in themes.yaml")
+                return False
+            
+            # Check if renaming
+            new_name = colors.get('name', '').strip()
+            if new_name and new_name != theme_name:
+                # Check if new name already exists
+                existing_names = [t.get('name') for i, t in enumerate(themes_list) if i != theme_index]
+                if new_name in existing_names:
+                    print(f"Theme name '{new_name}' already exists")
+                    return False
+                
+                # Update active theme in config if this theme is active
+                if config.get('appearance.theme') == theme_name:
+                    config.set('appearance.theme', new_name)
+                    config.save()
+                
+                themes_list[theme_index]['name'] = new_name
             
             # Update all color fields
-            theme.bg_primary = colors.get('bg_primary', theme.bg_primary)
-            theme.bg_secondary = colors.get('bg_secondary', theme.bg_secondary)
-            theme.bg_tertiary = colors.get('bg_tertiary', theme.bg_tertiary)
-            theme.fg_primary = colors.get('fg_primary', theme.fg_primary)
-            theme.fg_secondary = colors.get('fg_secondary', theme.fg_secondary)
-            theme.accent = colors.get('accent', theme.accent)
-            theme.accent_hover = colors.get('accent_hover', theme.accent_hover)
-            theme.success = colors.get('success', theme.success)
-            theme.warning = colors.get('warning', theme.warning)
-            theme.danger = colors.get('danger', theme.danger)
-            theme.border = colors.get('border', theme.border)
+            theme = themes_list[theme_index]
+            theme['bg_primary'] = colors.get('bg_primary', theme.get('bg_primary'))
+            theme['bg_secondary'] = colors.get('bg_secondary', theme.get('bg_secondary'))
+            theme['bg_tertiary'] = colors.get('bg_tertiary', theme.get('bg_tertiary'))
+            theme['fg_primary'] = colors.get('fg_primary', theme.get('fg_primary'))
+            theme['fg_secondary'] = colors.get('fg_secondary', theme.get('fg_secondary'))
+            theme['accent'] = colors.get('accent', theme.get('accent'))
+            theme['accent_hover'] = colors.get('accent_hover', theme.get('accent_hover'))
+            theme['success'] = colors.get('success', theme.get('success'))
+            theme['warning'] = colors.get('warning', theme.get('warning'))
+            theme['danger'] = colors.get('danger', theme.get('danger'))
+            theme['border'] = colors.get('border', theme.get('border'))
             
-            theme.save()
-            
-            db.close()
-            print(f"Updated theme: {theme_name}")
-            return True
+            if self._save_themes_yaml(themes_list):
+                print(f"Updated theme: {theme['name']}")
+                return True
+            return False
         except Exception as e:
             print(f"Error updating theme: {e}")
             import traceback
             traceback.print_exc()
             return False
+            return False
     
     def delete_theme(self, theme_name: str) -> bool:
         """
-        Delete a custom theme
+        Delete a custom theme from themes.yaml
         
         Args:
             theme_name: Name of theme to delete
@@ -1044,15 +1139,24 @@ QLabel[class="accent-label"] {{
             bool: True if successful
         """
         try:
-            db.connect(reuse_if_open=True)
+            themes_list = self._load_themes_yaml()
             
-            theme = Theme.get(Theme.name == theme_name)
-            if theme.is_custom:
-                theme.delete_instance()
-                db.close()
+            # Find and remove the theme
+            original_length = len(themes_list)
+            themes_list = [t for t in themes_list if t.get('name') != theme_name]
+            
+            if len(themes_list) == original_length:
+                print(f"Theme '{theme_name}' not found in themes.yaml")
+                return False
+            
+            # If deleting active theme, switch to Dark
+            if config.get('appearance.theme') == theme_name:
+                config.set('appearance.theme', 'Dark')
+                config.save()
+            
+            if self._save_themes_yaml(themes_list):
+                print(f"Deleted theme: {theme_name}")
                 return True
-            
-            db.close()
             return False
         except Exception as e:
             print(f"Error deleting theme: {e}")

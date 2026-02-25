@@ -87,14 +87,14 @@ def initialize_database():
         ], safe=True)
         
         # Run migrations for existing databases
-        run_migrations()
+        # run_migrations()
     
     db.close()
     print("Database initialized")
 
-
+"""
 def run_migrations():
-    """Run database migrations for schema updates"""
+    Run database migrations for schema updates
     try:
         # Migration 1: Add habit_type column to Habit table
         cursor = db.execute_sql("PRAGMA table_info(habit)")
@@ -169,7 +169,7 @@ def run_migrations():
     except Exception as e:
         print(f"Migration error: {e}")
 
-
+"""
 def get_default_themes():
     """Get default theme definitions"""
     return {

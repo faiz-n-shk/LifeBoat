@@ -205,6 +205,10 @@ class HabitItem(QFrame):
             indicator.setFixedSize(14, 14)
             indicator.setAlignment(Qt.AlignmentFlag.AlignCenter)
             
+            # For bad habits, invert the logic: success = NOT completed
+            is_bad_habit = self.habit.habit_type == "Bad"
+            is_success = (not completed) if is_bad_habit else completed
+            
             # Gray out future days
             if check_date > today:
                 indicator.setStyleSheet("""
@@ -212,7 +216,7 @@ class HabitItem(QFrame):
                     border: 2px solid #444;
                     border-radius: 7px;
                 """)
-            elif completed:
+            elif is_success:
                 indicator.setStyleSheet(f"""
                     background-color: {self.habit.color};
                     border-radius: 7px;
