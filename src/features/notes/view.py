@@ -11,6 +11,7 @@ from PyQt6.QtGui import QFont
 
 from src.features.notes.controller import NotesController
 from src.features.notes.widgets.note_dialog import NoteDialog
+from src.features.notes.widgets.note_viewer import NoteViewer
 from src.features.notes.widgets.note_card import NoteCard
 from src.shared.flow_layout import FlowLayout
 
@@ -21,8 +22,15 @@ class NotesView(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.controller = NotesController()
-        self.current_view_mode = "Auto"
+        
+        # Load saved view mode and filter state
+        from src.core.config import config
+        self.current_view_mode = config.get('notes.view_mode', 'Grid')
+        self.saved_tag_filter = config.get('notes.tag_filter', 'All Tags')
+        self.saved_pinned_filter = config.get('notes.pinned_filter', False)
+        
         self.setup_ui()
+        self.restore_filter_state()
         self.load_notes()
     
     def setup_ui(self):
@@ -49,6 +57,7 @@ class NotesView(QWidget):
         
         self.view_mode_combo = QComboBox()
         self.view_mode_combo.addItems(["Auto", "Grid", "List", "Compact"])
+        self.view_mode_combo.setCurrentText(self.current_view_mode)
         self.view_mode_combo.setMinimumWidth(100)
         self.view_mode_combo.currentTextChanged.connect(self.on_view_mode_changed)
         header_layout.addWidget(self.view_mode_combo)
@@ -125,7 +134,11 @@ class NotesView(QWidget):
         
         # Filter by tag if selected
         selected_tag = self.tag_filter.currentText()
-        if selected_tag != "All Tags":
+        if selected_tag == "No Tags":
+            # Show only notes without tags
+            notes = [n for n in notes if not n.tags or not n.tags.strip()]
+        elif selected_tag != "All Tags":
+            # Show notes with the selected tag
             notes = [n for n in notes if n.tags and selected_tag in [t.strip() for t in n.tags.split(',')]]
         
         # Display notes based on view mode
@@ -170,23 +183,58 @@ class NotesView(QWidget):
             self.notes_layout.addWidget(empty_widget)
     
     def create_edit_handler(self, note_id):
-        """Create a handler function for editing a specific note"""
+        """Create a handler function for viewing a specific note"""
         def handler():
-            self.on_edit_note(note_id)
+            self.on_view_note(note_id)
         return handler
+    
+    def on_view_note(self, note_id: int):
+        """Handle viewing a note"""
+        note = self.controller.get_note_by_id(note_id)
+        if note:
+            viewer = NoteViewer(self, note, self.controller)
+            viewer.edit_requested.connect(self.on_edit_note)
+            viewer.delete_requested.connect(self.on_delete_note)
+            viewer.pin_toggled.connect(self.on_toggle_pin)
+            viewer.exec()
+            # Refresh after viewer closes
+            self.load_notes()
     
     def on_view_mode_changed(self, mode):
         """Handle view mode change"""
         self.current_view_mode = mode
+        
+        # Save view mode to config
+        from src.core.config import config
+        config.set('notes.view_mode', mode)
+        config.save()
+        
         self.load_notes()
+    
+    def restore_filter_state(self):
+        """Restore saved filter state"""
+        # Restore pinned filter
+        self.pinned_btn.setChecked(self.saved_pinned_filter)
+    
+    def save_filter_state(self):
+        """Save current filter state"""
+        from src.core.config import config
+        config.set('notes.tag_filter', self.tag_filter.currentText())
+        config.set('notes.pinned_filter', self.pinned_btn.isChecked())
+        config.save()
     
     def update_tag_filter(self):
         """Update the tag filter dropdown with available tags"""
         self.tag_filter.blockSignals(True)
         
         current_tag = self.tag_filter.currentText()
+        # Use saved tag filter if current is default
+        if current_tag == "All Tags" and hasattr(self, 'saved_tag_filter'):
+            current_tag = self.saved_tag_filter
+        
         self.tag_filter.clear()
         self.tag_filter.addItem("All Tags")
+        self.tag_filter.addItem("No Tags")
         
         tags = self.controller.get_all_tags()
         for tag in tags:
@@ -255,6 +303,7 @@ class NotesView(QWidget):
     
     def on_filter_changed(self):
         """Handle filter change"""
+        self.save_filter_state()
         self.load_notes()
     
     def refresh(self):

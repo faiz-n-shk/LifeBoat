@@ -99,6 +99,12 @@ dashboard:
   show_summary: true
   show_recent_items: true
   recent_items_count: 5
+
+# Notes Settings
+notes:
+  view_mode: "Grid"  # Auto, Grid, List, or Compact
+  tag_filter: "All Tags"
+  pinned_filter: false
 """
 
 

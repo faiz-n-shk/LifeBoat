@@ -135,8 +135,30 @@ class NoteCard(QFrame):
         main_layout.addWidget(content_container, 1)
         
         # Tags
-        if self.note.tags:
+        if self.note.tags and self.note.tags.strip():
             self.add_tags(main_layout)
+        else:
+            # Show "no tags" indicator
+            tags_layout = QHBoxLayout()
+            tags_layout.setSpacing(4)
+            
+            no_tag_pill = QLabel("no tags")
+            font = QFont()
+            font.setPointSize(8)
+            font.setItalic(True)
+            no_tag_pill.setFont(font)
+            no_tag_pill.setStyleSheet("""
+                QLabel {
+                    padding: 0.3em 0.8em;
+                    border-radius: 10px;
+                    background-color: rgba(100, 100, 100, 0.15);
+                    border: 1px solid rgba(100, 100, 100, 0.25);
+                    color: rgba(150, 150, 150, 0.8);
+                }
+            """)
+            tags_layout.addWidget(no_tag_pill)
+            tags_layout.addStretch()
+            main_layout.addLayout(tags_layout)
         
         # Footer
         self.add_footer(main_layout)
@@ -205,8 +227,30 @@ class NoteCard(QFrame):
         main_layout.addWidget(content_container, 1)
         
         # Tags
-        if self.note.tags:
+        if self.note.tags and self.note.tags.strip():
             self.add_tags(main_layout)
+        else:
+            # Show "no tags" indicator
+            tags_layout = QHBoxLayout()
+            tags_layout.setSpacing(4)
+            
+            no_tag_pill = QLabel("no tags")
+            font = QFont()
+            font.setPointSize(8)
+            font.setItalic(True)
+            no_tag_pill.setFont(font)
+            no_tag_pill.setStyleSheet("""
+                QLabel {
+                    padding: 0.3em 0.8em;
+                    border-radius: 10px;
+                    background-color: rgba(100, 100, 100, 0.15);
+                    border: 1px solid rgba(100, 100, 100, 0.25);
+                    color: rgba(150, 150, 150, 0.8);
+                }
+            """)
+            tags_layout.addWidget(no_tag_pill)
+            tags_layout.addStretch()
+            main_layout.addLayout(tags_layout)
         
         # Footer
         self.add_footer(main_layout)
@@ -216,50 +260,46 @@ class NoteCard(QFrame):
     def setup_list_view(self):
         """Setup list view (horizontal layout)"""
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        self.setMinimumWidth(500)
+        self.setMinimumWidth(400)
+        self.setMaximumWidth(600)
         self.setFixedHeight(100)
         
         main_layout = QHBoxLayout(self)
-        main_layout.setContentsMargins(12, 10, 12, 10)
-        main_layout.setSpacing(12)
+        main_layout.setContentsMargins(16, 12, 16, 12)
+        main_layout.setSpacing(16)
         
-        # Left side: Title only
+        # Left side: Title, tags, and date in vertical layout
         left_layout = QVBoxLayout()
         left_layout.setSpacing(6)
         
         # Title with pin
         title_layout = QHBoxLayout()
-        title_layout.setSpacing(6)
+        title_layout.setSpacing(8)
         
         title = QLabel(self.note.title)
         font = QFont()
-        font.setPointSize(11)
+        font.setPointSize(12)
         font.setBold(True)
         title.setFont(font)
-        title.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
-        title_layout.addWidget(title, 1)
+        title.setWordWrap(False)
+        title_layout.addWidget(title)
         
         if self.note.pinned:
             pin_icon = QLabel("📌")
             font = QFont()
-            font.setPointSize(11)
+            font.setPointSize(12)
             pin_icon.setFont(font)
-            pin_icon.setFixedWidth(18)
             title_layout.addWidget(pin_icon)
         
+        title_layout.addStretch()
         left_layout.addLayout(title_layout)
-        left_layout.addStretch()
         
-        main_layout.addLayout(left_layout, 3)
+        # Tags in the middle
+        tags_layout = QHBoxLayout()
+        tags_layout.setSpacing(6)
         
-        # Right side: Tags, date, actions
-        right_layout = QVBoxLayout()
-        right_layout.setSpacing(6)
-        
-        if self.note.tags:
-            tags_layout = QHBoxLayout()
-            tags_layout.setSpacing(4)
-            for tag in self.note.tags.split(',')[:2]:
+        if self.note.tags and self.note.tags.strip():
+            for tag in self.note.tags.split(',')[:4]:
                 tag = tag.strip()
                 if tag:
                     tag_pill = QLabel(f"#{tag}")
@@ -269,44 +309,67 @@ class NoteCard(QFrame):
                     tag_pill.setFont(font)
                     tag_pill.setStyleSheet("""
                         QLabel {
-                            padding: 0.2em 0.6em;
-                            border-radius: 10px;
+                            padding: 0.3em 0.8em;
+                            border-radius: 11px;
                             background-color: rgba(100, 150, 255, 0.2);
                             border: 1px solid rgba(100, 150, 255, 0.4);
                         }
                     """)
                     tags_layout.addWidget(tag_pill)
-            tags_layout.addStretch()
-            right_layout.addLayout(tags_layout)
+        else:
+            # Show "no tags" indicator
+            no_tag_pill = QLabel("no tags")
+            font = QFont()
+            font.setPointSize(8)
+            font.setItalic(True)
+            no_tag_pill.setFont(font)
+            no_tag_pill.setStyleSheet("""
+                QLabel {
+                    padding: 0.3em 0.8em;
+                    border-radius: 11px;
+                    background-color: rgba(100, 100, 100, 0.15);
+                    border: 1px solid rgba(100, 100, 100, 0.25);
+                    color: rgba(150, 150, 150, 0.8);
+                }
+            """)
+            tags_layout.addWidget(no_tag_pill)
         
-        right_layout.addStretch()
+        tags_layout.addStretch()
+        left_layout.addLayout(tags_layout)
         
-        # Date and actions
-        footer_layout = QHBoxLayout()
+        # Date at the bottom
         date_label = QLabel(format_datetime(self.note.updated_at))
         date_label.setProperty("class", "meta-text")
         font = QFont()
-        font.setPointSize(8)
+        font.setPointSize(9)
         date_label.setFont(font)
-        footer_layout.addWidget(date_label)
+        left_layout.addWidget(date_label)
         
-        footer_layout.addStretch()
-        self.add_action_buttons(footer_layout, size=28)
-        right_layout.addLayout(footer_layout)
+        main_layout.addLayout(left_layout, 1)
         
-        main_layout.addLayout(right_layout, 1)
+        # Right side: Actions only
+        right_layout = QVBoxLayout()
+        right_layout.addStretch()
+        
+        actions_layout = QHBoxLayout()
+        self.add_action_buttons(actions_layout, size=28)
+        right_layout.addLayout(actions_layout)
+        
+        right_layout.addStretch()
+        
+        main_layout.addLayout(right_layout)
         
         self.setLayout(main_layout)
     
     def setup_compact_view(self):
         """Setup compact view (minimal)"""
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.setFixedWidth(220)
-        self.setFixedHeight(70)
+        self.setFixedWidth(200)
+        self.setFixedHeight(60)
         
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(8, 8, 8, 8)
-        main_layout.setSpacing(4)
+        main_layout.setContentsMargins(10, 8, 10, 8)
+        main_layout.setSpacing(6)
         
         # Title with pin
         title_layout = QHBoxLayout()
@@ -325,13 +388,14 @@ class NoteCard(QFrame):
             font = QFont()
             font.setPointSize(10)
             pin_icon.setFont(font)
-            pin_icon.setFixedWidth(16)
+            pin_icon.setFixedWidth(14)
             title_layout.addWidget(pin_icon)
         
         main_layout.addLayout(title_layout)
+        
         main_layout.addStretch()
         
-        # Footer
+        # Footer with date only (no action buttons)
         footer_layout = QHBoxLayout()
         date_label = QLabel(format_datetime(self.note.updated_at))
         date_label.setProperty("class", "meta-text")
@@ -339,9 +403,7 @@ class NoteCard(QFrame):
         font.setPointSize(7)
         date_label.setFont(font)
         footer_layout.addWidget(date_label)
-        
         footer_layout.addStretch()
-        self.add_action_buttons(footer_layout, size=20)
         main_layout.addLayout(footer_layout)
         
         self.setLayout(main_layout)
@@ -445,7 +507,18 @@ class NoteCard(QFrame):
         layout.addLayout(actions_layout)
     
     def mousePressEvent(self, event):
-        """Handle mouse press to open note"""
+        """Handle mouse press to open note viewer"""
         if event.button() == Qt.MouseButton.LeftButton:
-            self.clicked.emit(self.note.id)
+            # Check if click is on action buttons area
+            if not self._is_click_on_buttons(event.position()):
+                self.clicked.emit(self.note.id)
         super().mousePressEvent(event)
+    
+    def _is_click_on_buttons(self, pos):
+        """Check if click position is on action buttons"""
+        # Get the geometry of the card
+        card_rect = self.rect()
+        # Buttons are typically in the bottom-right corner
+        # Reserve bottom 40px and right 120px for buttons
+        button_area = card_rect.adjusted(card_rect.width() - 120, card_rect.height() - 40, 0, 0)
+        return button_area.contains(pos.toPoint())
