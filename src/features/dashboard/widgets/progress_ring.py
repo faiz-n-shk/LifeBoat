@@ -83,6 +83,22 @@ class ProgressRing(QWidget):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
         
+        # Get theme colors
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
+        try:
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+            bg_color = QColor(theme_obj.bg_tertiary)
+            progress_color = QColor(theme_obj.accent)
+            text_color = QColor(theme_obj.fg_primary)
+            db.close()
+        except:
+            bg_color = QColor(60, 60, 60, 80)
+            progress_color = QColor(100, 150, 255)
+            text_color = QColor(255, 255, 255)
+        
         # Calculate dimensions for ring only (not including title)
         width = self.width()
         ring_height = 140  # Fixed height for ring area
@@ -93,7 +109,7 @@ class ProgressRing(QWidget):
         rect = QRectF(x, y, size, size)
         
         # Draw background circle
-        pen = QPen(QColor(60, 60, 60, 80))
+        pen = QPen(bg_color)
         pen.setWidth(10)
         pen.setCapStyle(Qt.PenCapStyle.RoundCap)
         painter.setPen(pen)
@@ -102,7 +118,7 @@ class ProgressRing(QWidget):
         # Draw progress arc with gradient effect (only if progress > 0)
         if self._progress > 0:
             # Main progress arc
-            pen = QPen(QColor(100, 150, 255))
+            pen = QPen(progress_color)
             pen.setWidth(10)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
@@ -111,14 +127,16 @@ class ProgressRing(QWidget):
             painter.drawArc(rect, 90 * 16, span_angle)
             
             # Glow effect
-            pen = QPen(QColor(100, 150, 255, 50))
+            glow_color = QColor(progress_color)
+            glow_color.setAlpha(50)
+            pen = QPen(glow_color)
             pen.setWidth(14)
             pen.setCapStyle(Qt.PenCapStyle.RoundCap)
             painter.setPen(pen)
             painter.drawArc(rect, 90 * 16, span_angle)
         
         # Draw percentage text in center
-        painter.setPen(QColor(255, 255, 255))
+        painter.setPen(text_color)
         font = QFont()
         font.setPointSize(20)
         font.setBold(True)
