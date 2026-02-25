@@ -3,6 +3,7 @@ Main Application Class
 """
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtCore import Qt
+from PyQt6.QtGui import QIcon
 
 from src.core.constants import (
     APP_NAME, APP_VERSION,
@@ -19,6 +20,10 @@ class LifeboatApp(QMainWindow):
     
     def __init__(self):
         super().__init__()
+        
+        # Set application icon
+        icon_path = "assets/lifeboat.ico"
+        self.setWindowIcon(QIcon(icon_path))
         
         # Load theme before creating UI
         theme_manager.load_theme()
