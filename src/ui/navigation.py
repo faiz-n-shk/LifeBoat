@@ -66,18 +66,18 @@ class NavigationSidebar(QWidget):
         icon_label = QLabel()
         icon_label.setStyleSheet("background: transparent;")
         icon_pixmap = QPixmap(get_resource_path("assets/icons/lifeboat.svg"))
-        icon_label.setPixmap(icon_pixmap.scaled(36, 36, QtCore.AspectRatioMode.KeepAspectRatio, QtCore.TransformationMode.SmoothTransformation))
+        icon_label.setPixmap(icon_pixmap.scaled(50, 50, QtCore.AspectRatioMode.KeepAspectRatio, QtCore.TransformationMode.SmoothTransformation))
         top_layout.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
         # App title text
         title = QLabel("Lifeboat")
         from PyQt6.QtGui import QFont
         font = QFont()
-        font.setPointSize(15)
+        font.setPointSize(18)
         font.setBold(True)
-        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.5)
+        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.8)
         title.setFont(font)
-        title.setStyleSheet("background: transparent; color: rgba(255, 255, 255, 0.95);")
+        title.setStyleSheet("background: transparent; color: rgba(255, 255, 255, 0.95); font-size: 18pt;")
         top_layout.addWidget(title, 0, Qt.AlignmentFlag.AlignVCenter)
         
         top_layout.addStretch()
