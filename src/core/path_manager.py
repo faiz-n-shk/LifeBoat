@@ -13,11 +13,12 @@ class PathManager:
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent.parent
         self.paths_config_file = self.base_dir / "data" / "custom_paths.json"
-        self.default_config = self.base_dir / "config.yaml"
+        self.default_config = self.base_dir / "config" / "config.yaml"
         self.default_db = self.base_dir / "data" / "lifeboat.db"
         self.default_db_template = self.base_dir / "data" / "default_settings.db"
         
-        # Ensure data directory exists
+        # Ensure directories exist
+        (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
         (self.base_dir / "data").mkdir(exist_ok=True, parents=True)
         
         # Load custom paths

@@ -85,9 +85,48 @@ def initialize_database():
             Event, Task, Expense, Income, Goal,
             Habit, HabitLog, Note, Theme, Settings
         ], safe=True)
+        
+        # Run migrations for existing databases
+        run_migrations()
     
     db.close()
     print("Database initialized")
+
+
+def run_migrations():
+    """Run database migrations for schema updates"""
+    try:
+        # Migration 1: Add habit_type column to Habit table
+        cursor = db.execute_sql("PRAGMA table_info(habit)")
+        columns = [row[1] for row in cursor.fetchall()]
+        
+        if 'habit_type' not in columns:
+            print("Running migration: Adding habit_type column to Habit table...")
+            db.execute_sql("ALTER TABLE habit ADD COLUMN habit_type VARCHAR(255) DEFAULT 'Good'")
+            print("Migration completed: habit_type column added")
+        
+        # Migration 2: Add target_days column to Habit table
+        if 'target_days' not in columns:
+            print("Running migration: Adding target_days column to Habit table...")
+            db.execute_sql("ALTER TABLE habit ADD COLUMN target_days INTEGER DEFAULT 7")
+            print("Migration completed: target_days column added")
+        
+        # Migration 3: Add start_date column to Habit table
+        if 'start_date' not in columns:
+            print("Running migration: Adding start_date column to Habit table...")
+            # Use current date as default for existing habits
+            from datetime import date
+            today = date.today().isoformat()
+            db.execute_sql(f"ALTER TABLE habit ADD COLUMN start_date DATE DEFAULT '{today}'")
+            print("Migration completed: start_date column added")
+        
+        # Migration 4: Set default values for frequency if it exists
+        if 'frequency' in columns:
+            print("Running migration: Setting default frequency values...")
+            db.execute_sql("UPDATE habit SET frequency = 'Daily' WHERE frequency IS NULL")
+            print("Migration completed: frequency defaults set")
+    except Exception as e:
+        print(f"Migration error: {e}")
 
 
 def get_default_themes():

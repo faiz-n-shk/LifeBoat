@@ -4,7 +4,7 @@ Main settings page with change tracking
 """
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QFrame, QMessageBox
+    QScrollArea, QFrame, QMessageBox, QLineEdit
 )
 from PyQt6.QtCore import Qt, pyqtSignal
 
@@ -13,7 +13,6 @@ from src.features.settings.sections.locale import LocaleSection
 from src.features.settings.sections.themes import ThemesSection
 from src.features.settings.sections.paths import PathsSection
 from src.features.settings.sections.about import AboutSection
-from src.features.settings.change_tracker import change_tracker
 
 
 class SettingsView(QWidget):
@@ -24,6 +23,7 @@ class SettingsView(QWidget):
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.sections = []  # Store section containers for filtering
         self.setup_ui()
     
     def setup_ui(self):
@@ -41,6 +41,26 @@ class SettingsView(QWidget):
         header.setFont(font)
         main_layout.addWidget(header)
         
+        # Search bar
+        search_container = QFrame()
+        search_layout = QHBoxLayout(search_container)
+        search_layout.setContentsMargins(0, 0, 0, 0)
+        search_layout.setSpacing(8)
+        
+        # Search icon (permanent)
+        search_icon = QLabel("🔍")
+        search_icon.setFixedWidth(30)
+        search_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        search_layout.addWidget(search_icon)
+        
+        # Search input
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("Search settings...")
+        self.search_input.textChanged.connect(self.filter_sections)
+        search_layout.addWidget(self.search_input)
+        
+        main_layout.addWidget(search_container)
+        
         # Scroll area for settings sections
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -48,9 +68,9 @@ class SettingsView(QWidget):
         
         # Content widget
         content = QWidget()
-        content_layout = QVBoxLayout(content)
-        content_layout.setSpacing(20)
-        content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        self.content_layout = QVBoxLayout(content)
+        self.content_layout.setSpacing(20)
+        self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
         # Add settings sections
         self.appearance_section = AppearanceSection()
@@ -59,11 +79,23 @@ class SettingsView(QWidget):
         self.paths_section = PathsSection()
         self.about_section = AboutSection()
         
-        content_layout.addWidget(self.create_section("Appearance", self.appearance_section))
-        content_layout.addWidget(self.create_section("Themes", self.themes_section))
-        content_layout.addWidget(self.create_section("Locale & Format", self.locale_section))
-        content_layout.addWidget(self.create_section("File Locations", self.paths_section))
-        content_layout.addWidget(self.create_section("About", self.about_section))
+        # Create sections and store references
+        sections_data = [
+            ("Appearance", self.appearance_section),
+            ("Themes", self.themes_section),
+            ("Locale & Format", self.locale_section),
+            ("File Locations", self.paths_section),
+            ("About", self.about_section)
+        ]
+        
+        for title, section_widget in sections_data:
+            section_container = self.create_section(title, section_widget)
+            self.sections.append({
+                'title': title,
+                'container': section_container,
+                'widget': section_widget
+            })
+            self.content_layout.addWidget(section_container)
         
         scroll.setWidget(content)
         main_layout.addWidget(scroll)
@@ -74,6 +106,7 @@ class SettingsView(QWidget):
         """Create a settings section container"""
         container = QFrame()
         container.setObjectName("settings-section")
+        container.setProperty("section_title", title)  # Store title for searching
         
         layout = QVBoxLayout(container)
         layout.setSpacing(15)
@@ -93,23 +126,88 @@ class SettingsView(QWidget):
         container.setLayout(layout)
         return container
     
+    def filter_sections(self, search_text: str):
+        """Filter settings sections based on search text"""
+        search_text = search_text.lower().strip()
+        
+        # If search is empty, show all sections
+        if not search_text:
+            for section in self.sections:
+                section['container'].setVisible(True)
+            return
+        
+        # Filter sections based on title and content
+        for section in self.sections:
+            title = section['title'].lower()
+            
+            # Check if search matches title
+            if search_text in title:
+                section['container'].setVisible(True)
+                continue
+            
+            # Check if search matches any text in the section widget
+            section_text = self.get_widget_text(section['widget']).lower()
+            if search_text in section_text:
+                section['container'].setVisible(True)
+            else:
+                section['container'].setVisible(False)
+    
+    def get_widget_text(self, widget: QWidget) -> str:
+        """Recursively get all text from a widget and its children"""
+        text_parts = []
+        
+        # Get text from QLabel
+        if isinstance(widget, QLabel):
+            text_parts.append(widget.text())
+        
+        # Get text from QLineEdit
+        if isinstance(widget, QLineEdit):
+            if widget.placeholderText():
+                text_parts.append(widget.placeholderText())
+        
+        # Recursively get text from children
+        for child in widget.findChildren(QWidget):
+            if isinstance(child, QLabel):
+                text_parts.append(child.text())
+            elif isinstance(child, QLineEdit):
+                if child.placeholderText():
+                    text_parts.append(child.placeholderText())
+        
+        return " ".join(text_parts)
+    
     def check_unsaved_changes(self) -> bool:
         """
         Check for unsaved changes and prompt user
         Returns True if navigation should proceed, False if cancelled
         """
-        if not change_tracker.has_changes():
-            return True
+        # Check if any section has unsaved changes (enabled Apply button)
+        has_changes = False
         
-        # Build message with changes
-        changes_list = change_tracker.get_changes_summary()
-        changes_text = "\n".join(f"• {change}" for change in changes_list)
+        # Check appearance section
+        if hasattr(self.appearance_section, 'apply_btn') and self.appearance_section.apply_btn.isEnabled():
+            has_changes = True
+        
+        # Check locale section
+        if hasattr(self.locale_section, 'apply_btn') and self.locale_section.apply_btn.isEnabled():
+            has_changes = True
+        
+        if not has_changes:
+            return True
         
         msg = QMessageBox(self)
         msg.setWindowTitle("Unsaved Changes")
-        msg.setText("You have unsaved changes in Settings:")
-        msg.setInformativeText(changes_text)
+        msg.setText("You have unsaved changes in Settings.")
+        msg.setInformativeText("What would you like to do?")
         msg.setIcon(QMessageBox.Icon.Warning)
+        
+        # Style buttons with em units to prevent text cutoff
+        msg.setStyleSheet("""
+            QPushButton {
+                min-width: 10em;
+                min-height: 2.5em;
+                padding: 0.5em 1em;
+            }
+        """)
         
         # Add custom buttons
         apply_btn = msg.addButton("Apply Changes", QMessageBox.ButtonRole.AcceptRole)
@@ -121,80 +219,22 @@ class SettingsView(QWidget):
         clicked = msg.clickedButton()
         
         if clicked == apply_btn:
-            # Apply changes
-            self.apply_all_changes()
+            # Apply changes from all sections
+            if hasattr(self.appearance_section, 'apply_btn') and self.appearance_section.apply_btn.isEnabled():
+                self.appearance_section.on_apply()
+            if hasattr(self.locale_section, 'apply_btn') and self.locale_section.apply_btn.isEnabled():
+                self.locale_section.on_apply()
             return True
         elif clicked == discard_btn:
-            # Discard changes
-            change_tracker.clear()
+            # Discard changes from all sections
+            if hasattr(self.appearance_section, 'on_cancel'):
+                self.appearance_section.on_cancel()
+            if hasattr(self.locale_section, 'on_cancel'):
+                self.locale_section.on_cancel()
             return True
         else:
             # Cancel navigation
             return False
-    
-    def apply_all_changes(self):
-        """Apply all pending changes"""
-        if not change_tracker.has_changes():
-            return
-        
-        # Check if restart is needed
-        needs_restart = change_tracker.needs_restart()
-        
-        # Clear tracker
-        change_tracker.clear()
-        
-        # Show restart prompt if needed
-        if needs_restart:
-            self.show_restart_prompt()
-    
-    def show_restart_prompt(self):
-        """Show prompt to restart application"""
-        msg = QMessageBox(self)
-        msg.setWindowTitle("Restart Required")
-        msg.setText("Some changes require restarting the application to take effect.")
-        msg.setInformativeText("Would you like to restart now?")
-        msg.setIcon(QMessageBox.Icon.Information)
-        
-        restart_now = msg.addButton("Restart Now", QMessageBox.ButtonRole.AcceptRole)
-        restart_later = msg.addButton("Restart Later", QMessageBox.ButtonRole.RejectRole)
-        
-        msg.exec()
-        
-        if msg.clickedButton() == restart_now:
-            self.restart_application()
-    
-    def restart_application(self):
-        """Restart the application"""
-        import sys
-        import os
-        import subprocess
-        from PyQt6.QtWidgets import QApplication
-        
-        # Close the current application
-        QApplication.instance().quit()
-        
-        # Check if running as packaged app or script
-        if getattr(sys, 'frozen', False):
-            # Running as packaged executable
-            executable = sys.executable
-            if os.name == 'nt':  # Windows
-                # Use CREATE_NO_WINDOW to prevent console window
-                subprocess.Popen([executable], creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                subprocess.Popen([executable])
-        else:
-            # Running as script
-            python = sys.executable
-            script = sys.argv[0]
-            if os.name == 'nt':  # Windows
-                # Use pythonw.exe if available to avoid console window
-                pythonw = python.replace('python.exe', 'pythonw.exe')
-                if os.path.exists(pythonw):
-                    subprocess.Popen([pythonw, script])
-                else:
-                    subprocess.Popen([python, script], creationflags=subprocess.CREATE_NO_WINDOW)
-            else:
-                subprocess.Popen([python, script])
     
     def refresh(self):
         """Refresh view to apply config changes"""

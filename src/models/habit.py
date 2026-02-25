@@ -8,11 +8,14 @@ from src.core.database import BaseModel
 
 
 class Habit(BaseModel):
-    """Habit tracking model"""
+    """Habit tracking model - Goal-based habits"""
     name = CharField()
     description = TextField(null=True)
-    frequency = CharField(default="Daily")
-    target_count = IntegerField(default=1)
+    habit_type = CharField(default="Good")  # "Good" or "Bad" habit
+    target_days = IntegerField(default=7)  # Target duration in days
+    start_date = DateField(default=datetime.now().date)  # When habit tracking started
+    frequency = CharField(default="Daily")  
+    target_count = IntegerField(default=1)  
     color = CharField(default="#0078d4")
     created_at = DateTimeField(default=datetime.now)
 

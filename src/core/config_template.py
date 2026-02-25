@@ -14,12 +14,14 @@ window:
   min_height: 700
   remember_size: true
   remember_position: true
+  resolution: "custom"  # custom or preset like "1920x1080"
+  monitor: 0  # Monitor index for multi-monitor setups
 
 # Appearance
 appearance:
   theme: "Dark"
   font_family: "Segoe UI"
-  font_size: 13
+  font_size: 10
   animation_duration: 200  # milliseconds
   enable_animations: true
 

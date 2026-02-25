@@ -32,6 +32,7 @@ class LocaleSection(QWidget):
         self.date_input = QLineEdit()
         self.date_input.setText(config.get('datetime.date_format', '%d-%m-%Y'))
         self.date_input.setPlaceholderText("%d-%m-%Y")
+        self.date_input.textChanged.connect(self.on_value_changed)
         date_layout.addWidget(self.date_input, 1)
         
         layout.addLayout(date_layout)
@@ -45,6 +46,7 @@ class LocaleSection(QWidget):
         self.time_combo = QComboBox()
         self.time_combo.addItems(["12hr", "24hr"])
         self.time_combo.setCurrentText(config.get('datetime.time_mode', '12hr'))
+        self.time_combo.currentTextChanged.connect(self.on_value_changed)
         time_layout.addWidget(self.time_combo, 1)
         
         layout.addLayout(time_layout)
@@ -58,6 +60,7 @@ class LocaleSection(QWidget):
         self.week_combo = QComboBox()
         self.week_combo.addItems(["Monday", "Sunday"])
         self.week_combo.setCurrentText(config.get('datetime.week_start', 'Monday'))
+        self.week_combo.currentTextChanged.connect(self.on_value_changed)
         week_layout.addWidget(self.week_combo, 1)
         
         layout.addLayout(week_layout)
@@ -74,6 +77,8 @@ class LocaleSection(QWidget):
         current_symbol = config.get('currency.symbol', '₹')
         if current_symbol in currencies:
             self.currency_combo.setCurrentText(current_symbol)
+        self.currency_combo.currentTextChanged.connect(self.update_currency_code)
+        self.currency_combo.currentTextChanged.connect(self.on_value_changed)
         currency_layout.addWidget(self.currency_combo)
         
         # Show currency code (read-only)
@@ -81,7 +86,6 @@ class LocaleSection(QWidget):
         self.code_label.setProperty("class", "secondary-text")
         self.code_label.setStyleSheet("margin-left: 10px;")
         self.update_currency_code()
-        self.currency_combo.currentTextChanged.connect(self.update_currency_code)
         currency_layout.addWidget(self.code_label)
         
         currency_layout.addStretch()
@@ -97,6 +101,7 @@ class LocaleSection(QWidget):
         self.position_combo = QComboBox()
         self.position_combo.addItems(["prefix", "suffix"])
         self.position_combo.setCurrentText(config.get('currency.position', 'prefix'))
+        self.position_combo.currentTextChanged.connect(self.on_value_changed)
         position_layout.addWidget(self.position_combo, 1)
         
         layout.addLayout(position_layout)
@@ -110,18 +115,25 @@ class LocaleSection(QWidget):
         self.decimal_spin = QSpinBox()
         self.decimal_spin.setRange(0, 4)
         self.decimal_spin.setValue(config.get('currency.decimal_places', 2))
+        self.decimal_spin.valueChanged.connect(self.on_value_changed)
         decimal_layout.addWidget(self.decimal_spin)
         decimal_layout.addStretch()
         
         layout.addLayout(decimal_layout)
         
-        # Apply button
+        # Apply and Cancel buttons
         apply_layout = QHBoxLayout()
         apply_layout.addStretch()
         
-        apply_btn = QPushButton("Apply Changes")
-        apply_btn.clicked.connect(self.on_apply)
-        apply_layout.addWidget(apply_btn)
+        self.cancel_btn = QPushButton("Cancel Changes")
+        self.cancel_btn.clicked.connect(self.on_cancel)
+        self.cancel_btn.setEnabled(False)
+        apply_layout.addWidget(self.cancel_btn)
+        
+        self.apply_btn = QPushButton("Apply Changes")
+        self.apply_btn.clicked.connect(self.on_apply)
+        self.apply_btn.setEnabled(False)
+        apply_layout.addWidget(self.apply_btn)
         
         layout.addLayout(apply_layout)
         
@@ -132,6 +144,11 @@ class LocaleSection(QWidget):
         symbol = self.currency_combo.currentText()
         code = get_currency_code(symbol)
         self.code_label.setText(f"({code})")
+    
+    def on_value_changed(self):
+        """Handle any value change"""
+        self.apply_btn.setEnabled(True)
+        self.cancel_btn.setEnabled(True)
     
     def on_apply(self):
         """Apply locale changes"""
@@ -151,6 +168,9 @@ class LocaleSection(QWidget):
             # Emit signal to reload formatters and UI
             config.signals.locale_changed.emit()
             
+            self.apply_btn.setEnabled(False)
+            self.cancel_btn.setEnabled(False)
+            
             # Show success notification
             from PyQt6.QtWidgets import QMessageBox
             QMessageBox.information(
@@ -165,3 +185,25 @@ class LocaleSection(QWidget):
                 "Error",
                 "Failed to save locale settings."
             )
+    
+    def on_cancel(self):
+        """Cancel locale changes and revert to saved values"""
+        # Reload values from config
+        self.date_input.setText(config.get('datetime.date_format', '%d-%m-%Y'))
+        self.time_combo.setCurrentText(config.get('datetime.time_mode', '12hr'))
+        self.week_combo.setCurrentText(config.get('datetime.week_start', 'Monday'))
+        
+        current_symbol = config.get('currency.symbol', '₹')
+        currencies = get_available_currencies()
+        if current_symbol in currencies:
+            self.currency_combo.setCurrentText(current_symbol)
+        
+        self.position_combo.setCurrentText(config.get('currency.position', 'prefix'))
+        self.decimal_spin.setValue(config.get('currency.decimal_places', 2))
+        
+        # Update currency code
+        self.update_currency_code()
+        
+        # Disable buttons
+        self.apply_btn.setEnabled(False)
+        self.cancel_btn.setEnabled(False)

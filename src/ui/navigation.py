@@ -5,6 +5,8 @@ from PyQt6.QtWidgets import QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLab
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 
+from src.core.constants import APP_VERSION
+
 
 class NavigationSidebar(QWidget):
     """Navigation sidebar with feature buttons"""
@@ -133,7 +135,7 @@ class NavigationSidebar(QWidget):
         bottom_layout.addStretch()
         
         # Version label (centered)
-        version_label = QLabel("v2.0.0")
+        version_label = QLabel(f"v{APP_VERSION}")
         version_label.setProperty("class", "small-text")
         version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         bottom_layout.addWidget(version_label)

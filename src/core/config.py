@@ -12,11 +12,13 @@ from src.core.config_template import create_default_config
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent.parent
-CONFIG_FILE = BASE_DIR / "config.yaml"
+CONFIG_DIR = BASE_DIR / "config"
+CONFIG_FILE = CONFIG_DIR / "config.yaml"
 DATA_DIR = BASE_DIR / "data"
 ASSETS_DIR = BASE_DIR / "assets"
 
 # Ensure directories exist
+CONFIG_DIR.mkdir(exist_ok=True, parents=True)
 DATA_DIR.mkdir(exist_ok=True, parents=True)
 ASSETS_DIR.mkdir(exist_ok=True, parents=True)
 
