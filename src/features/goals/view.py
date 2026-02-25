@@ -104,6 +104,7 @@ class GoalsView(QWidget):
             goal_item.edit_requested.connect(self.edit_goal)
             goal_item.delete_requested.connect(self.delete_goal)
             goal_item.toggle_requested.connect(self.toggle_complete)
+            goal_item.progress_updated.connect(self.update_progress)
             self.goals_layout.addWidget(goal_item)
     
     def add_goal(self):
@@ -151,6 +152,10 @@ class GoalsView(QWidget):
         """Toggle goal completion status"""
         self.controller.toggle_complete(goal_id)
         self.load_goals()
+    
+    def update_progress(self, goal_id, new_progress):
+        """Update goal progress"""
+        self.controller.update_progress(goal_id, new_progress)
     
     def refresh(self):
         """Refresh view"""
