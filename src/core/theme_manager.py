@@ -146,15 +146,18 @@ QMainWindow, QWidget {{
 /* Navigation Sidebar */
 #navigation {{
     background-color: {theme.bg_secondary};
-    border-right: 1px solid {theme.border};
+    border-right: 2px solid {theme.border};
 }}
 
 #app-title {{
-    background-color: {theme.bg_secondary};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_secondary},
+        stop:1 {theme.bg_tertiary});
     color: {theme.fg_primary};
     font-size: 15pt;
     font-weight: bold;
-    border-bottom: 1px solid {theme.border};
+    border-bottom: 2px solid {theme.border};
+    border-right: 2px solid {theme.border};
 }}
 
 #nav-button {{
@@ -162,18 +165,26 @@ QMainWindow, QWidget {{
     color: {theme.fg_primary};
     border: none;
     border-left: 3px solid transparent;
+    border-right: 2px solid transparent;
     text-align: left;
     padding-left: 20px;
     font-size: 11pt;
+    margin: 2px 0px;
 }}
 
 #nav-button:hover {{
-    background-color: {theme.bg_tertiary};
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {theme.bg_tertiary},
+        stop:1 transparent);
+    border-right: 2px solid {theme.accent};
 }}
 
 #nav-button[active="true"] {{
-    background-color: {theme.bg_tertiary};
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 {theme.bg_tertiary},
+        stop:1 transparent);
     border-left: 3px solid {theme.accent};
+    border-right: 2px solid {theme.accent};
     color: {theme.accent};
     font-weight: bold;
 }}
@@ -182,8 +193,8 @@ QMainWindow, QWidget {{
 QPushButton {{
     background-color: {theme.accent};
     color: {theme.bg_primary};
-    border: none;
-    border-radius: 6px;
+    border: 2px solid {theme.accent};
+    border-radius: 8px;
     padding: 0.6em 1.2em;  /* Use em units to scale with font size */
     font-weight: 500;
     min-height: 2.4em;  /* Scale with font size */
@@ -192,11 +203,13 @@ QPushButton {{
 
 QPushButton:hover {{
     background-color: {theme.accent_hover};
+    border-color: {theme.accent_hover};
     color: {theme.bg_primary};
 }}
 
 QPushButton:pressed {{
     background-color: {theme.accent};
+    border-color: {theme.accent};
     color: {theme.bg_primary};
     padding: 9px 15px 7px 17px;
 }}
@@ -204,13 +217,14 @@ QPushButton:pressed {{
 QPushButton:disabled {{
     background-color: {theme.bg_tertiary};
     color: {theme.fg_secondary};
+    border-color: {theme.border};
 }}
 
 /* Checkable Buttons (for AM/PM toggle) */
 QPushButton:checkable {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_secondary};
-    border: 1px solid {theme.border};
+    border: 2px solid {theme.border};
 }}
 
 QPushButton:checked {{
@@ -221,15 +235,15 @@ QPushButton:checked {{
 }}
 
 QPushButton:checkable:hover {{
-    border: 1px solid {theme.accent};
+    border: 2px solid {theme.accent};
 }}
 
 /* Input Fields */
 QLineEdit, QPlainTextEdit {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.border};
+    border-radius: 8px;
     padding: 8px 12px;
     selection-background-color: {theme.accent};
     selection-color: {theme.fg_primary};
@@ -239,7 +253,7 @@ QTextEdit {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
     border: 2px solid {theme.border};
-    border-radius: 6px;
+    border-radius: 8px;
     padding: 8px 12px;
     selection-background-color: {theme.accent};
     selection-color: {theme.fg_primary};
@@ -266,14 +280,14 @@ QTextEdit:hover {{
 QComboBox {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.border};
+    border-radius: 8px;
     padding: 8px 12px;
     min-height: 32px;
 }}
 
 QComboBox:hover {{
-    border: 1px solid {theme.accent};
+    border: 2px solid {theme.accent};
 }}
 
 QComboBox:focus {{
@@ -295,8 +309,8 @@ QComboBox::down-arrow {{
 QComboBox QAbstractItemView {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.accent};
+    border-radius: 8px;
     selection-background-color: {theme.accent};
     selection-color: {theme.fg_primary};
     outline: none;
@@ -305,24 +319,27 @@ QComboBox QAbstractItemView {{
 
 QComboBox QAbstractItemView::item {{
     padding: 8px 12px;
-    border-radius: 4px;
+    border-radius: 6px;
     min-height: 32px;
+    border: 1px solid transparent;
 }}
 
 QComboBox QAbstractItemView::item:hover {{
     background-color: {theme.bg_tertiary};
+    border: 1px solid {theme.accent};
 }}
 
 QComboBox QAbstractItemView::item:selected {{
     background-color: {theme.accent};
+    border: 1px solid {theme.accent};
 }}
 
 /* SpinBox */
 QSpinBox, QDoubleSpinBox {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.border};
+    border-radius: 8px;
     padding: 8px 12px;
     min-height: 32px;
 }}
@@ -332,16 +349,16 @@ QSpinBox:focus, QDoubleSpinBox:focus {{
 }}
 
 QSpinBox:hover, QDoubleSpinBox:hover {{
-    border: 1px solid {theme.accent};
+    border: 2px solid {theme.accent};
 }}
 
 QSpinBox::up-button, QDoubleSpinBox::up-button {{
     subcontrol-origin: border;
     subcontrol-position: top right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
+    border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
-    border-top-right-radius: 5px;
+    border-top-right-radius: 6px;
     width: 16px;
 }}
 
@@ -353,8 +370,8 @@ QSpinBox::down-button, QDoubleSpinBox::down-button {{
     subcontrol-origin: border;
     subcontrol-position: bottom right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
-    border-bottom-right-radius: 5px;
+    border-left: 2px solid {theme.border};
+    border-bottom-right-radius: 6px;
     width: 16px;
 }}
 
@@ -385,12 +402,13 @@ QCheckBox::indicator {{
     width: 20px;
     height: 20px;
     border: 2px solid {theme.border};
-    border-radius: 4px;
+    border-radius: 5px;
     background-color: {theme.bg_secondary};
 }}
 
 QCheckBox::indicator:hover {{
     border: 2px solid {theme.accent};
+    background-color: {theme.bg_tertiary};
 }}
 
 QCheckBox::indicator:checked {{
@@ -416,6 +434,7 @@ QRadioButton::indicator {{
 
 QRadioButton::indicator:hover {{
     border: 2px solid {theme.accent};
+    background-color: {theme.bg_tertiary};
 }}
 
 QRadioButton::indicator:checked {{
@@ -436,14 +455,17 @@ QScrollBar::handle:vertical {{
     border-radius: 7px;
     min-height: 30px;
     margin: 2px;
+    border: 1px solid {theme.border};
 }}
 
 QScrollBar::handle:vertical:hover {{
     background-color: {theme.fg_secondary};
+    border-color: {theme.accent};
 }}
 
 QScrollBar::handle:vertical:pressed {{
     background-color: {theme.accent};
+    border-color: {theme.accent};
 }}
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {{
@@ -467,14 +489,17 @@ QScrollBar::handle:horizontal {{
     border-radius: 7px;
     min-width: 30px;
     margin: 2px;
+    border: 1px solid {theme.border};
 }}
 
 QScrollBar::handle:horizontal:hover {{
     background-color: {theme.fg_secondary};
+    border-color: {theme.accent};
 }}
 
 QScrollBar::handle:horizontal:pressed {{
     background-color: {theme.accent};
+    border-color: {theme.accent};
 }}
 
 QScrollBar::add-line:horizontal, QScrollBar::sub-line:horizontal {{
@@ -495,8 +520,8 @@ QScrollArea {{
 QDateEdit, QTimeEdit, QDateTimeEdit {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.border};
+    border-radius: 8px;
     padding: 8px 12px;
     min-height: 32px;
 }}
@@ -506,7 +531,7 @@ QDateEdit:focus, QTimeEdit:focus, QDateTimeEdit:focus {{
 }}
 
 QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {{
-    border: 1px solid {theme.accent};
+    border: 2px solid {theme.accent};
 }}
 
 /* DateEdit dropdown button with calendar icon */
@@ -514,9 +539,9 @@ QDateEdit::drop-down {{
     subcontrol-origin: border;
     subcontrol-position: center right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
+    border-left: 2px solid {theme.border};
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
     width: 20px;
 }}
 
@@ -535,9 +560,9 @@ QDateTimeEdit::drop-down {{
     subcontrol-origin: border;
     subcontrol-position: center right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
-    border-top-right-radius: 5px;
-    border-bottom-right-radius: 5px;
+    border-left: 2px solid {theme.border};
+    border-top-right-radius: 6px;
+    border-bottom-right-radius: 6px;
     width: 20px;
 }}
 
@@ -556,9 +581,9 @@ QTimeEdit::up-button {{
     subcontrol-origin: border;
     subcontrol-position: top right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
+    border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
-    border-top-right-radius: 5px;
+    border-top-right-radius: 6px;
     width: 16px;
 }}
 
@@ -570,8 +595,8 @@ QTimeEdit::down-button {{
     subcontrol-origin: border;
     subcontrol-position: bottom right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
-    border-bottom-right-radius: 5px;
+    border-left: 2px solid {theme.border};
+    border-bottom-right-radius: 6px;
     width: 16px;
 }}
 
@@ -595,38 +620,40 @@ QTimeEdit::down-arrow {{
 QCalendarWidget {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 8px;
+    border: 2px solid {theme.border};
+    border-radius: 10px;
 }}
 
 QCalendarWidget QToolButton {{
     background-color: transparent;
     color: {theme.fg_primary};
-    border: none;
-    border-radius: 4px;
+    border: 1px solid transparent;
+    border-radius: 6px;
     padding: 6px;
     margin: 2px;
 }}
 
 QCalendarWidget QToolButton:hover {{
     background-color: {theme.bg_tertiary};
+    border: 1px solid {theme.accent};
 }}
 
 QCalendarWidget QToolButton:pressed {{
     background-color: {theme.accent};
+    border: 1px solid {theme.accent};
 }}
 
 QCalendarWidget QMenu {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
+    border: 2px solid {theme.border};
 }}
 
 QCalendarWidget QSpinBox {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 4px;
+    border: 2px solid {theme.border};
+    border-radius: 6px;
     padding: 4px;
 }}
 
@@ -634,9 +661,9 @@ QCalendarWidget QSpinBox::up-button {{
     subcontrol-origin: border;
     subcontrol-position: top right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
+    border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
-    border-top-right-radius: 3px;
+    border-top-right-radius: 4px;
     width: 16px;
 }}
 
@@ -648,8 +675,8 @@ QCalendarWidget QSpinBox::down-button {{
     subcontrol-origin: border;
     subcontrol-position: bottom right;
     background-color: {theme.bg_tertiary};
-    border-left: 1px solid {theme.border};
-    border-bottom-right-radius: 3px;
+    border-left: 2px solid {theme.border};
+    border-bottom-right-radius: 4px;
     width: 16px;
 }}
 
@@ -687,6 +714,7 @@ QCalendarWidget QAbstractItemView {{
 QDialog {{
     background-color: {theme.bg_primary};
     color: {theme.fg_primary};
+    border: 2px solid {theme.border};
 }}
 
 /* MessageBox */
@@ -702,48 +730,52 @@ QMessageBox QPushButton {{
 
 /* TabWidget */
 QTabWidget::pane {{
-    border: 1px solid {theme.border};
+    border: 2px solid {theme.border};
     background-color: {theme.bg_primary};
-    border-radius: 8px;
+    border-radius: 10px;
     top: -1px;
 }}
 
 QTabBar::tab {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_secondary};
-    border: 1px solid {theme.border};
+    border: 2px solid {theme.border};
     border-bottom: none;
     padding: 10px 20px;
     margin-right: 2px;
-    border-top-left-radius: 6px;
-    border-top-right-radius: 6px;
+    border-top-left-radius: 8px;
+    border-top-right-radius: 8px;
 }}
 
 QTabBar::tab:selected {{
     background-color: {theme.accent};
     color: {theme.fg_primary};
+    border-color: {theme.accent};
 }}
 
 QTabBar::tab:hover:!selected {{
     background-color: {theme.bg_tertiary};
+    border-color: {theme.accent};
 }}
 
 /* Menu */
 QMenu {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 6px;
+    border: 2px solid {theme.border};
+    border-radius: 8px;
     padding: 4px;
 }}
 
 QMenu::item {{
     padding: 8px 24px;
-    border-radius: 4px;
+    border-radius: 6px;
+    border: 1px solid transparent;
 }}
 
 QMenu::item:selected {{
     background-color: {theme.accent};
+    border: 1px solid {theme.accent};
 }}
 
 QMenu::separator {{
@@ -756,8 +788,8 @@ QMenu::separator {{
 QToolTip {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    border: 1px solid {theme.border};
-    border-radius: 4px;
+    border: 2px solid {theme.accent};
+    border-radius: 6px;
     padding: 6px 10px;
 }}
 
@@ -775,54 +807,79 @@ QLabel {{
 
 /* Custom Components */
 #settings-section {{
-    background-color: {theme.bg_secondary};
-    border: 1px solid {theme.border};
-    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_secondary},
+        stop:1 {theme.bg_tertiary});
+    border: 2px solid {theme.border};
+    border-radius: 10px;
     padding: 20px;
 }}
 
 #summary-card {{
-    background-color: {theme.bg_secondary};
-    border: 1px solid {theme.border};
-    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_secondary},
+        stop:1 {theme.bg_tertiary});
+    border: 2px solid {theme.border};
+    border-radius: 10px;
     padding: 20px;
 }}
 
 #task-item {{
     background-color: {theme.bg_secondary};
-    border: 1px solid {theme.border};
-    border-radius: 8px;
+    border: 2px solid {theme.border};
+    border-radius: 10px;
     padding: 15px;
 }}
 
 #task-item:hover {{
     border-color: {theme.accent};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_secondary},
+        stop:1 {theme.bg_tertiary});
 }}
 
 /* Expense/Income Items */
 QFrame[class="expense-item"], QFrame[class="income-item"] {{
     background-color: {theme.bg_secondary};
-    border: 1px solid {theme.border};
-    border-radius: 8px;
+    border: 2px solid {theme.border};
+    border-radius: 10px;
     padding: 15px;
 }}
 
 QFrame[class="expense-item"]:hover, QFrame[class="income-item"]:hover {{
     border-color: {theme.accent};
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_secondary},
+        stop:1 {theme.bg_tertiary});
 }}
 
 /* Warning/Info Boxes */
-QFrame[class="warning-box"], QFrame[class="info-box"] {{
+QFrame[class="warning-box"] {{
     background-color: {theme.bg_tertiary};
-    border-radius: 6px;
+    border: 2px solid {theme.warning};
+    border-radius: 8px;
+    padding: 15px;
+}}
+
+QFrame[class="info-box"] {{
+    background-color: {theme.bg_tertiary};
+    border: 2px solid {theme.accent};
+    border-radius: 8px;
     padding: 15px;
 }}
 
 /* Path/Settings Containers */
 QFrame[class="path-container"], QFrame[class="theme-item"] {{
-    background-color: {theme.bg_tertiary};
-    border-radius: 8px;
+    background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+        stop:0 {theme.bg_tertiary},
+        stop:1 {theme.bg_secondary});
+    border: 2px solid {theme.border};
+    border-radius: 10px;
     padding: 15px;
+}}
+
+QFrame[class="path-container"]:hover, QFrame[class="theme-item"]:hover {{
+    border-color: {theme.accent};
 }}
 
 /* Secondary Text */
