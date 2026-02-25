@@ -34,8 +34,12 @@ class ExpensesView(QWidget):
         # Header
         header_layout = QHBoxLayout()
         
+        from PyQt6.QtGui import QFont
         title = QLabel("💰 Expenses")
-        title.setStyleSheet("font-size: 24px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        title.setFont(font)
         header_layout.addWidget(title)
         
         header_layout.addStretch()
@@ -117,13 +121,16 @@ class ExpensesView(QWidget):
         layout = QVBoxLayout(card)
         
         title_label = QLabel(title)
-        title_label.setProperty("class", "secondary-text")
-        title_label.setStyleSheet("font-size: 14px;")
+        title_label.setProperty("class", "title-text")
         layout.addWidget(title_label)
         
         value_label = QLabel(value)
         value_label.setObjectName("value")
-        value_label.setStyleSheet("font-size: 24px; font-weight: bold;")
+        from PyQt6.QtGui import QFont
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        value_label.setFont(font)
         layout.addWidget(value_label)
         
         return card
@@ -161,7 +168,6 @@ class ExpensesView(QWidget):
         if not expenses:
             empty = QLabel("No expenses yet")
             empty.setProperty("class", "secondary-text")
-            empty.setStyleSheet("padding: 40px;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.expenses_layout.addWidget(empty)
         else:
@@ -184,7 +190,6 @@ class ExpensesView(QWidget):
         if not income:
             empty = QLabel("No income yet")
             empty.setProperty("class", "secondary-text")
-            empty.setStyleSheet("padding: 40px;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.income_layout.addWidget(empty)
         else:

@@ -43,12 +43,13 @@ class TaskItem(QFrame):
         
         # Title
         self.title_label = QLabel(self.task.title)
-        self.title_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        from PyQt6.QtGui import QFont
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        self.title_label.setFont(font)
         if self.task.completed:
-            self.title_label.setStyleSheet(
-                "font-size: 14px; font-weight: bold; "
-                "text-decoration: line-through; color: #b0b0b0;"
-            )
+            self.title_label.setStyleSheet("text-decoration: line-through; color: #b0b0b0;")
         info_layout.addWidget(self.title_label)
         
         # Metadata

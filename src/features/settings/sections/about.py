@@ -23,36 +23,39 @@ class AboutSection(QWidget):
         layout.setSpacing(15)
         
         # App icon/logo
+        from PyQt6.QtGui import QFont
         logo = QLabel("⛵")
-        logo.setStyleSheet("font-size: 48px;")
+        font = QFont()
+        font.setPointSize(36)
+        logo.setFont(font)
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(logo)
         
         # App name
         name = QLabel(APP_NAME)
-        name.setStyleSheet("font-size: 20px; font-weight: bold;")
+        font2 = QFont()
+        font2.setPointSize(15)
+        font2.setBold(True)
+        name.setFont(font2)
         name.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(name)
         
         # Version
         version = QLabel(f"Version {APP_VERSION}")
-        version.setProperty("class", "secondary-text")
-        version.setStyleSheet("font-size: 14px;")
+        version.setProperty("class", "title-text")
         version.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version)
         
         # Description
         description = QLabel(APP_DESCRIPTION)
         description.setProperty("class", "secondary-text")
-        description.setStyleSheet("font-size: 13px;")
         description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         description.setWordWrap(True)
         layout.addWidget(description)
         
         # Author
         author = QLabel(f"Made by {APP_AUTHOR}")
-        author.setProperty("class", "secondary-text")
-        author.setStyleSheet("font-size: 12px;")
+        author.setProperty("class", "meta-text")
         author.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(author)
         
@@ -75,7 +78,6 @@ class AboutSection(QWidget):
         # Copyright
         copyright_label = QLabel("© 2025 Lifeboat Team. All rights reserved.")
         copyright_label.setProperty("class", "small-text")
-        copyright_label.setStyleSheet("margin-top: 20px;")
         copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(copyright_label)
         

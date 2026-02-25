@@ -84,15 +84,17 @@ class PathsSection(QWidget):
         layout.setSpacing(10)
         
         # Title
+        from PyQt6.QtGui import QFont
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-weight: bold;")
+        font = QFont()
+        font.setBold(True)
+        title_label.setFont(font)
         layout.addWidget(title_label)
         
         # Status and path
         status_text = "Custom Location" if is_custom else "Default Location"
         status_label = QLabel(status_text)
         status_label.setProperty("class", "accent-label" if is_custom else "secondary-text")
-        status_label.setStyleSheet("font-size: 11px;")
         layout.addWidget(status_label)
         
         path_label = QLabel(current_path)

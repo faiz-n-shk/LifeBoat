@@ -78,7 +78,7 @@ class ThemeManager(QObject):
 
 * {{
     font-family: "Segoe UI", Arial, sans-serif;
-    font-size: 13px;
+    font-size: 10pt;
 }}
 
 /* Main Window */
@@ -96,7 +96,7 @@ QMainWindow, QWidget {{
 #app-title {{
     background-color: {theme.bg_secondary};
     color: {theme.fg_primary};
-    font-size: 20px;
+    font-size: 15pt;
     font-weight: bold;
     border-bottom: 1px solid {theme.border};
 }}
@@ -108,7 +108,7 @@ QMainWindow, QWidget {{
     border-left: 3px solid transparent;
     text-align: left;
     padding-left: 20px;
-    font-size: 14px;
+    font-size: 11pt;
 }}
 
 #nav-button:hover {{
@@ -188,14 +188,13 @@ QComboBox:focus {{
 QComboBox::drop-down {{
     border: none;
     width: 30px;
+    background-color: transparent;
 }}
 
 QComboBox::down-arrow {{
-    image: none;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 7px solid {theme.fg_primary};
-    margin-right: 10px;
+    image: url(assets/icons/arrow-down.svg);
+    width: 12px;
+    height: 12px;
 }}
 
 QComboBox QAbstractItemView {{
@@ -242,29 +241,42 @@ QSpinBox:hover, QDoubleSpinBox:hover {{
 }}
 
 QSpinBox::up-button, QDoubleSpinBox::up-button {{
-    background-color: transparent;
-    border: none;
-    width: 20px;
+    subcontrol-origin: border;
+    subcontrol-position: top right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom: 1px solid {theme.border};
+    border-top-right-radius: 5px;
+    width: 16px;
+}}
+
+QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {{
+    background-color: {theme.accent};
 }}
 
 QSpinBox::down-button, QDoubleSpinBox::down-button {{
-    background-color: transparent;
-    border: none;
-    width: 20px;
+    subcontrol-origin: border;
+    subcontrol-position: bottom right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-bottom-right-radius: 5px;
+    width: 16px;
+}}
+
+QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
+    background-color: {theme.accent};
 }}
 
 QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
-    image: none;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-bottom: 6px solid {theme.fg_primary};
+    image: url(assets/icons/arrow-up.svg);
+    width: 10px;
+    height: 10px;
 }}
 
 QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
-    image: none;
-    border-left: 4px solid transparent;
-    border-right: 4px solid transparent;
-    border-top: 6px solid {theme.fg_primary};
+    image: url(assets/icons/arrow-down.svg);
+    width: 10px;
+    height: 10px;
 }}
 
 /* CheckBox */
@@ -403,16 +415,23 @@ QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {{
 }}
 
 QDateEdit::drop-down, QTimeEdit::drop-down, QDateTimeEdit::drop-down {{
-    border: none;
-    width: 30px;
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    width: 20px;
+}}
+
+QDateEdit::drop-down:hover, QTimeEdit::drop-down:hover, QDateTimeEdit::drop-down:hover {{
+    background-color: {theme.accent};
 }}
 
 QDateEdit::down-arrow, QTimeEdit::down-arrow, QDateTimeEdit::down-arrow {{
-    image: none;
-    border-left: 5px solid transparent;
-    border-right: 5px solid transparent;
-    border-top: 7px solid {theme.fg_primary};
-    margin-right: 10px;
+    image: url(assets/icons/calendar.svg);
+    width: 12px;
+    height: 12px;
 }}
 
 /* Calendar Widget */
@@ -452,6 +471,25 @@ QCalendarWidget QSpinBox {{
     border: 1px solid {theme.border};
     border-radius: 4px;
     padding: 4px;
+}}
+
+QCalendarWidget QSpinBox::up-button,
+QCalendarWidget QSpinBox::down-button {{
+    width: 0px;
+    border: none;
+}}
+
+QCalendarWidget QSpinBox::up-arrow,
+QCalendarWidget QSpinBox::down-arrow {{
+    image: none;
+    width: 0px;
+    height: 0px;
+}}
+
+QCalendarWidget QToolButton::menu-indicator {{
+    image: none;
+    width: 0px;
+    height: 0px;
 }}
 
 QCalendarWidget QAbstractItemView {{
@@ -611,12 +649,17 @@ QLabel[class="secondary-text"] {{
 
 QLabel[class="small-text"] {{
     color: {theme.fg_secondary};
-    font-size: 11px;
+    font-size: 8pt;
 }}
 
 QLabel[class="meta-text"] {{
     color: {theme.fg_secondary};
-    font-size: 12px;
+    font-size: 9pt;
+}}
+
+QLabel[class="title-text"] {{
+    color: {theme.fg_secondary};
+    font-size: 11pt;
 }}
 
 /* Success/Warning/Danger Buttons */

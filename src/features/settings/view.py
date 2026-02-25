@@ -29,8 +29,12 @@ class SettingsView(QWidget):
         main_layout.setSpacing(20)
         
         # Header
+        from PyQt6.QtGui import QFont
         header = QLabel("⚙ Settings")
-        header.setStyleSheet("font-size: 24px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        header.setFont(font)
         main_layout.addWidget(header)
         
         # Scroll area for settings sections
@@ -65,8 +69,12 @@ class SettingsView(QWidget):
         layout.setSpacing(15)
         
         # Section title
+        from PyQt6.QtGui import QFont
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 18px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        title_label.setFont(font)
         layout.addWidget(title_label)
         
         # Section content

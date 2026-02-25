@@ -91,8 +91,12 @@ class ThemesSection(QWidget):
         # Info section
         info_layout = QVBoxLayout()
         
+        from PyQt6.QtGui import QFont
         name_label = QLabel("System")
-        name_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        name_label.setFont(font)
         info_layout.addWidget(name_label)
         
         desc_label = QLabel("Automatically switches between Dark and Light based on OS theme")
@@ -150,14 +154,17 @@ class ThemesSection(QWidget):
         # Theme info
         info_layout = QVBoxLayout()
         
+        from PyQt6.QtGui import QFont
         name_label = QLabel(theme.name)
-        name_label.setStyleSheet("font-weight: bold; font-size: 14px;")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        name_label.setFont(font)
         info_layout.addWidget(name_label)
         
         if theme.is_custom:
             custom_label = QLabel("Custom Theme")
             custom_label.setProperty("class", "accent-label")
-            custom_label.setStyleSheet("font-size: 11px;")
             info_layout.addWidget(custom_label)
         
         layout.addLayout(info_layout, 1)
@@ -292,6 +299,7 @@ class ThemeEditorDialog(QDialog):
         layout.setSpacing(20)
         
         # Title
+        from PyQt6.QtGui import QFont
         if self.is_new and self.base_theme:
             title = QLabel(f"Creating custom theme based on {self.base_theme.name}")
         elif self.base_theme:
@@ -299,7 +307,10 @@ class ThemeEditorDialog(QDialog):
         else:
             title = QLabel("Create Custom Theme")
         
-        title.setStyleSheet("font-size: 16px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(12)
+        font.setBold(True)
+        title.setFont(font)
         layout.addWidget(title)
         
         # Scroll area for color pickers

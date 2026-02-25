@@ -33,7 +33,11 @@ class TasksView(QWidget):
         header_layout = QHBoxLayout()
         
         title = QLabel("✓ Tasks")
-        title.setStyleSheet("font-size: 24px; font-weight: bold;")
+        from PyQt6.QtGui import QFont
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        title.setFont(font)
         header_layout.addWidget(title)
         
         header_layout.addStretch()
@@ -83,7 +87,6 @@ class TasksView(QWidget):
             # Show empty state
             empty_label = QLabel("No tasks yet. Click '+ Add Task' to create one.")
             empty_label.setProperty("class", "secondary-text")
-            empty_label.setStyleSheet("padding: 40px;")
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tasks_layout.addWidget(empty_label)
             self.task_items.append(empty_label)

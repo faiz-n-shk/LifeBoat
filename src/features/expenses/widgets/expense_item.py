@@ -37,14 +37,22 @@ class ExpenseItem(QFrame):
         # Category and amount
         header_layout = QHBoxLayout()
         
+        from PyQt6.QtGui import QFont
         category_label = QLabel(self.item.category)
-        category_label.setStyleSheet("font-size: 14px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        category_label.setFont(font)
         header_layout.addWidget(category_label)
         
         header_layout.addStretch()
         
         amount_label = QLabel(format_currency(self.item.amount))
-        amount_label.setStyleSheet(f"font-size: 16px; font-weight: bold; color: {color};")
+        font2 = QFont()
+        font2.setPointSize(12)
+        font2.setBold(True)
+        amount_label.setFont(font2)
+        amount_label.setStyleSheet(f"color: {color};")
         header_layout.addWidget(amount_label)
         
         info_layout.addLayout(header_layout)

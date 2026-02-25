@@ -24,8 +24,12 @@ class DashboardView(QWidget):
         main_layout.setSpacing(20)
         
         # Header
+        from PyQt6.QtGui import QFont
         header = QLabel("📊 Dashboard")
-        header.setStyleSheet("font-size: 24px; font-weight: bold;")
+        font = QFont()
+        font.setPointSize(18)
+        font.setBold(True)
+        header.setFont(font)
         main_layout.addWidget(header)
         
         # Scroll area for content
@@ -56,14 +60,17 @@ class DashboardView(QWidget):
         content_layout.addLayout(cards_layout)
         
         # Recent activity section
+        from PyQt6.QtGui import QFont
         recent_label = QLabel("Recent Activity")
-        recent_label.setStyleSheet("font-size: 18px; font-weight: bold; margin-top: 20px;")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        recent_label.setFont(font)
         content_layout.addWidget(recent_label)
         
         # Placeholder for recent items
         self.recent_placeholder = QLabel("No recent activity")
         self.recent_placeholder.setProperty("class", "secondary-text")
-        self.recent_placeholder.setStyleSheet("padding: 20px;")
         self.recent_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         content_layout.addWidget(self.recent_placeholder)
         
@@ -123,21 +130,26 @@ class DashboardView(QWidget):
         layout.setSpacing(10)
         
         # Icon
+        from PyQt6.QtGui import QFont
         icon_label = QLabel(icon)
-        icon_label.setStyleSheet("font-size: 32px;")
+        font = QFont()
+        font.setPointSize(24)
+        icon_label.setFont(font)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon_label)
         
         # Value
         value_label = QLabel(value)
-        value_label.setStyleSheet("font-size: 28px; font-weight: bold;")
+        font2 = QFont()
+        font2.setPointSize(21)
+        font2.setBold(True)
+        value_label.setFont(font2)
         value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(value_label)
         
         # Title
         title_label = QLabel(title)
-        title_label.setProperty("class", "secondary-text")
-        title_label.setStyleSheet("font-size: 14px;")
+        title_label.setProperty("class", "title-text")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
         
