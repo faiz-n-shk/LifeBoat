@@ -232,21 +232,18 @@ class ExpensePieChart(QWidget):
         except:
             # Fallback colors
             colors = [
-                QColor(100, 150, 255),  # Blue
-                QColor(255, 100, 150),  # Pink
-                QColor(150, 255, 100),  # Green
-                QColor(255, 200, 100),  # Orange
-                QColor(200, 100, 255),  # Purple
-                QColor(100, 255, 200),  # Cyan
-                QColor(255, 150, 100),  # Coral
-                QColor(150, 100, 255),  # Violet
-                QColor(255, 255, 100),  # Yellow
-                QColor(100, 200, 255),  # Sky Blue
+                QColor(100, 150, 255),
+                QColor(255, 100, 150),
+                QColor(150, 255, 100),
+                QColor(255, 200, 100),
+                QColor(200, 100, 255),
+                QColor(100, 255, 200),
+                QColor(255, 150, 100),
+                QColor(150, 100, 255),
+                QColor(255, 255, 100),
+                QColor(100, 200, 255),
             ]
             text_color = "#ffffff"
-        
-        # Reset animation progress to 0 FIRST
-        self._animation_progress = 0
         
         self.data = []
         self.total = sum(float(amount) for _, amount in data)
@@ -255,21 +252,18 @@ class ExpensePieChart(QWidget):
             color = colors[i % len(colors)]
             self.data.append((category, float(amount), color))
         
-        # Update canvas data
-        self.canvas.data = self.data
-        self.canvas.total = self.total
-        self.canvas._animation_progress = 0
-        
         # Clear and rebuild legend
         self.clear_legend()
         self.build_legend(text_color)
         
-        # Force repaint to show empty state before animating
-        self.canvas.update()
+        # Reset animation progress to 0 and update canvas
+        self._animation_progress = 0
+        self.canvas._animation_progress = 0
+        self.canvas.data = self.data
+        self.canvas.total = self.total
         
         if animate:
-            # Small delay before starting animation
-            QTimer.singleShot(10, self.animate_chart)
+            self.animate_chart()
         else:
             self._animation_progress = 1.0
             self.canvas._animation_progress = 1.0
@@ -338,18 +332,14 @@ class ExpensePieChart(QWidget):
             self.canvas.update()
             return
         
-        # Ensure we start from 0
-        self._animation_progress = 0
-        self.canvas._animation_progress = 0
         self.animation_step = 0
-        self.canvas.update()
         
         if self.animation_timer:
             self.animation_timer.stop()
         
         self.animation_timer = QTimer()
         self.animation_timer.timeout.connect(self._update_animation)
-        self.animation_timer.start(16)  # ~60 FPS
+        self.animation_timer.start(16)
     
     def _update_animation(self):
         """Update animation frame"""

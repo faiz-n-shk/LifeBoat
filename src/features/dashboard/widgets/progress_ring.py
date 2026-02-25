@@ -22,10 +22,8 @@ class ProgressRing(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # Spacer for ring
-        layout.addStretch(1)
+        layout.addSpacing(160)
         
-        # Title label below ring
         if self.title:
             self.title_label = QLabel(self.title)
             font = QFont()
@@ -35,6 +33,8 @@ class ProgressRing(QWidget):
             self.title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.title_label.setWordWrap(True)
             layout.addWidget(self.title_label)
+        
+        layout.addStretch()
     
     def set_progress(self, value: float, animate: bool = True):
         """Set progress value (0-100) with optional animation"""

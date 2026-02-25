@@ -1126,7 +1126,6 @@ QLabel[class="accent-label"] {{
             import traceback
             traceback.print_exc()
             return False
-            return False
     
     def delete_theme(self, theme_name: str) -> bool:
         """

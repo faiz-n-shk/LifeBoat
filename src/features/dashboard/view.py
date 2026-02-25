@@ -325,16 +325,15 @@ class DashboardView(QWidget):
             self.todo_total_ring._target_progress = 0
             self.todo_today_ring._progress = 0
             self.todo_today_ring._target_progress = 0
-            self.expense_chart._animation_progress = 0
+            self.expense_chart.canvas._animation_progress = 0
             
-            # Force update to show 0 state
             self.tasks_ring.update()
             self.goals_ring.update()
             self.habits_total_ring.update()
             self.habits_today_ring.update()
             self.todo_total_ring.update()
             self.todo_today_ring.update()
-            self.expense_chart.update()
+            self.expense_chart.canvas.update()
         
         # Load data which will trigger animations
         self.load_data()
@@ -619,7 +618,7 @@ class DashboardView(QWidget):
             self.todo_total_ring._target_progress = 0
             self.todo_today_ring._progress = 0
             self.todo_today_ring._target_progress = 0
-            self.expense_chart._animation_progress = 0
+            self.expense_chart.canvas._animation_progress = 0
             
             self.tasks_ring.update()
             self.goals_ring.update()
@@ -627,7 +626,7 @@ class DashboardView(QWidget):
             self.habits_today_ring.update()
             self.todo_total_ring.update()
             self.todo_today_ring.update()
-            self.expense_chart.update()
+            self.expense_chart.canvas.update()
         
         self.load_data_with_animation()
     
@@ -652,16 +651,15 @@ class DashboardView(QWidget):
                 self.todo_total_ring._target_progress = 0
                 self.todo_today_ring._progress = 0
                 self.todo_today_ring._target_progress = 0
-                self.expense_chart._animation_progress = 0
+                self.expense_chart.canvas._animation_progress = 0
                 
-                # Immediate update to show 0 state
                 self.tasks_ring.update()
                 self.goals_ring.update()
                 self.habits_total_ring.update()
                 self.habits_today_ring.update()
                 self.todo_total_ring.update()
                 self.todo_today_ring.update()
-                self.expense_chart.update()
+                self.expense_chart.canvas.update()
             
             # Mark as initial load to trigger animations
             self.initial_load = True
