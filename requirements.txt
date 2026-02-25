@@ -4,7 +4,6 @@
 PyQt6==6.10.2
 PyQt6-Qt6==6.10.2
 PyQt6_sip==13.11.0
-colorama==0.4.6
 
 # Database
 peewee==4.0.0
@@ -12,22 +11,5 @@ peewee==4.0.0
 # Configuration
 PyYAML==6.0.3
 
-# Charts and Visualization
-pyqtgraph==0.14.0
-
-# Date/Time
-python-dateutil==2.9.0.post0
-
-# Utilities
-pillow==12.1.1
-numpy==2.4.2
-
-#Compatibility
-six==1.17.0
-
 # OS Theme Detection
 darkdetect==0.8.0
-
-# Markdown rendering
-markdown==3.10.2
-pygments==2.19.2

@@ -26,12 +26,33 @@ class EventItem(QFrame):
     
     def setup_ui(self):
         """Setup event item UI"""
-        self.setObjectName("task-item")
+        self.setObjectName("event-item-card")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         
+        # Set maximum width to fit within parent container
+        self.setMaximumWidth(320)
+        
+        # Set size policy
+        from PyQt6.QtWidgets import QSizePolicy
+        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        
+        self.setStyleSheet("""
+            QFrame#event-item-card {
+                background: rgba(60, 60, 80, 0.3);
+                border: 1px solid rgba(80, 80, 100, 0.3);
+                border-radius: 8px;
+                max-width: 320px;
+            }
+            QFrame#event-item-card:hover {
+                background: rgba(70, 70, 90, 0.4);
+                border-color: rgba(100, 150, 255, 0.4);
+            }
+        """)
+        
         layout = QVBoxLayout(self)
-        layout.setSpacing(5)
+        layout.setSpacing(8)
         layout.setContentsMargins(10, 10, 10, 10)
+        layout.setSizeConstraint(layout.SizeConstraint.SetMinAndMaxSize)
         
         # Title with color indicator
         title_layout = QHBoxLayout()
@@ -43,17 +64,16 @@ class EventItem(QFrame):
         color_box.setStyleSheet(f"background-color: {self.event.color}; border-radius: 2px;")
         title_layout.addWidget(color_box)
         
-        # Title (word wrap enabled, responsive)
+        # Title
+        from PyQt6.QtWidgets import QSizePolicy
         title_label = QLabel(self.event.title)
         font = QFont()
-        font.setPointSize(11)
+        font.setPointSize(10)
         font.setBold(True)
         title_label.setFont(font)
         title_label.setWordWrap(True)
-        title_label.setSizePolicy(
-            title_label.sizePolicy().horizontalPolicy(),
-            title_label.sizePolicy().verticalPolicy()
-        )
+        title_label.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
+        title_label.setMaximumWidth(270)
         title_layout.addWidget(title_label, 1)
         
         layout.addLayout(title_layout)
@@ -65,41 +85,54 @@ class EventItem(QFrame):
             date_str += f" at {time_str}"
         
         date_label = QLabel(date_str)
-        date_label.setProperty("class", "meta-text")
         date_label.setWordWrap(True)
+        date_label.setMaximumWidth(290)
+        date_label.setStyleSheet("font-size: 9pt; color: rgba(255, 255, 255, 0.6);")
         layout.addWidget(date_label)
         
         # Location
         if self.event.location:
             loc_label = QLabel(f"📍 {self.event.location}")
-            loc_label.setProperty("class", "meta-text")
             loc_label.setWordWrap(True)
+            loc_label.setMaximumWidth(290)
+            loc_label.setStyleSheet("font-size: 9pt; color: rgba(255, 255, 255, 0.6);")
             layout.addWidget(loc_label)
         
         # Description
         if self.event.description:
-            desc_label = QLabel(self.truncate_text(self.event.description, 100))
-            desc_label.setProperty("class", "small-text")
+            desc_label = QLabel(self.truncate_text(self.event.description, 80))
             desc_label.setWordWrap(True)
+            desc_label.setMaximumWidth(290)
+            desc_label.setStyleSheet("font-size: 8pt; color: rgba(255, 255, 255, 0.5);")
             layout.addWidget(desc_label)
         
         # Actions
         actions_layout = QHBoxLayout()
-        actions_layout.setSpacing(5)
+        actions_layout.setSpacing(6)
         actions_layout.addStretch()
         
-        edit_btn = QPushButton("Edit")
+        from PyQt6.QtGui import QIcon
+        
+        edit_btn = QPushButton()
+        edit_btn.setIcon(QIcon("assets/icons/edit.svg"))
+        edit_btn.setFixedSize(28, 28)
+        edit_btn.setToolTip("Edit")
+        edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        edit_btn.setStyleSheet("QPushButton { border-radius: 14px; padding: 0px; }")
         edit_btn.clicked.connect(self.on_edit)
         actions_layout.addWidget(edit_btn)
         
-        delete_btn = QPushButton("Delete")
+        delete_btn = QPushButton()
+        delete_btn.setIcon(QIcon("assets/icons/delete.svg"))
+        delete_btn.setFixedSize(28, 28)
+        delete_btn.setToolTip("Delete")
+        delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         delete_btn.setProperty("class", "danger-button")
+        delete_btn.setStyleSheet("QPushButton { border-radius: 14px; padding: 0px; }")
         delete_btn.clicked.connect(self.on_delete)
         actions_layout.addWidget(delete_btn)
         
         layout.addLayout(actions_layout)
-        
-        self.setLayout(layout)
     
     def mousePressEvent(self, event):
         """Handle click on event item - navigate to date"""
