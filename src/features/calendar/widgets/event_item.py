@@ -112,9 +112,10 @@ class EventItem(QFrame):
         actions_layout.addStretch()
         
         from PyQt6.QtGui import QIcon
+        from src.core.path_manager import get_resource_path
         
         edit_btn = QPushButton()
-        edit_btn.setIcon(QIcon("assets/icons/edit.svg"))
+        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/edit.svg")))
         edit_btn.setFixedSize(28, 28)
         edit_btn.setToolTip("Edit")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -123,7 +124,7 @@ class EventItem(QFrame):
         actions_layout.addWidget(edit_btn)
         
         delete_btn = QPushButton()
-        delete_btn.setIcon(QIcon("assets/icons/delete.svg"))
+        delete_btn.setIcon(QIcon(get_resource_path("assets/icons/delete.svg")))
         delete_btn.setFixedSize(28, 28)
         delete_btn.setToolTip("Delete")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)

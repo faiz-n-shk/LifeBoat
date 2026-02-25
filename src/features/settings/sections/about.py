@@ -23,15 +23,18 @@ class AboutSection(QWidget):
         layout.setSpacing(15)
         
         # App icon/logo
-        from PyQt6.QtGui import QFont
-        logo = QLabel("⛵")
-        font = QFont()
-        font.setPointSize(36)
-        logo.setFont(font)
+        from PyQt6.QtGui import QPixmap
+        from PyQt6.QtCore import Qt as QtCore
+        from src.core.path_manager import get_resource_path
+        
+        logo = QLabel()
+        icon_pixmap = QPixmap(get_resource_path("assets/icons/lifeboat.svg"))
+        logo.setPixmap(icon_pixmap.scaled(64, 64, QtCore.AspectRatioMode.KeepAspectRatio, QtCore.TransformationMode.SmoothTransformation))
         logo.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(logo)
         
         # App name
+        from PyQt6.QtGui import QFont
         name = QLabel(APP_NAME)
         font2 = QFont()
         font2.setPointSize(15)

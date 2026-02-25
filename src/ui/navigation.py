@@ -31,12 +31,66 @@ class NavigationSidebar(QWidget):
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(0)
         
-        # App title
-        title = QLabel("⛵ Lifeboat")
-        title.setObjectName("app-title")
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        title.setFixedHeight(60)
-        layout.addWidget(title)
+        # App title with icon - clean modern design
+        title_container = QWidget()
+        title_container.setFixedHeight(75)
+        title_container.setStyleSheet("""
+            QWidget {
+                background: transparent;
+            }
+        """)
+        
+        title_layout = QVBoxLayout(title_container)
+        title_layout.setContentsMargins(0, 0, 0, 0)
+        title_layout.setSpacing(0)
+        
+        # Top section with icon and text
+        top_section = QWidget()
+        top_section.setStyleSheet("""
+            QWidget {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(70, 70, 90, 0.2),
+                    stop:1 rgba(50, 50, 70, 0.1));
+            }
+        """)
+        
+        top_layout = QHBoxLayout(top_section)
+        top_layout.setContentsMargins(15, 15, 15, 15)
+        top_layout.setSpacing(12)
+        
+        # App icon
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QPixmap
+        from PyQt6.QtCore import Qt as QtCore
+        
+        icon_label = QLabel()
+        icon_label.setStyleSheet("background: transparent;")
+        icon_pixmap = QPixmap(get_resource_path("assets/icons/lifeboat.svg"))
+        icon_label.setPixmap(icon_pixmap.scaled(36, 36, QtCore.AspectRatioMode.KeepAspectRatio, QtCore.TransformationMode.SmoothTransformation))
+        top_layout.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
+        
+        # App title text
+        title = QLabel("Lifeboat")
+        from PyQt6.QtGui import QFont
+        font = QFont()
+        font.setPointSize(15)
+        font.setBold(True)
+        font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.5)
+        title.setFont(font)
+        title.setStyleSheet("background: transparent; color: rgba(255, 255, 255, 0.95);")
+        top_layout.addWidget(title, 0, Qt.AlignmentFlag.AlignVCenter)
+        
+        top_layout.addStretch()
+        
+        title_layout.addWidget(top_section)
+        
+        # Subtle separator line
+        separator = QWidget()
+        separator.setFixedHeight(1)
+        separator.setStyleSheet("background: rgba(100, 100, 120, 0.15);")
+        title_layout.addWidget(separator)
+        
+        layout.addWidget(title_container)
         
         # Navigation items
         nav_items = [
@@ -59,105 +113,87 @@ class NavigationSidebar(QWidget):
         # Spacer
         layout.addStretch()
         
-        # Bottom section with buttons and version
-        bottom_layout = QHBoxLayout()
-        bottom_layout.setContentsMargins(10, 5, 10, 10)
-        bottom_layout.setSpacing(4)
-        
-        from PyQt6.QtCore import QSize
-        from PyQt6.QtWidgets import QSizePolicy
-        from src.core.theme_manager import theme_manager
-        
-        # Get theme colors for warning/danger
-        theme = theme_manager.get_theme_by_name(theme_manager.get_active_theme())
-        if not theme:
-            # Fallback colors if theme not found
-            warning_color = "#ffc107"
-            danger_color = "#dc3545"
-        else:
-            warning_color = theme.warning
-            danger_color = theme.danger
-        
-        # Reload button (small, circular, warning color)
-        self.reload_btn = QPushButton()
-        self.reload_btn.setIcon(QIcon("assets/icons/reload.svg"))
-        self.reload_btn.setFixedSize(20, 20)
-        self.reload_btn.setIconSize(QSize(16, 16))
-        self.reload_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.reload_btn.setToolTip("Reload")
-        self.reload_btn.setStyleSheet(f"""
-            QPushButton {{
-                border-radius: 10px;
-                padding: 0px;
-                margin: 0px;
-                background-color: {warning_color};
-                border: none;
-                min-width: 20px;
-                max-width: 20px;
-                min-height: 20px;
-                max-height: 20px;
-            }}
-            QPushButton:hover {{
-                background-color: {warning_color};
-                opacity: 0.8;
-            }}
-        """)
-        self.reload_btn.clicked.connect(self.on_reload)
-        bottom_layout.addWidget(self.reload_btn, 0, Qt.AlignmentFlag.AlignLeft)
-        
-        # Restart button (small, circular, danger color)
-        self.restart_btn = QPushButton()
-        self.restart_btn.setIcon(QIcon("assets/icons/restart.svg"))
-        self.restart_btn.setFixedSize(20, 20)
-        self.restart_btn.setIconSize(QSize(16, 16))
-        self.restart_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        self.restart_btn.setToolTip("Restart")
-        self.restart_btn.setStyleSheet(f"""
-            QPushButton {{
-                border-radius: 10px;
-                padding: 0px;
-                margin: 0px;
-                background-color: {danger_color};
-                border: none;
-                min-width: 20px;
-                max-width: 20px;
-                min-height: 20px;
-                max-height: 20px;
-            }}
-            QPushButton:hover {{
-                background-color: {danger_color};
-                opacity: 0.8;
-            }}
-        """)
-        self.restart_btn.clicked.connect(self.on_restart)
-        bottom_layout.addWidget(self.restart_btn, 0, Qt.AlignmentFlag.AlignLeft)
-        
-        # Spacer to push version to center
-        bottom_layout.addStretch()
-        
-        # Version label (centered)
-        version_label = QLabel(f"v{APP_VERSION}")
-        version_label.setProperty("class", "small-text")
-        version_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        bottom_layout.addWidget(version_label)
-        
-        # Spacer on right to keep version centered
-        bottom_layout.addStretch()
-        
-        # Invisible spacer widget to balance the buttons on the left (20px + 4px spacing + 20px = 44px)
-        self.spacer_widget = QWidget()
-        self.spacer_widget.setFixedWidth(44)
-        self.spacer_widget.setStyleSheet("background: transparent;")
-        bottom_layout.addWidget(self.spacer_widget)
-        
-        # Check config to show/hide debug buttons (after all widgets are created)
+        # Bottom section with debug buttons only (no version text)
         from src.core.config import config
         show_debug = config.get('advanced.show_debug_buttons', False)
-        self.reload_btn.setVisible(show_debug)
-        self.restart_btn.setVisible(show_debug)
-        self.spacer_widget.setVisible(show_debug)
         
-        layout.addLayout(bottom_layout)
+        if show_debug:
+            bottom_layout = QHBoxLayout()
+            bottom_layout.setContentsMargins(8, 4, 8, 4)
+            bottom_layout.setSpacing(4)
+            
+            from PyQt6.QtCore import QSize
+            from PyQt6.QtWidgets import QSizePolicy
+            from src.core.theme_manager import theme_manager
+            
+            # Get theme colors for warning/danger
+            theme = theme_manager.get_theme_by_name(theme_manager.get_active_theme())
+            if not theme:
+                warning_color = "#ffc107"
+                danger_color = "#dc3545"
+            else:
+                warning_color = theme.warning
+                danger_color = theme.danger
+            
+            # Reload button (small circle)
+            self.reload_btn = QPushButton()
+            from src.core.path_manager import get_resource_path
+            self.reload_btn.setIcon(QIcon(get_resource_path("assets/icons/reload.svg")))
+            self.reload_btn.setFixedSize(20, 20)
+            self.reload_btn.setIconSize(QSize(12, 12))
+            self.reload_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.reload_btn.setToolTip("Reload")
+            self.reload_btn.setStyleSheet(f"""
+                QPushButton {{
+                    border-radius: 10px;
+                    padding: 0px;
+                    margin: 0px;
+                    background-color: {warning_color};
+                    border: none;
+                    min-width: 20px;
+                    max-width: 20px;
+                    min-height: 20px;
+                    max-height: 20px;
+                }}
+                QPushButton:hover {{
+                    background-color: {warning_color};
+                    opacity: 0.8;
+                }}
+            """)
+            self.reload_btn.clicked.connect(self.on_reload)
+            bottom_layout.addWidget(self.reload_btn, 0, Qt.AlignmentFlag.AlignLeft)
+            
+            # Restart button (small circle)
+            self.restart_btn = QPushButton()
+            self.restart_btn.setIcon(QIcon(get_resource_path("assets/icons/restart.svg")))
+            self.restart_btn.setFixedSize(20, 20)
+            self.restart_btn.setIconSize(QSize(12, 12))
+            self.restart_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+            self.restart_btn.setToolTip("Restart")
+            self.restart_btn.setStyleSheet(f"""
+                QPushButton {{
+                    border-radius: 10px;
+                    padding: 0px;
+                    margin: 0px;
+                    background-color: {danger_color};
+                    border: none;
+                    min-width: 20px;
+                    max-width: 20px;
+                    min-height: 20px;
+                    max-height: 20px;
+                }}
+                QPushButton:hover {{
+                    background-color: {danger_color};
+                    opacity: 0.8;
+                }}
+            """)
+            self.restart_btn.clicked.connect(self.on_restart)
+            bottom_layout.addWidget(self.restart_btn, 0, Qt.AlignmentFlag.AlignLeft)
+            
+            # Add stretch to push buttons to far left
+            bottom_layout.addStretch()
+            
+            layout.addLayout(bottom_layout)
         
         self.setLayout(layout)
         
@@ -215,9 +251,9 @@ class NavigationSidebar(QWidget):
         """Update debug buttons visibility based on config"""
         from src.core.config import config
         show_debug = config.get('advanced.show_debug_buttons', False)
+        
+        # reload and restart buttons are only visible in debug mode, rebuild UI
         if hasattr(self, 'reload_btn'):
             self.reload_btn.setVisible(show_debug)
         if hasattr(self, 'restart_btn'):
             self.restart_btn.setVisible(show_debug)
-        if hasattr(self, 'spacer_widget'):
-            self.spacer_widget.setVisible(show_debug)

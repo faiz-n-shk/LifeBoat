@@ -14,6 +14,18 @@ from src.core.config import ensure_config_exists
 
 def main():
     """Main entry point"""
+    # Windows taskbar icon fix
+    import sys
+    import os
+    if sys.platform == 'win32':
+        try:
+            # Set AppUserModelID to make taskbar icon work
+            import ctypes
+            myappid = 'fayz212.lifeboat.app.2'  # arbitrary string
+            ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+        except:
+            pass
+    
     # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
         Qt.HighDpiScaleFactorRoundingPolicy.PassThrough
@@ -25,12 +37,13 @@ def main():
     app.setOrganizationName("Fayz212")
     
     # Set application icon (for all windows and dialogs)
-    app.setWindowIcon(QIcon("assets/lifeboat.ico"))
+    from src.core.path_manager import get_resource_path
+    icon_path = get_resource_path("assets/lifeboat.ico")
+    app.setWindowIcon(QIcon(icon_path))
     
     # Load custom fonts from assets/fonts
     from PyQt6.QtGui import QFontDatabase
-    import os
-    fonts_dir = "assets/fonts"
+    fonts_dir = get_resource_path("assets/fonts")
     if os.path.exists(fonts_dir):
         for filename in os.listdir(fonts_dir):
             if filename.lower().endswith(('.ttf', '.otf')):

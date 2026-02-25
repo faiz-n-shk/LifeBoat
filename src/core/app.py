@@ -22,7 +22,8 @@ class LifeboatApp(QMainWindow):
         super().__init__()
         
         # Set application icon
-        icon_path = "assets/lifeboat.ico"
+        from src.core.path_manager import get_resource_path
+        icon_path = get_resource_path("assets/lifeboat.ico")
         self.setWindowIcon(QIcon(icon_path))
         
         # Load theme before creating UI
