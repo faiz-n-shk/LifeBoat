@@ -508,11 +508,15 @@ class NoteCard(QFrame):
     
     def mousePressEvent(self, event):
         """Handle mouse press to open note viewer"""
-        if event.button() == Qt.MouseButton.LeftButton:
-            # Check if click is on action buttons area
-            if not self._is_click_on_buttons(event.position()):
-                self.clicked.emit(self.note.id)
-        super().mousePressEvent(event)
+        try:
+            if event.button() == Qt.MouseButton.LeftButton:
+                # Check if click is on action buttons area
+                if not self._is_click_on_buttons(event.position()):
+                    self.clicked.emit(self.note.id)
+            super().mousePressEvent(event)
+        except RuntimeError:
+            # Widget has been deleted, ignore the event
+            pass
     
     def _is_click_on_buttons(self, pos):
         """Check if click position is on action buttons"""

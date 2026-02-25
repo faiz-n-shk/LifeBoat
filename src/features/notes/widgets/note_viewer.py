@@ -185,38 +185,56 @@ class NoteViewer(BaseDialog):
     
     def _markdown_to_html(self, text):
         """Convert markdown to HTML (basic implementation)"""
-        html = text
-        
-        # Headers
         import re
-        html = re.sub(r'^### (.+)$', r'<h3>\1</h3>', html, flags=re.MULTILINE)
-        html = re.sub(r'^## (.+)$', r'<h2>\1</h2>', html, flags=re.MULTILINE)
-        html = re.sub(r'^# (.+)$', r'<h1>\1</h1>', html, flags=re.MULTILINE)
         
-        # Bold
+        # Escape HTML special characters first
+        html = text.replace('&', '&amp;').replace('<', '&lt;').replace('>', '&gt;')
+        
+        # Code blocks (must be before inline code)
+        html = re.sub(r'```(.+?)```', r'<pre style="background: rgba(50,50,50,0.5); padding: 10px; border-radius: 5px; overflow-x: auto;"><code>\1</code></pre>', html, flags=re.DOTALL)
+        
+        # Inline code
+        html = re.sub(r'`(.+?)`', r'<code style="background: rgba(50,50,50,0.5); padding: 2px 6px; border-radius: 3px;">\1</code>', html)
+        
+        # Headers (must be on their own line)
+        html = re.sub(r'^### (.+)$', r'<h3 style="color: #6495ED; margin-top: 16px; margin-bottom: 8px;">\1</h3>', html, flags=re.MULTILINE)
+        html = re.sub(r'^## (.+)$', r'<h2 style="color: #6495ED; margin-top: 20px; margin-bottom: 10px;">\1</h2>', html, flags=re.MULTILINE)
+        html = re.sub(r'^# (.+)$', r'<h1 style="color: #6495ED; margin-top: 24px; margin-bottom: 12px;">\1</h1>', html, flags=re.MULTILINE)
+        
+        # Bold (non-greedy)
         html = re.sub(r'\*\*(.+?)\*\*', r'<strong>\1</strong>', html)
         html = re.sub(r'__(.+?)__', r'<strong>\1</strong>', html)
         
-        # Italic
-        html = re.sub(r'\*(.+?)\*', r'<em>\1</em>', html)
-        html = re.sub(r'_(.+?)_', r'<em>\1</em>', html)
+        # Italic (non-greedy, but not inside words)
+        html = re.sub(r'(?<!\w)\*(.+?)\*(?!\w)', r'<em>\1</em>', html)
+        html = re.sub(r'(?<!\w)_(.+?)_(?!\w)', r'<em>\1</em>', html)
         
-        # Code blocks
-        html = re.sub(r'```(.+?)```', r'<pre><code>\1</code></pre>', html, flags=re.DOTALL)
-        html = re.sub(r'`(.+?)`', r'<code>\1</code>', html)
-        
-        # Lists
-        html = re.sub(r'^\* (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
-        html = re.sub(r'^\- (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
-        html = re.sub(r'((?:<li>.+</li>\n?)+)', r'<ul>\1</ul>', html)
+        # Strikethrough
+        html = re.sub(r'~~(.+?)~~', r'<del>\1</del>', html)
         
         # Links
-        html = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2">\1</a>', html)
+        html = re.sub(r'\[(.+?)\]\((.+?)\)', r'<a href="\2" style="color: #6495ED; text-decoration: underline;">\1</a>', html)
         
-        # Line breaks
+        # Unordered lists
+        html = re.sub(r'^[\*\-] (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
+        html = re.sub(r'(<li>.+</li>\n?)+', r'<ul style="margin: 10px 0; padding-left: 30px;">\g<0></ul>', html)
+        
+        # Ordered lists
+        html = re.sub(r'^\d+\. (.+)$', r'<li>\1</li>', html, flags=re.MULTILINE)
+        # Find consecutive <li> tags and wrap in <ol>
+        html = re.sub(r'(<li>.+</li>\n?)+', lambda m: f'<ol style="margin: 10px 0; padding-left: 30px;">{m.group(0)}</ol>' if '<ul' not in m.group(0) else m.group(0), html)
+        
+        # Blockquotes
+        html = re.sub(r'^&gt; (.+)$', r'<blockquote style="border-left: 4px solid #6495ED; padding-left: 16px; margin: 10px 0; color: #AAA;">\1</blockquote>', html, flags=re.MULTILINE)
+        
+        # Horizontal rule
+        html = re.sub(r'^---$', r'<hr style="border: none; border-top: 2px solid rgba(100,100,100,0.3); margin: 20px 0;">', html, flags=re.MULTILINE)
+        
+        # Line breaks (double newline = paragraph break)
         html = html.replace('\n\n', '<br><br>')
+        html = html.replace('\n', '<br>')
         
-        return f'<div style="font-size: 11pt; line-height: 1.6;">{html}</div>'
+        return f'<div style="font-size: 11pt; line-height: 1.8; color: #DDD;">{html}</div>'
     
     def _apply_content_styling(self):
         """Apply theme styling to content viewer"""

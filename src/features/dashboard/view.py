@@ -1,20 +1,29 @@
 """
 Dashboard View
-Main overview page
+Main overview page with charts and statistics
 """
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QFrame, QScrollArea
+    QFrame, QScrollArea, QGridLayout
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QFont
+from datetime import datetime, timedelta
+
+from src.features.dashboard.widgets import StatCard, ProgressRing, ExpensePieChart
 
 
 class DashboardView(QWidget):
-    """Dashboard main view"""
+    """Dashboard main view with animated charts"""
     
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setup_ui()
+        
+        # Auto-refresh timer
+        self.refresh_timer = QTimer()
+        self.refresh_timer.timeout.connect(self.load_data)
+        self.refresh_timer.start(30000)  # Refresh every 30 seconds
     
     def setup_ui(self):
         """Setup dashboard UI"""
@@ -24,18 +33,31 @@ class DashboardView(QWidget):
         main_layout.setSpacing(20)
         
         # Header
-        from PyQt6.QtGui import QFont
+        header_layout = QHBoxLayout()
         header = QLabel("📊 Dashboard")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
         header.setFont(font)
-        main_layout.addWidget(header)
+        header_layout.addWidget(header)
+        
+        # Welcome message with time
+        self.welcome_label = QLabel()
+        font = QFont()
+        font.setPointSize(11)
+        self.welcome_label.setFont(font)
+        self.welcome_label.setProperty("class", "secondary-text")
+        self.update_welcome_message()
+        header_layout.addStretch()
+        header_layout.addWidget(self.welcome_label)
+        
+        main_layout.addLayout(header_layout)
         
         # Scroll area for content
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         
         # Content widget
         content = QWidget()
@@ -44,13 +66,13 @@ class DashboardView(QWidget):
         
         # Summary cards row
         cards_layout = QHBoxLayout()
-        cards_layout.setSpacing(20)
+        cards_layout.setSpacing(15)
         
-        # Create summary cards with real data
-        self.tasks_card = self.create_summary_card("Tasks", "0", "📝")
-        self.events_card = self.create_summary_card("Events", "0", "📅")
-        self.goals_card = self.create_summary_card("Goals", "0", "🎯")
-        self.habits_card = self.create_summary_card("Habits", "0", "🔄")
+        # Create animated stat cards
+        self.tasks_card = StatCard("Active Tasks", "📝")
+        self.events_card = StatCard("Upcoming Events", "📅")
+        self.goals_card = StatCard("Active Goals", "🎯")
+        self.habits_card = StatCard("Habits Tracked", "🔄")
         
         cards_layout.addWidget(self.tasks_card)
         cards_layout.addWidget(self.events_card)
@@ -59,20 +81,160 @@ class DashboardView(QWidget):
         
         content_layout.addLayout(cards_layout)
         
-        # Recent activity section
-        from PyQt6.QtGui import QFont
-        recent_label = QLabel("Recent Activity")
+        # Two column layout for progress and expenses
+        charts_row = QHBoxLayout()
+        charts_row.setSpacing(15)
+        
+        # Progress section (left)
+        progress_section = QFrame()
+        progress_section.setObjectName("dashboard-section")
+        progress_section.setStyleSheet("""
+            QFrame#dashboard-section {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(70, 70, 90, 0.25),
+                    stop:1 rgba(50, 50, 70, 0.15));
+                border: 1px solid rgba(100, 100, 120, 0.25);
+                border-radius: 12px;
+                padding: 8px;
+            }
+        """)
+        progress_layout = QVBoxLayout(progress_section)
+        progress_layout.setSpacing(15)
+        progress_layout.setContentsMargins(20, 20, 20, 20)
+        
+        section_title = QLabel("📈 Progress Overview")
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
-        recent_label.setFont(font)
-        content_layout.addWidget(recent_label)
+        section_title.setFont(font)
+        progress_layout.addWidget(section_title)
         
-        # Placeholder for recent items
-        self.recent_placeholder = QLabel("No recent activity")
-        self.recent_placeholder.setProperty("class", "secondary-text")
-        self.recent_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        content_layout.addWidget(self.recent_placeholder)
+        # Progress rings row
+        rings_layout = QHBoxLayout()
+        rings_layout.setSpacing(20)
+        
+        self.tasks_ring = ProgressRing("Tasks Completed")
+        self.goals_ring = ProgressRing("Goals Progress")
+        self.habits_ring = ProgressRing("Habits Streak")
+        
+        rings_layout.addWidget(self.tasks_ring)
+        rings_layout.addWidget(self.goals_ring)
+        rings_layout.addWidget(self.habits_ring)
+        rings_layout.addStretch()
+        
+        progress_layout.addLayout(rings_layout)
+        charts_row.addWidget(progress_section, 1)
+        
+        # Expense chart section (right)
+        expense_section = QFrame()
+        expense_section.setObjectName("dashboard-section")
+        expense_section.setStyleSheet("""
+            QFrame#dashboard-section {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(70, 70, 90, 0.25),
+                    stop:1 rgba(50, 50, 70, 0.15));
+                border: 1px solid rgba(100, 100, 120, 0.25);
+                border-radius: 12px;
+                padding: 8px;
+            }
+        """)
+        expense_layout = QVBoxLayout(expense_section)
+        expense_layout.setSpacing(15)
+        expense_layout.setContentsMargins(20, 20, 20, 20)
+        
+        expense_title = QLabel("💰 Expenses by Category")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        expense_title.setFont(font)
+        expense_layout.addWidget(expense_title)
+        
+        self.expense_chart = ExpensePieChart()
+        expense_layout.addWidget(self.expense_chart)
+        
+        charts_row.addWidget(expense_section, 1)
+        
+        content_layout.addLayout(charts_row)
+        
+        # Quick stats section
+        stats_section = QFrame()
+        stats_section.setObjectName("dashboard-section")
+        stats_section.setStyleSheet("""
+            QFrame#dashboard-section {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(70, 70, 90, 0.25),
+                    stop:1 rgba(50, 50, 70, 0.15));
+                border: 1px solid rgba(100, 100, 120, 0.25);
+                border-radius: 12px;
+                padding: 8px;
+            }
+            QFrame#stat-item {
+                background: rgba(60, 60, 80, 0.3);
+                border: 1px solid rgba(80, 80, 100, 0.3);
+                border-radius: 8px;
+            }
+            QFrame#stat-item:hover {
+                background: rgba(70, 70, 90, 0.4);
+                border-color: rgba(100, 150, 255, 0.4);
+            }
+        """)
+        stats_layout = QVBoxLayout(stats_section)
+        stats_layout.setSpacing(15)
+        stats_layout.setContentsMargins(20, 20, 20, 20)
+        
+        stats_title = QLabel("📊 Quick Stats")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        stats_title.setFont(font)
+        stats_layout.addWidget(stats_title)
+        
+        # Stats grid
+        stats_grid = QGridLayout()
+        stats_grid.setSpacing(10)
+        
+        self.notes_stat = self.create_stat_item("📝 Notes", "0")
+        self.expenses_stat = self.create_stat_item("💰 Expenses This Month", "$0")
+        self.events_week_stat = self.create_stat_item("📅 Events This Week", "0")
+        self.overdue_stat = self.create_stat_item("⚠️ Overdue Tasks", "0")
+        
+        stats_grid.addWidget(self.notes_stat, 0, 0)
+        stats_grid.addWidget(self.expenses_stat, 0, 1)
+        stats_grid.addWidget(self.events_week_stat, 1, 0)
+        stats_grid.addWidget(self.overdue_stat, 1, 1)
+        
+        stats_layout.addLayout(stats_grid)
+        content_layout.addWidget(stats_section)
+        
+        # Recent activity section
+        activity_section = QFrame()
+        activity_section.setObjectName("dashboard-section")
+        activity_section.setStyleSheet("""
+            QFrame#dashboard-section {
+                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+                    stop:0 rgba(70, 70, 90, 0.25),
+                    stop:1 rgba(50, 50, 70, 0.15));
+                border: 1px solid rgba(100, 100, 120, 0.25);
+                border-radius: 12px;
+                padding: 8px;
+            }
+        """)
+        activity_layout = QVBoxLayout(activity_section)
+        activity_layout.setSpacing(15)
+        activity_layout.setContentsMargins(20, 20, 20, 20)
+        
+        activity_title = QLabel("🕐 Recent Activity")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        activity_title.setFont(font)
+        activity_layout.addWidget(activity_title)
+        
+        self.recent_container = QVBoxLayout()
+        self.recent_container.setSpacing(8)
+        activity_layout.addLayout(self.recent_container)
+        
+        content_layout.addWidget(activity_section)
         
         content_layout.addStretch()
         
@@ -81,81 +243,294 @@ class DashboardView(QWidget):
         
         self.setLayout(main_layout)
         
-        # Load real data
+        # Store initial values for animation
+        self.initial_load = True
+        
+        # Load data with slight delay for animation effect
+        QTimer.singleShot(100, self.load_data_with_animation)
+    
+    def update_welcome_message(self):
+        """Update welcome message based on time of day"""
+        hour = datetime.now().hour
+        if hour < 12:
+            greeting = "Good Morning"
+        elif hour < 18:
+            greeting = "Good Afternoon"
+        else:
+            greeting = "Good Evening"
+        
+        self.welcome_label.setText(f"{greeting} • {datetime.now().strftime('%B %d, %Y')}")
+    
+    def create_stat_item(self, label: str, value: str) -> QFrame:
+        """Create a stat item widget"""
+        frame = QFrame()
+        frame.setObjectName("stat-item")
+        layout = QHBoxLayout(frame)
+        layout.setContentsMargins(12, 10, 12, 10)
+        
+        label_widget = QLabel(label)
+        font = QFont()
+        font.setPointSize(10)
+        label_widget.setFont(font)
+        layout.addWidget(label_widget)
+        
+        layout.addStretch()
+        
+        value_widget = QLabel(value)
+        value_widget.setObjectName("stat-value")
+        font = QFont()
+        font.setPointSize(11)
+        font.setBold(True)
+        value_widget.setFont(font)
+        layout.addWidget(value_widget)
+        
+        return frame
+    
+    def update_stat_item(self, frame: QFrame, value: str):
+        """Update stat item value"""
+        layout = frame.layout()
+        if layout and layout.count() >= 2:
+            value_widget = layout.itemAt(2).widget()
+            if isinstance(value_widget, QLabel):
+                value_widget.setText(value)
+    
+    def load_data_with_animation(self):
+        """Load data and trigger animations"""
+        from src.core.config import config
+        
+        # Reset all progress values to 0 BEFORE loading data
+        if config.get('appearance.enable_animations', True) and self.initial_load:
+            self.tasks_ring._progress = 0
+            self.tasks_ring._target_progress = 0
+            self.goals_ring._progress = 0
+            self.goals_ring._target_progress = 0
+            self.habits_ring._progress = 0
+            self.habits_ring._target_progress = 0
+            self.expense_chart._animation_progress = 0
+            
+            # Force update to show 0 state
+            self.tasks_ring.update()
+            self.goals_ring.update()
+            self.habits_ring.update()
+            self.expense_chart.update()
+        
+        # Load data which will trigger animations
         self.load_data()
     
     def load_data(self):
         """Load data from database and update UI"""
-        from src.models import Task, Event, Goal, Habit
+        from src.models import Task, Event, Goal, Habit, Note, Expense
         from src.core.database import db
         
         try:
             db.connect(reuse_if_open=True)
             
-            # Count tasks
-            task_count = Task.select().where(Task.completed == False).count()
-            self.update_card_value(self.tasks_card, str(task_count))
+            # Update welcome message
+            self.update_welcome_message()
             
-            # Count events
-            event_count = Event.select().count()
-            self.update_card_value(self.events_card, str(event_count))
+            # Determine if we should animate (only on initial load or when animations enabled)
+            from src.core.config import config
+            should_animate = config.get('appearance.enable_animations', True) and self.initial_load
+            self.initial_load = False
             
-            # Count goals
-            goal_count = Goal.select().where(Goal.completed == False).count()
-            self.update_card_value(self.goals_card, str(goal_count))
+            # Count active tasks
+            active_tasks = Task.select().where(Task.completed == False).count()
+            self.tasks_card.set_value(active_tasks, animate=should_animate)
+            
+            # Count upcoming events (next 7 days)
+            today = datetime.now().date()
+            week_later = today + timedelta(days=7)
+            upcoming_events = Event.select().where(
+                (Event.start_date >= today) & (Event.start_date <= week_later)
+            ).count()
+            self.events_card.set_value(upcoming_events, animate=should_animate)
+            
+            # Count active goals
+            active_goals = Goal.select().where(Goal.completed == False).count()
+            self.goals_card.set_value(active_goals, animate=should_animate)
             
             # Count habits
             habit_count = Habit.select().count()
-            self.update_card_value(self.habits_card, str(habit_count))
+            self.habits_card.set_value(habit_count, animate=should_animate)
+            
+            # Calculate task completion rate
+            total_tasks = Task.select().count()
+            completed_tasks = Task.select().where(Task.completed == True).count()
+            task_completion = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
+            self.tasks_ring.set_progress(task_completion, animate=should_animate)
+            
+            # Calculate goal progress (average of all goals)
+            goals = Goal.select().where(Goal.completed == False)
+            if goals.count() > 0:
+                avg_progress = sum(g.progress for g in goals) / goals.count()
+                self.goals_ring.set_progress(avg_progress, animate=should_animate)
+            else:
+                self.goals_ring.set_progress(0, animate=should_animate)
+            
+            # Calculate habit streak (placeholder - would need streak tracking)
+            self.habits_ring.set_progress(75, animate=should_animate)  # Placeholder
+            
+            # Load expense data for pie chart
+            first_day = datetime.now().replace(day=1).date()
+            month_expenses = Expense.select().where(Expense.date >= first_day)
+            
+            # Group by category
+            category_totals = {}
+            for expense in month_expenses:
+                category = expense.category or "Other"
+                category_totals[category] = category_totals.get(category, 0) + expense.amount
+            
+            # Convert to list and sort by amount
+            expense_data = sorted(category_totals.items(), key=lambda x: x[1], reverse=True)
+            self.expense_chart.set_data(expense_data, animate=should_animate)
+            
+            # Update quick stats
+            note_count = Note.select().count()
+            self.update_stat_item(self.notes_stat, str(note_count))
+            
+            # Expenses this month
+            from src.core.config import config
+            currency_symbol = config.get('currency.symbol', '$')
+            
+            first_day = datetime.now().replace(day=1).date()
+            month_expenses = Expense.select().where(Expense.date >= first_day)
+            total_expenses = sum(e.amount for e in month_expenses)
+            self.update_stat_item(self.expenses_stat, f"{currency_symbol}{total_expenses:.2f}")
+            
+            # Events this week
+            events_week = Event.select().where(
+                (Event.start_date >= today) & (Event.start_date <= week_later)
+            ).count()
+            self.update_stat_item(self.events_week_stat, str(events_week))
+            
+            # Overdue tasks
+            overdue_tasks = Task.select().where(
+                (Task.completed == False) & (Task.due_date < today)
+            ).count()
+            self.update_stat_item(self.overdue_stat, str(overdue_tasks))
+            
+            # Load recent activity
+            self.load_recent_activity()
             
             db.close()
         except Exception as e:
             print(f"Error loading dashboard data: {e}")
     
-    def update_card_value(self, card: QFrame, value: str):
-        """Update the value in a summary card"""
-        # Find the value label (second child in layout)
-        layout = card.layout()
-        if layout and layout.count() >= 2:
-            value_label = layout.itemAt(1).widget()
-            if isinstance(value_label, QLabel):
-                value_label.setText(value)
-    
-    def create_summary_card(self, title: str, value: str, icon: str) -> QFrame:
-        """Create a summary card widget"""
-        card = QFrame()
-        card.setObjectName("summary-card")
+    def load_recent_activity(self):
+        """Load and display recent activity"""
+        from src.models import Task, Event, Note
+        from src.core.database import db
         
-        layout = QVBoxLayout(card)
+        # Clear existing items
+        while self.recent_container.count():
+            item = self.recent_container.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        try:
+            db.connect(reuse_if_open=True)
+            
+            activities = []
+            
+            # Recent tasks (last 5 completed)
+            recent_tasks = Task.select().where(Task.completed == True).order_by(Task.updated_at.desc()).limit(3)
+            for task in recent_tasks:
+                activities.append({
+                    'icon': '✅',
+                    'text': f"Completed task: {task.title}",
+                    'time': task.updated_at
+                })
+            
+            # Recent notes (last 3)
+            recent_notes = Note.select().order_by(Note.updated_at.desc()).limit(3)
+            for note in recent_notes:
+                activities.append({
+                    'icon': '📝',
+                    'text': f"Updated note: {note.title}",
+                    'time': note.updated_at
+                })
+            
+            # Sort by time
+            activities.sort(key=lambda x: x['time'], reverse=True)
+            
+            # Display top 5
+            for activity in activities[:5]:
+                item = self.create_activity_item(
+                    activity['icon'],
+                    activity['text'],
+                    activity['time']
+                )
+                self.recent_container.addLayout(item)
+            
+            if not activities:
+                no_activity = QLabel("No recent activity")
+                no_activity.setProperty("class", "secondary-text")
+                no_activity.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                self.recent_container.addWidget(no_activity)
+            
+            db.close()
+        except Exception as e:
+            print(f"Error loading recent activity: {e}")
+    
+    def create_activity_item(self, icon: str, text: str, time: datetime) -> QHBoxLayout:
+        """Create an activity item"""
+        layout = QHBoxLayout()
         layout.setSpacing(10)
         
         # Icon
-        from PyQt6.QtGui import QFont
         icon_label = QLabel(icon)
         font = QFont()
-        font.setPointSize(24)
+        font.setPointSize(14)
         icon_label.setFont(font)
-        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon_label)
         
-        # Value
-        value_label = QLabel(value)
-        font2 = QFont()
-        font2.setPointSize(21)
-        font2.setBold(True)
-        value_label.setFont(font2)
-        value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(value_label)
+        # Text
+        text_label = QLabel(text)
+        font = QFont()
+        font.setPointSize(10)
+        text_label.setFont(font)
+        layout.addWidget(text_label, 1)
         
-        # Title
-        title_label = QLabel(title)
-        title_label.setProperty("class", "title-text")
-        title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title_label)
+        # Time
+        from src.shared.formatters import format_datetime
+        time_label = QLabel(format_datetime(time))
+        time_label.setProperty("class", "meta-text")
+        font = QFont()
+        font.setPointSize(9)
+        time_label.setFont(font)
+        layout.addWidget(time_label)
         
-        card.setLayout(layout)
-        return card
+        return layout
     
     def refresh(self):
         """Refresh view to apply config changes"""
-        self.load_data()
+        self.initial_load = True
+        self.load_data_with_animation()
+    
+    def showEvent(self, event):
+        """Handle show event to trigger animations"""
+        super().showEvent(event)
+        # Trigger animations when dashboard becomes visible
+        if hasattr(self, 'tasks_ring'):
+            from src.core.config import config
+            
+            # Immediately reset to 0 if animations are enabled
+            if config.get('appearance.enable_animations', True):
+                self.tasks_ring._progress = 0
+                self.tasks_ring._target_progress = 0
+                self.goals_ring._progress = 0
+                self.goals_ring._target_progress = 0
+                self.habits_ring._progress = 0
+                self.habits_ring._target_progress = 0
+                self.expense_chart._animation_progress = 0
+                
+                # Immediate update to show 0 state
+                self.tasks_ring.update()
+                self.goals_ring.update()
+                self.habits_ring.update()
+                self.expense_chart.update()
+            
+            # Mark as initial load to trigger animations
+            self.initial_load = True
+            # Small delay to load data and start animations
+            QTimer.singleShot(50, self.load_data_with_animation)
