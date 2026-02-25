@@ -27,12 +27,15 @@ class EventItem(QFrame):
     def setup_ui(self):
         """Setup event item UI"""
         self.setObjectName("task-item")
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
         
         layout = QVBoxLayout(self)
         layout.setSpacing(5)
+        layout.setContentsMargins(10, 10, 10, 10)
         
         # Title with color indicator
         title_layout = QHBoxLayout()
+        title_layout.setSpacing(8)
         
         # Color indicator
         color_box = QFrame()
@@ -40,12 +43,17 @@ class EventItem(QFrame):
         color_box.setStyleSheet(f"background-color: {self.event.color}; border-radius: 2px;")
         title_layout.addWidget(color_box)
         
-        # Title
+        # Title (word wrap enabled, responsive)
         title_label = QLabel(self.event.title)
         font = QFont()
         font.setPointSize(11)
         font.setBold(True)
         title_label.setFont(font)
+        title_label.setWordWrap(True)
+        title_label.setSizePolicy(
+            title_label.sizePolicy().horizontalPolicy(),
+            title_label.sizePolicy().verticalPolicy()
+        )
         title_layout.addWidget(title_label, 1)
         
         layout.addLayout(title_layout)
@@ -58,12 +66,14 @@ class EventItem(QFrame):
         
         date_label = QLabel(date_str)
         date_label.setProperty("class", "meta-text")
+        date_label.setWordWrap(True)
         layout.addWidget(date_label)
         
         # Location
         if self.event.location:
             loc_label = QLabel(f"📍 {self.event.location}")
             loc_label.setProperty("class", "meta-text")
+            loc_label.setWordWrap(True)
             layout.addWidget(loc_label)
         
         # Description
@@ -75,6 +85,7 @@ class EventItem(QFrame):
         
         # Actions
         actions_layout = QHBoxLayout()
+        actions_layout.setSpacing(5)
         actions_layout.addStretch()
         
         edit_btn = QPushButton("Edit")
@@ -89,6 +100,18 @@ class EventItem(QFrame):
         layout.addLayout(actions_layout)
         
         self.setLayout(layout)
+    
+    def mousePressEvent(self, event):
+        """Handle click on event item - navigate to date"""
+        # Get the calendar view parent
+        parent = self.parent()
+        while parent and not hasattr(parent, 'navigate_to_date'):
+            parent = parent.parent()
+        
+        if parent and hasattr(parent, 'navigate_to_date'):
+            parent.navigate_to_date(self.event.start_date.date())
+        
+        super().mousePressEvent(event)
     
     def on_edit(self):
         """Handle edit button"""

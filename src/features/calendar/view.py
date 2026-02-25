@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QScrollArea, QGridLayout
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QDate
 from PyQt6.QtGui import QFont
 from datetime import datetime, timedelta
 import calendar
@@ -90,7 +90,8 @@ class CalendarView(QWidget):
         # Events list (right side)
         events_panel = QFrame()
         events_panel.setObjectName("settings-section")
-        events_panel.setFixedWidth(350)
+        events_panel.setMinimumWidth(300)
+        events_panel.setMaximumWidth(400)
         events_layout = QVBoxLayout(events_panel)
         events_layout.setContentsMargins(15, 15, 15, 15)
         events_layout.setSpacing(10)
@@ -193,9 +194,11 @@ class CalendarView(QWidget):
                 date = datetime(self.current_date.year, self.current_date.month, day).date()
                 is_today = date == today
                 
-                # Day cell
+                # Day cell (clickable)
                 day_cell = QFrame()
                 day_cell.setObjectName("task-item")
+                day_cell.setCursor(Qt.CursorShape.PointingHandCursor)
+                day_cell.mousePressEvent = lambda e, d=date: self.on_date_clicked(d)
                 if is_today:
                     day_cell.setStyleSheet("QFrame#task-item { border: 2px solid; }")
                 
@@ -301,6 +304,22 @@ class CalendarView(QWidget):
     
     def on_event_deleted(self):
         """Handle event deletion"""
+        self.load_calendar()
+    
+    def on_date_clicked(self, date):
+        """Handle date cell click - create new event"""
+        from datetime import datetime
+        dialog = EventDialog(self)
+        # Pre-fill with clicked date
+        dialog.date_input.setDate(QDate(date.year, date.month, date.day))
+        if dialog.exec():
+            event_data = dialog.get_event_data()
+            self.controller.create_event(event_data)
+            self.load_calendar()
+    
+    def navigate_to_date(self, date):
+        """Navigate calendar to show a specific date"""
+        self.current_date = datetime(date.year, date.month, 1)
         self.load_calendar()
     
     def truncate_text(self, text: str, max_length: int) -> str:

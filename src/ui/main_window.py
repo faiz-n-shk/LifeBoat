@@ -2,7 +2,7 @@
 Main Window UI
 Contains navigation and content area
 """
-from PyQt6.QtWidgets import QWidget, QHBoxLayout
+from PyQt6.QtWidgets import QWidget, QHBoxLayout, QVBoxLayout
 from PyQt6.QtCore import Qt
 
 from src.ui.navigation import NavigationSidebar
@@ -59,16 +59,31 @@ class MainWindow(QWidget):
         expenses = ExpensesView()
         self.content.register_feature("Expenses", expenses)
         
+        # Goals
+        from src.features.goals.view import GoalsView
+        goals = GoalsView()
+        self.content.register_feature("Goals", goals)
+        
+        # Habits
+        from src.features.habits.view import HabitsView
+        habits = HabitsView()
+        self.content.register_feature("Habits", habits)
+        
+        # Notes
+        from src.features.notes.view import NotesView
+        notes = NotesView()
+        self.content.register_feature("Notes", notes)
+        
         # Settings
         from src.features.settings.view import SettingsView
         settings = SettingsView()
         self.content.register_feature("Settings", settings)
-        
-        # TODO: Register other features as they're implemented
     
     def connect_signals(self):
         """Connect navigation signals"""
         self.navigation.navigate_requested.connect(self.on_navigate)
+        self.navigation.reload_requested.connect(self.on_reload)
+        self.navigation.restart_requested.connect(self.on_restart)
         
         # Connect config signals for hot-loading
         from src.core.config import config
@@ -78,8 +93,63 @@ class MainWindow(QWidget):
     
     def on_navigate(self, feature_name: str):
         """Handle navigation request"""
+        # Check for unsaved changes in settings
+        current_feature = self.content.current_feature
+        if current_feature == "Settings":
+            settings_view = self.content.get_feature_widget("Settings")
+            if settings_view and hasattr(settings_view, 'check_unsaved_changes'):
+                if not settings_view.check_unsaved_changes():
+                    # User cancelled navigation
+                    return
+        
         self.navigation.set_active(feature_name)
         self.content.show_feature(feature_name)
+    
+    def on_reload(self):
+        """Handle reload request - reload app and go to dashboard"""
+        # Reload theme
+        from src.core.theme_manager import theme_manager
+        theme_manager.load_theme()
+        
+        # Refresh all features
+        self.content.refresh_all_features()
+        
+        # Navigate to dashboard
+        self.navigation.set_active("Dashboard")
+        self.content.show_feature("Dashboard")
+    
+    def on_restart(self):
+        """Handle restart request"""
+        import sys
+        import os
+        import subprocess
+        from PyQt6.QtWidgets import QApplication
+        
+        # Close the current application
+        QApplication.instance().quit()
+        
+        # Check if running as packaged app or script
+        if getattr(sys, 'frozen', False):
+            # Running as packaged executable
+            executable = sys.executable
+            if os.name == 'nt':  # Windows
+                # Use CREATE_NO_WINDOW to prevent console window
+                subprocess.Popen([executable], creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.Popen([executable])
+        else:
+            # Running as script
+            python = sys.executable
+            script = sys.argv[0]
+            if os.name == 'nt':  # Windows
+                # Use pythonw.exe if available to avoid console window
+                pythonw = python.replace('python.exe', 'pythonw.exe')
+                if os.path.exists(pythonw):
+                    subprocess.Popen([pythonw, script])
+                else:
+                    subprocess.Popen([python, script], creationflags=subprocess.CREATE_NO_WINDOW)
+            else:
+                subprocess.Popen([python, script])
     
     def on_appearance_changed(self):
         """Handle appearance settings change"""

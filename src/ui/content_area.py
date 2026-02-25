@@ -13,6 +13,7 @@ class ContentArea(QWidget):
         super().__init__(parent)
         self.setup_ui()
         self.features = {}
+        self.current_feature = None
     
     def setup_ui(self):
         """Setup content area UI"""
@@ -45,8 +46,26 @@ class ContentArea(QWidget):
         if name in self.features:
             widget = self.features[name]
             self.stack.setCurrentWidget(widget)
+            self.current_feature = name
         else:
             print(f"Feature not found: {name}")
+    
+    def get_feature_widget(self, name: str):
+        """Get a feature widget by name"""
+        return self.features.get(name)
+    
+    def refresh_feature(self, name: str):
+        """Refresh a specific feature"""
+        if name in self.features:
+            widget = self.features[name]
+            if hasattr(widget, 'refresh'):
+                widget.refresh()
+            elif hasattr(widget, 'load_data'):
+                widget.load_data()
+            elif hasattr(widget, 'load_tasks'):
+                widget.load_tasks()
+            elif hasattr(widget, 'load_calendar'):
+                widget.load_calendar()
     
     def refresh_all_features(self):
         """Refresh all registered features to apply config changes"""
