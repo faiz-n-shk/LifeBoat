@@ -10,8 +10,6 @@ DEFAULT_CONFIG_YAML = """# Lifeboat 2.0 Configuration
 window:
   width: 1280
   height: 720
-  min_width: 1024
-  min_height: 700
   remember_size: true
   remember_position: true
   resolution: "custom"  # custom or preset like "1920x1080"

@@ -2,7 +2,7 @@
 Expense Pie Chart Widget
 3D-style pie chart for expense categories
 """
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QScrollArea, QFrame
+from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel, QHBoxLayout, QScrollArea, QFrame, QGridLayout
 from PyQt6.QtCore import Qt, QRectF, QTimer, QSize
 from PyQt6.QtGui import QPainter, QColor, QFont, QPen, QBrush, QConicalGradient
 import math
@@ -121,6 +121,7 @@ class ExpensePieChart(QWidget):
         self.data = []
         self.total = 0
         self.setMinimumSize(300, 450)
+        self.current_columns = 1  # Track current column count
         
         # Animation
         self._animation_progress = 0
@@ -145,15 +146,48 @@ class ExpensePieChart(QWidget):
         
         # Legend container
         self.legend_widget = QWidget()
-        self.legend_layout = QVBoxLayout(self.legend_widget)
+        self.legend_layout = QGridLayout(self.legend_widget)
         self.legend_layout.setContentsMargins(8, 0, 8, 0)
-        self.legend_layout.setSpacing(6)
+        self.legend_layout.setSpacing(8)
+        self.legend_layout.setHorizontalSpacing(16)
         
         self.scroll.setWidget(self.legend_widget)
         layout.addWidget(self.scroll)
         
         # Apply styling to scroll area
         self.apply_scroll_styling()
+    
+    def resizeEvent(self, event):
+        """Handle resize to adjust legend columns"""
+        super().resizeEvent(event)
+        
+        # Determine how many columns can fit
+        # Minimum width per category item is approximately 200px
+        available_width = self.width() - 40  # Account for margins
+        
+        if available_width >= 450:  # Enough space for 2 columns
+            new_columns = 2
+        else:  # Only 1 column
+            new_columns = 1
+        
+        # Rebuild legend if column count changed
+        if new_columns != self.current_columns:
+            self.current_columns = new_columns
+            if self.data:
+                # Get theme color for text
+                from src.core.theme_manager import theme_manager
+                from src.models.theme import Theme
+                from src.core.database import db
+                try:
+                    db.connect(reuse_if_open=True)
+                    theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
+                    text_color = theme_obj.fg_primary
+                    db.close()
+                except:
+                    text_color = "#ffffff"
+                
+                self.clear_legend()
+                self.build_legend(text_color)
     
     def apply_scroll_styling(self):
         """Apply theme-aware styling to scroll area"""
@@ -249,23 +283,26 @@ class ExpensePieChart(QWidget):
                 item.widget().deleteLater()
     
     def build_legend(self, text_color):
-        """Build legend with all categories"""
+        """Build legend with dynamic columns based on available width"""
         from src.shared.formatters import format_currency
+        
+        row = 0
+        col = 0
         
         for category, amount, color in self.data:
             # Create legend item
             item_widget = QWidget()
             item_widget.setStyleSheet("background: transparent;")
             item_layout = QHBoxLayout(item_widget)
-            item_layout.setContentsMargins(0, 2, 0, 2)
-            item_layout.setSpacing(10)
+            item_layout.setContentsMargins(0, 0, 0, 0)
+            item_layout.setSpacing(6)
             
             # Color indicator - circular
             color_box = QLabel()
-            color_box.setFixedSize(10, 10)
+            color_box.setFixedSize(8, 8)
             color_box.setStyleSheet(f"""
                 background-color: {color.name()};
-                border-radius: 5px;
+                border-radius: 4px;
                 border: none;
             """)
             item_layout.addWidget(color_box, 0, Qt.AlignmentFlag.AlignVCenter)
@@ -277,14 +314,20 @@ class ExpensePieChart(QWidget):
             label = QLabel(text)
             label.setStyleSheet(f"color: {text_color}; background: transparent;")
             font = QFont()
-            font.setPointSize(9)
+            font.setPointSize(8)
             label.setFont(font)
             item_layout.addWidget(label, 1)
             
-            self.legend_layout.addWidget(item_widget)
+            # Add to grid layout using current_columns
+            self.legend_layout.addWidget(item_widget, row, col)
+            
+            col += 1
+            if col >= self.current_columns:
+                col = 0
+                row += 1
         
         # Add stretch at the end
-        self.legend_layout.addStretch()
+        self.legend_layout.setRowStretch(row + 1, 1)
     
     def animate_chart(self):
         """Animate chart appearance"""

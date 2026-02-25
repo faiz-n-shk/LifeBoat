@@ -351,6 +351,8 @@ class AppearanceSection(QWidget):
     
     def load_available_resolutions(self):
         """Load resolutions available for the selected monitor"""
+        from src.core.constants import MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT
+        
         self.available_resolutions = [("Custom", "custom")]
         
         # Get selected monitor
@@ -409,10 +411,12 @@ class AppearanceSection(QWidget):
                 (5120, 1440, "DQHD", "32:9"),
             ]
             
-            # Group resolutions by aspect ratio
+            # Group resolutions by aspect ratio, filtering out those below minimum
             grouped = {}
             for width, height, name, aspect in all_resolutions:
-                if width <= max_width and height <= max_height:
+                # Only include resolutions that meet minimum requirements and fit monitor
+                if (width >= MIN_WINDOW_WIDTH and height >= MIN_WINDOW_HEIGHT and 
+                    width <= max_width and height <= max_height):
                     if aspect not in grouped:
                         grouped[aspect] = []
                     grouped[aspect].append((width, height, name, aspect))

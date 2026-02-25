@@ -57,6 +57,7 @@ class LifeboatApp(QMainWindow):
             height = config.get('window.height', DEFAULT_WINDOW_HEIGHT)
             self.resize(width, height)
         
+        # Get minimum size from constants
         self.setMinimumSize(MIN_WINDOW_WIDTH, MIN_WINDOW_HEIGHT)
         
         # Center window on screen

@@ -5,7 +5,7 @@ DO NOT MODIFY - These values are set by the application
 
 # Application Metadata (Read-only)
 APP_NAME = "Lifeboat"
-APP_VERSION = "2.8.0beta"
+APP_VERSION = "2.8.1beta"
 APP_AUTHOR = "Fayz212"
 APP_DESCRIPTION = "Personal Life Management Application"
 
@@ -21,5 +21,5 @@ CUSTOM_PATHS_FILENAME = "custom_paths.json"
 # Window Settings
 DEFAULT_WINDOW_WIDTH = 1280
 DEFAULT_WINDOW_HEIGHT = 720
-MIN_WINDOW_WIDTH = 1024
-MIN_WINDOW_HEIGHT = 700
+MIN_WINDOW_WIDTH = 1280
+MIN_WINDOW_HEIGHT = 720
