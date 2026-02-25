@@ -1,44 +1,263 @@
 """
 Notes View
-Simple notes management
+Notes management interface with multiple view modes
 """
-from PyQt6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PyQt6.QtWidgets import (
+    QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton, QLineEdit, QScrollArea, QFrame, QMessageBox, QComboBox
+)
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 
+from src.features.notes.controller import NotesController
+from src.features.notes.widgets.note_dialog import NoteDialog
+from src.features.notes.widgets.note_card import NoteCard
+from src.shared.flow_layout import FlowLayout
+
 
 class NotesView(QWidget):
-    """Notes view - Coming Soon"""
+    """Notes management view with responsive layout"""
     
     def __init__(self, parent=None):
         super().__init__(parent)
+        self.controller = NotesController()
+        self.current_view_mode = "Auto"
         self.setup_ui()
+        self.load_notes()
     
     def setup_ui(self):
         """Setup notes UI"""
         layout = QVBoxLayout(self)
-        layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.setContentsMargins(20, 20, 20, 20)
+        layout.setSpacing(15)
         
-        # Title
+        # Header
+        header_layout = QHBoxLayout()
+        
         title = QLabel("📝 Notes")
         font = QFont()
-        font.setPointSize(24)
+        font.setPointSize(18)
         font.setBold(True)
         title.setFont(font)
-        title.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(title)
+        header_layout.addWidget(title)
         
-        # Coming soon message
-        message = QLabel("Coming Soon")
-        message.setProperty("class", "secondary-text")
-        font2 = QFont()
-        font2.setPointSize(16)
-        message.setFont(font2)
-        message.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(message)
+        header_layout.addStretch()
+        
+        # View mode selector
+        view_label = QLabel("View:")
+        header_layout.addWidget(view_label)
+        
+        self.view_mode_combo = QComboBox()
+        self.view_mode_combo.addItems(["Auto", "Grid", "List", "Compact"])
+        self.view_mode_combo.setMinimumWidth(100)
+        self.view_mode_combo.currentTextChanged.connect(self.on_view_mode_changed)
+        header_layout.addWidget(self.view_mode_combo)
+        
+        # New note button
+        new_btn = QPushButton("+ New Note")
+        new_btn.setMinimumWidth(120)
+        new_btn.setMinimumHeight(36)
+        new_btn.clicked.connect(self.on_new_note)
+        header_layout.addWidget(new_btn)
+        
+        layout.addLayout(header_layout)
+        
+        # Search and filters
+        controls_layout = QHBoxLayout()
+        controls_layout.setSpacing(10)
+        
+        # Search
+        self.search_input = QLineEdit()
+        self.search_input.setPlaceholderText("🔍 Search notes...")
+        self.search_input.setMinimumHeight(36)
+        self.search_input.textChanged.connect(self.on_search)
+        controls_layout.addWidget(self.search_input, 3)
+        
+        # Tag filter
+        self.tag_filter = QComboBox()
+        self.tag_filter.setMinimumHeight(36)
+        self.tag_filter.setMinimumWidth(150)
+        self.tag_filter.addItem("All Tags")
+        self.tag_filter.currentTextChanged.connect(self.on_filter_changed)
+        controls_layout.addWidget(self.tag_filter, 1)
+        
+        # Pinned toggle
+        self.pinned_btn = QPushButton("📌 Pinned")
+        self.pinned_btn.setCheckable(True)
+        self.pinned_btn.setMinimumHeight(36)
+        self.pinned_btn.setMinimumWidth(100)
+        self.pinned_btn.clicked.connect(self.on_filter_changed)
+        controls_layout.addWidget(self.pinned_btn)
+        
+        layout.addLayout(controls_layout)
+        
+        # Scroll area for notes
+        self.scroll = QScrollArea()
+        self.scroll.setWidgetResizable(True)
+        self.scroll.setFrameShape(QFrame.Shape.NoFrame)
+        self.scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        # Container for notes
+        self.notes_container = QWidget()
+        self.notes_layout = FlowLayout(self.notes_container)
+        self.notes_layout.setSpacing(15)
+        
+        self.scroll.setWidget(self.notes_container)
+        layout.addWidget(self.scroll)
         
         self.setLayout(layout)
     
+    def load_notes(self):
+        """Load and display notes"""
+        # Clear existing notes
+        while self.notes_layout.count():
+            item = self.notes_layout.takeAt(0)
+            if item.widget():
+                item.widget().deleteLater()
+        
+        # Get filter criteria
+        search_query = self.search_input.text().strip()
+        pinned_only = self.pinned_btn.isChecked()
+        
+        # Get notes
+        notes = self.controller.get_all_notes(search_query, pinned_only)
+        
+        # Filter by tag if selected
+        selected_tag = self.tag_filter.currentText()
+        if selected_tag != "All Tags":
+            notes = [n for n in notes if n.tags and selected_tag in [t.strip() for t in n.tags.split(',')]]
+        
+        # Display notes based on view mode
+        if notes:
+            for note in notes:
+                note_card = NoteCard(note, view_mode=self.current_view_mode)
+                note_card.clicked.connect(self.create_edit_handler(note.id))
+                note_card.pin_clicked.connect(self.on_toggle_pin)
+                note_card.delete_clicked.connect(self.on_delete_note)
+                
+                self.notes_layout.addWidget(note_card)
+        else:
+            # Empty state
+            empty_widget = QWidget()
+            empty_widget.setMinimumSize(400, 300)
+            empty_layout = QVBoxLayout(empty_widget)
+            empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            
+            empty_icon = QLabel("📝")
+            font = QFont()
+            font.setPointSize(48)
+            empty_icon.setFont(font)
+            empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_layout.addWidget(empty_icon)
+            
+            empty_label = QLabel("No notes yet")
+            font = QFont()
+            font.setPointSize(16)
+            font.setBold(True)
+            empty_label.setFont(font)
+            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_layout.addWidget(empty_label)
+            
+            empty_hint = QLabel("Click '+ New Note' to create your first note")
+            empty_hint.setProperty("class", "secondary-text")
+            font = QFont()
+            font.setPointSize(12)
+            empty_hint.setFont(font)
+            empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            empty_layout.addWidget(empty_hint)
+            
+            self.notes_layout.addWidget(empty_widget)
+    
+    def create_edit_handler(self, note_id):
+        """Create a handler function for editing a specific note"""
+        def handler():
+            self.on_edit_note(note_id)
+        return handler
+    
+    def on_view_mode_changed(self, mode):
+        """Handle view mode change"""
+        self.current_view_mode = mode
+        self.load_notes()
+    
+    def update_tag_filter(self):
+        """Update the tag filter dropdown with available tags"""
+        self.tag_filter.blockSignals(True)
+        
+        current_tag = self.tag_filter.currentText()
+        self.tag_filter.clear()
+        self.tag_filter.addItem("All Tags")
+        
+        tags = self.controller.get_all_tags()
+        for tag in tags:
+            self.tag_filter.addItem(tag)
+        
+        index = self.tag_filter.findText(current_tag)
+        if index >= 0:
+            self.tag_filter.setCurrentIndex(index)
+        
+        self.tag_filter.blockSignals(False)
+    
+    def on_new_note(self):
+        """Handle new note button click"""
+        dialog = NoteDialog(self)
+        if dialog.exec():
+            data = dialog.get_data()
+            note = self.controller.create_note(
+                title=data['title'],
+                content=data['content'],
+                tags=data['tags'],
+                pinned=data['pinned']
+            )
+            if note:
+                self.update_tag_filter()
+                self.load_notes()
+    
+    def on_edit_note(self, note_id: int):
+        """Handle edit note"""
+        note = self.controller.get_note_by_id(note_id)
+        if note:
+            dialog = NoteDialog(self, note)
+            if dialog.exec():
+                data = dialog.get_data()
+                if self.controller.update_note(
+                    note_id=note_id,
+                    title=data['title'],
+                    content=data['content'],
+                    tags=data['tags'],
+                    pinned=data['pinned']
+                ):
+                    self.update_tag_filter()
+                    self.load_notes()
+    
+    def on_delete_note(self, note_id: int):
+        """Handle delete note"""
+        reply = QMessageBox.question(
+            self,
+            "Delete Note",
+            "Are you sure you want to delete this note?",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            if self.controller.delete_note(note_id):
+                self.update_tag_filter()
+                self.load_notes()
+    
+    def on_toggle_pin(self, note_id: int):
+        """Handle toggle pin"""
+        if self.controller.toggle_pin(note_id):
+            self.load_notes()
+    
+    def on_search(self):
+        """Handle search text change"""
+        self.load_notes()
+    
+    def on_filter_changed(self):
+        """Handle filter change"""
+        self.load_notes()
+    
     def refresh(self):
         """Refresh view"""
-        pass
+        self.update_tag_filter()
+        self.load_notes()

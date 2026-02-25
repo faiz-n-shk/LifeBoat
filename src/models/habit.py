@@ -11,11 +11,11 @@ class Habit(BaseModel):
     """Habit tracking model - Goal-based habits"""
     name = CharField()
     description = TextField(null=True)
-    habit_type = CharField(default="Good")  # "Good" or "Bad" habit
+    habit_type = CharField(default="Good")  # "Good" or "Bad"
     target_days = IntegerField(default=7)  # Target duration in days
     start_date = DateField(default=datetime.now().date)  # When habit tracking started
-    frequency = CharField(default="Daily")  
-    target_count = IntegerField(default=1)  
+    frequency = CharField(default="Daily")  # Keep for backward compatibility
+    target_count = IntegerField(default=1)  # Keep for backward compatibility
     color = CharField(default="#0078d4")
     created_at = DateTimeField(default=datetime.now)
 
