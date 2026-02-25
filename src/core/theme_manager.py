@@ -142,11 +142,9 @@ QMainWindow, QWidget {{
     background-color: {theme.bg_primary};
     color: {theme.fg_primary};
 }}
-
 /* Navigation Sidebar */
 #navigation {{
     background-color: {theme.bg_secondary};
-    border-right: 2px solid {theme.border};
 }}
 
 #app-title {{
@@ -157,7 +155,6 @@ QMainWindow, QWidget {{
     font-size: 15pt;
     font-weight: bold;
     border-bottom: 2px solid {theme.border};
-    border-right: 2px solid {theme.border};
 }}
 
 #nav-button {{

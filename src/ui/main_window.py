@@ -32,11 +32,30 @@ class MainWindow(QWidget):
         self.navigation = NavigationSidebar(self)
         layout.addWidget(self.navigation)
         
+        # Vertical separator line
+        from PyQt6.QtWidgets import QFrame
+        self.separator = QFrame()
+        self.separator.setFixedWidth(1)
+        self.update_separator_color()
+        layout.addWidget(self.separator)
+        
         # Content area
         self.content = ContentArea(self)
         layout.addWidget(self.content, 1)
         
         self.setLayout(layout)
+    
+    def update_separator_color(self):
+        """Update separator color based on current theme"""
+        from src.core.theme_manager import theme_manager
+        theme = theme_manager.get_theme_by_name(theme_manager.get_active_theme())
+        if theme:
+            self.separator.setStyleSheet(f"""
+                QFrame {{
+                    background-color: {theme.border};
+                    border: none;
+                }}
+            """)
     
     def register_features(self):
         """Register all feature modules"""
@@ -162,6 +181,9 @@ class MainWindow(QWidget):
         # Reload theme with new font settings
         from src.core.theme_manager import theme_manager
         theme_manager.load_theme()
+        
+        # Update separator color
+        self.update_separator_color()
         
         # Refresh all registered features to apply new theme/font
         self.content.refresh_all_features()
