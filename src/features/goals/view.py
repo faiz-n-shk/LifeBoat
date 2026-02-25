@@ -128,9 +128,16 @@ class GoalsView(QWidget):
             self.goals_layout.addWidget(goal_item)
             self.goal_items.append(goal_item)
         
-        # Set progress with animation
+        # Force layout update before setting progress
+        self.goals_container.updateGeometry()
+        
+        # Set progress with animation after a delay to ensure widgets are sized
+        QTimer.singleShot(100, lambda: self.set_all_progress(should_animate))
+    
+    def set_all_progress(self, animate):
+        """Set progress for all goal items"""
         for goal_item in self.goal_items:
-            goal_item.set_progress(goal_item.goal.progress, animate=should_animate)
+            goal_item.set_progress(goal_item.goal.progress, animate=animate)
     
     def showEvent(self, event):
         """Handle show event to trigger animations"""

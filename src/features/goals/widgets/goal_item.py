@@ -78,7 +78,13 @@ class GoalItem(QFrame):
             self.progress_percent.style().polish(self.progress_percent)
         
         if hasattr(self, 'progress_bar_container') and hasattr(self, 'progress_fill'):
-            container_width = self.progress_bar_container.width() - 2
+            # Ensure container has valid width
+            container_width = self.progress_bar_container.width()
+            if container_width <= 2:
+                # Container not sized yet, skip update
+                return
+            
+            container_width = container_width - 2  # Account for borders
             
             if self._progress >= 100:
                 # Always fill completely at 100%
