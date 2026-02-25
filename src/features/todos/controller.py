@@ -6,6 +6,7 @@ from datetime import datetime, date
 from typing import List, Dict, Any
 from src.models.todo import Todo
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class TodosController:
@@ -59,6 +60,9 @@ class TodosController:
             )
             
             db.close()
+            
+            activity_logger.log('Todos', 'Created', todo.title)
+            
             return todo
         except Exception as e:
             print(f"Error creating todo: {e}")
@@ -70,6 +74,7 @@ class TodosController:
             db.connect(reuse_if_open=True)
             
             todo = Todo.get_by_id(todo_id)
+            title = todo.title
             
             for key, value in data.items():
                 if hasattr(todo, key):
@@ -79,6 +84,9 @@ class TodosController:
             todo.save()
             
             db.close()
+            
+            activity_logger.log('Todos', 'Updated', title)
+            
             return True
         except Exception as e:
             print(f"Error updating todo: {e}")
@@ -90,9 +98,13 @@ class TodosController:
             db.connect(reuse_if_open=True)
             
             todo = Todo.get_by_id(todo_id)
+            title = todo.title
             todo.delete_instance()
             
             db.close()
+            
+            activity_logger.log('Todos', 'Deleted', title)
+            
             return True
         except Exception as e:
             print(f"Error deleting todo: {e}")
@@ -105,6 +117,9 @@ class TodosController:
             
             todo = Todo.get_by_id(todo_id)
             todo.toggle_complete()
+            
+            status = "Completed" if todo.completed else "Uncompleted"
+            activity_logger.log('Todos', status, todo.title)
             
             db.close()
             return True

@@ -67,10 +67,22 @@ class AdvancedSection(QWidget):
         scroll_area = self.get_scroll_area()
         scroll_pos = scroll_area.verticalScrollBar().value() if scroll_area else 0
         
-        # Save to config
-        config.set('advanced.show_debug_buttons', self.debug_check.isChecked())
+        # Track changes for logging
+        changes = []
         
-        if config.save():
+        # Save to config
+        old_debug = config.get('advanced.show_debug_buttons')
+        new_debug = self.debug_check.isChecked()
+        if old_debug != new_debug:
+            changes.append(f"Debug buttons: {'enabled' if new_debug else 'disabled'}")
+        config.set('advanced.show_debug_buttons', new_debug)
+        
+        if config.save(log_changes=False):
+            # Log changes if any
+            if changes:
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "updated advanced", ", ".join(changes))
+            
             # Emit signal to reload UI
             config.signals.advanced_changed.emit()
             

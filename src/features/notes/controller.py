@@ -6,6 +6,7 @@ from datetime import datetime
 from typing import List, Optional
 
 from src.models.note import Note
+from src.core.activity_logger import activity_logger
 
 
 class NotesController:
@@ -53,6 +54,7 @@ class NotesController:
                 created_at=datetime.now(),
                 updated_at=datetime.now()
             )
+            activity_logger.log("Notes", "created", f"'{title}'")
             return note
         except Exception as e:
             print(f"Error creating note: {e}")
@@ -69,6 +71,7 @@ class NotesController:
             note.pinned = pinned
             note.updated_at = datetime.now()
             note.save()
+            activity_logger.log("Notes", "updated", f"'{title}'")
             return True
         except Exception as e:
             print(f"Error updating note: {e}")
@@ -79,7 +82,9 @@ class NotesController:
         """Delete a note"""
         try:
             note = Note.get_by_id(note_id)
+            title = note.title
             note.delete_instance()
+            activity_logger.log("Notes", "deleted", f"'{title}'")
             return True
         except Exception as e:
             print(f"Error deleting note: {e}")
@@ -93,6 +98,8 @@ class NotesController:
             note.pinned = not note.pinned
             note.updated_at = datetime.now()
             note.save()
+            action = "pinned" if note.pinned else "unpinned"
+            activity_logger.log("Notes", action, f"'{note.title}'")
             return True
         except Exception as e:
             print(f"Error toggling pin: {e}")

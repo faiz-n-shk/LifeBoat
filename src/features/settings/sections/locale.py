@@ -159,16 +159,52 @@ class LocaleSection(QWidget):
         symbol = self.currency_combo.currentText()
         code = get_currency_code(symbol)
         
+        # Track changes for logging
+        changes = []
+        
         # Save to config
-        config.set('datetime.date_format', self.date_input.text())
-        config.set('datetime.time_mode', self.time_combo.currentText())
-        config.set('datetime.week_start', self.week_combo.currentText())
+        old_date_format = config.get('datetime.date_format')
+        new_date_format = self.date_input.text()
+        if old_date_format != new_date_format:
+            changes.append(f"Date format: {old_date_format} → {new_date_format}")
+        config.set('datetime.date_format', new_date_format)
+        
+        old_time_mode = config.get('datetime.time_mode')
+        new_time_mode = self.time_combo.currentText()
+        if old_time_mode != new_time_mode:
+            changes.append(f"Time mode: {old_time_mode} → {new_time_mode}")
+        config.set('datetime.time_mode', new_time_mode)
+        
+        old_week_start = config.get('datetime.week_start')
+        new_week_start = self.week_combo.currentText()
+        if old_week_start != new_week_start:
+            changes.append(f"Week start: {old_week_start} → {new_week_start}")
+        config.set('datetime.week_start', new_week_start)
+        
+        old_currency = config.get('currency.symbol')
+        if old_currency != symbol:
+            changes.append(f"Currency: {old_currency} → {symbol}")
         config.set('currency.symbol', symbol)
         config.set('currency.code', code)
-        config.set('currency.position', self.position_combo.currentText())
-        config.set('currency.decimal_places', self.decimal_spin.value())
         
-        if config.save():
+        old_position = config.get('currency.position')
+        new_position = self.position_combo.currentText()
+        if old_position != new_position:
+            changes.append(f"Currency position: {old_position} → {new_position}")
+        config.set('currency.position', new_position)
+        
+        old_decimal = config.get('currency.decimal_places')
+        new_decimal = self.decimal_spin.value()
+        if old_decimal != new_decimal:
+            changes.append(f"Decimal places: {old_decimal} → {new_decimal}")
+        config.set('currency.decimal_places', new_decimal)
+        
+        if config.save(log_changes=False):
+            # Log changes if any
+            if changes:
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "updated locale", ", ".join(changes))
+            
             # Emit signal to reload formatters and UI
             config.signals.locale_changed.emit()
             

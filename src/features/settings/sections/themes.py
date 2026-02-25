@@ -200,7 +200,14 @@ class ThemesSection(QWidget):
     
     def on_apply_theme(self, theme_name):
         """Apply a theme"""
+        old_theme = theme_manager.get_active_theme()
         theme_manager.set_theme(theme_name)
+        
+        # Log theme change
+        if old_theme != theme_name:
+            from src.core.activity_logger import activity_logger
+            activity_logger.log("Settings", "changed theme", f"{old_theme} → {theme_name}")
+        
         config.signals.appearance_changed.emit()
         self.load_themes()
     
@@ -212,6 +219,11 @@ class ThemesSection(QWidget):
             print(f"Creating custom theme with colors: {colors}")
             if theme_manager.create_custom_theme(colors):
                 print("Custom theme created successfully")
+                
+                # Log theme creation
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "created custom theme", "New custom theme")
+                
                 self.load_themes()
             else:
                 print("Failed to create custom theme")
@@ -230,6 +242,13 @@ class ThemesSection(QWidget):
             new_name = colors.get('name', theme.name)
             
             if theme_manager.update_theme(theme.name, colors):
+                # Log theme edit
+                from src.core.activity_logger import activity_logger
+                if theme.name != new_name:
+                    activity_logger.log("Settings", "renamed theme", f"'{theme.name}' → '{new_name}'")
+                else:
+                    activity_logger.log("Settings", "edited theme", f"'{theme.name}'")
+                
                 # If editing active theme, reload it with new name
                 if theme.name == theme_manager.get_active_theme() or new_name == theme_manager.get_active_theme():
                     theme_manager.load_theme(new_name)
@@ -251,6 +270,11 @@ class ThemesSection(QWidget):
             print(f"Customizing theme {theme.name} with colors: {colors}")
             if theme_manager.create_custom_theme(colors, theme.name):
                 print(f"Custom theme based on {theme.name} created successfully")
+                
+                # Log theme customization
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "customized theme", f"Based on '{theme.name}'")
+                
                 self.load_themes()
             else:
                 print(f"Failed to create custom theme based on {theme.name}")
@@ -273,6 +297,10 @@ class ThemesSection(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             if theme_manager.delete_theme(theme.name):
+                # Log theme deletion
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "deleted theme", f"'{theme.name}'")
+                
                 self.load_themes()
 
 

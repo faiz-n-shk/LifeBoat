@@ -7,6 +7,7 @@ from typing import List, Optional
 
 from src.models.event import Event
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class CalendarController:
@@ -85,6 +86,8 @@ class CalendarController:
                 color=event_data.get('color', '#0078d4')
             )
             
+            activity_logger.log("Calendar", "created", f"'{event_data['title']}'")
+            
             db.close()
             return event
         except Exception as e:
@@ -108,6 +111,8 @@ class CalendarController:
             event.updated_at = datetime.now()
             event.save()
             
+            activity_logger.log("Calendar", "updated", f"'{event_data['title']}'")
+            
             db.close()
             return True
         except Exception as e:
@@ -120,7 +125,10 @@ class CalendarController:
             db.connect(reuse_if_open=True)
             
             event = Event.get_by_id(event_id)
+            title = event.title
             event.delete_instance()
+            
+            activity_logger.log("Calendar", "deleted", f"'{title}'")
             
             db.close()
             return True

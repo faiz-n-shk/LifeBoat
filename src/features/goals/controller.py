@@ -5,6 +5,7 @@ Business logic for goals management
 from datetime import datetime
 from src.models.goal import Goal
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class GoalsController:
@@ -39,6 +40,7 @@ class GoalsController:
                 completed=False
             )
             db.close()
+            activity_logger.log('Goals', 'Created', title)
             return goal
         except Exception as e:
             print(f"Error creating goal: {e}")
@@ -49,6 +51,7 @@ class GoalsController:
         try:
             db.connect(reuse_if_open=True)
             goal = Goal.get_by_id(goal_id)
+            title = goal.title
             
             for key, value in kwargs.items():
                 if hasattr(goal, key):
@@ -57,6 +60,7 @@ class GoalsController:
             goal.updated_at = datetime.now()
             goal.save()
             db.close()
+            activity_logger.log('Goals', 'Updated', title)
             return goal
         except Exception as e:
             print(f"Error updating goal: {e}")
@@ -67,8 +71,10 @@ class GoalsController:
         try:
             db.connect(reuse_if_open=True)
             goal = Goal.get_by_id(goal_id)
+            title = goal.title
             goal.delete_instance()
             db.close()
+            activity_logger.log('Goals', 'Deleted', title)
             return True
         except Exception as e:
             print(f"Error deleting goal: {e}")

@@ -53,6 +53,17 @@ class PathsSection(QWidget):
         )
         layout.addWidget(self.database_section)
         
+        # Logs directory section
+        self.logs_section = self.create_path_section(
+            "Logs Directory",
+            paths_info['logs']['current'],
+            paths_info['logs']['is_custom'],
+            self.on_browse_logs,
+            self.on_reset_logs,
+            None
+        )
+        layout.addWidget(self.logs_section)
+        
         # Warning message
         warning = QFrame()
         warning.setProperty("class", "warning-box")
@@ -114,9 +125,10 @@ class PathsSection(QWidget):
             reset_btn.clicked.connect(on_reset)
             btn_layout.addWidget(reset_btn)
         
-        restore_btn = QPushButton("Restore Defaults")
-        restore_btn.clicked.connect(on_restore)
-        btn_layout.addWidget(restore_btn)
+        if on_restore:
+            restore_btn = QPushButton("Restore Defaults")
+            restore_btn.clicked.connect(on_restore)
+            btn_layout.addWidget(restore_btn)
         
         btn_layout.addStretch()
         
@@ -134,6 +146,10 @@ class PathsSection(QWidget):
         if directory:
             success, message = path_manager.set_custom_config_path(directory)
             if success:
+                # Log path change
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "changed config path", directory)
+                
                 QMessageBox.information(
                     self,
                     "Success",
@@ -153,6 +169,10 @@ class PathsSection(QWidget):
         if directory:
             success, message = path_manager.set_custom_database_path(directory)
             if success:
+                # Log path change
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "changed database path", directory)
+                
                 QMessageBox.information(
                     self,
                     "Success",
@@ -176,6 +196,10 @@ class PathsSection(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success, message = path_manager.reset_config_to_default()
             if success:
+                # Log reset
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "reset config path", "To default location")
+                
                 QMessageBox.information(
                     self,
                     "Success",
@@ -199,6 +223,10 @@ class PathsSection(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success, message = path_manager.reset_database_to_default()
             if success:
+                # Log reset
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "reset database path", "To default location")
+                
                 QMessageBox.information(
                     self,
                     "Success",
@@ -223,6 +251,10 @@ class PathsSection(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success, message = path_manager.restore_default_config()
             if success:
+                # Log restore
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "restored config", "To default settings")
+                
                 QMessageBox.information(
                     self,
                     "Success",
@@ -258,6 +290,10 @@ class PathsSection(QWidget):
             if reply2 == QMessageBox.StandardButton.Yes:
                 success, message = path_manager.restore_default_database()
                 if success:
+                    # Log restore
+                    from src.core.activity_logger import activity_logger
+                    activity_logger.log("Settings", "restored database", "To default state")
+                    
                     QMessageBox.information(
                         self,
                         "Success",
@@ -265,6 +301,56 @@ class PathsSection(QWidget):
                     )
                 else:
                     QMessageBox.critical(self, "Error", message)
+    
+    def on_browse_logs(self):
+        """Browse for custom logs directory"""
+        directory = QFileDialog.getExistingDirectory(
+            self,
+            "Select Directory for Logs"
+        )
+        
+        if directory:
+            success, message = path_manager.set_custom_logs_path(directory)
+            if success:
+                # Log path change
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "changed logs path", directory)
+                
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"{message}\n\nPlease restart the application for changes to take effect."
+                )
+                self.refresh_ui()
+            else:
+                QMessageBox.critical(self, "Error", message)
+    
+    def on_reset_logs(self):
+        """Reset logs to default location"""
+        reply = QMessageBox.question(
+            self,
+            "Confirm Reset",
+            "Reset logs directory to default location?\n\n"
+            "Your custom logs will remain in their current location.\n"
+            "The app will use the default logs directory after restart.",
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if reply == QMessageBox.StandardButton.Yes:
+            success, message = path_manager.reset_logs_to_default()
+            if success:
+                # Log reset
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "reset logs path", "To default location")
+                
+                QMessageBox.information(
+                    self,
+                    "Success",
+                    f"{message}\n\nPlease restart the application."
+                )
+                self.refresh_ui()
+            else:
+                QMessageBox.critical(self, "Error", message)
     
     def refresh_ui(self):
         """Refresh UI to show updated paths"""

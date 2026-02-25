@@ -18,6 +18,10 @@ docs/
 *.db-shm
 data/
 
+# log files
+logs/
+*.log
+
 # IDE
 .vscode/
 .idea/

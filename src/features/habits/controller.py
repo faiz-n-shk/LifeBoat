@@ -5,6 +5,7 @@ Business logic for habit tracking
 from datetime import datetime, date, timedelta
 from src.models.habit import Habit, HabitLog
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class HabitsController:
@@ -36,6 +37,7 @@ class HabitsController:
                 color=color
             )
             db.close()
+            activity_logger.log('Habits', 'Created', name)
             return habit
         except Exception as e:
             print(f"Error creating habit: {e}")
@@ -48,6 +50,7 @@ class HabitsController:
         try:
             db.connect(reuse_if_open=True)
             habit = Habit.get_by_id(habit_id)
+            name = habit.name
             
             for key, value in kwargs.items():
                 if hasattr(habit, key):
@@ -55,6 +58,7 @@ class HabitsController:
             
             habit.save()
             db.close()
+            activity_logger.log('Habits', 'Updated', name)
             return habit
         except Exception as e:
             print(f"Error updating habit: {e}")
@@ -65,6 +69,7 @@ class HabitsController:
         try:
             db.connect(reuse_if_open=True)
             habit = Habit.get_by_id(habit_id)
+            name = habit.name
             
             # Delete all logs first
             HabitLog.delete().where(HabitLog.habit == habit).execute()
@@ -72,6 +77,7 @@ class HabitsController:
             # Delete habit
             habit.delete_instance()
             db.close()
+            activity_logger.log('Habits', 'Deleted', name)
             return True
         except Exception as e:
             print(f"Error deleting habit: {e}")
@@ -98,6 +104,7 @@ class HabitsController:
                     existing.notes = notes
                 existing.save()
                 log = existing
+                status = "Logged" if existing.completed else "Unlogged"
             else:
                 # Create new log
                 log = HabitLog.create(
@@ -106,8 +113,10 @@ class HabitsController:
                     completed=True,
                     notes=notes
                 )
+                status = "Logged"
             
             db.close()
+            activity_logger.log('Habits', status, habit.name)
             return log
         except Exception as e:
             print(f"Error logging habit: {e}")

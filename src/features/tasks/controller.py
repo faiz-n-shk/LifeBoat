@@ -7,6 +7,7 @@ from datetime import datetime
 
 from src.models.task import Task
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class TasksController:
@@ -44,6 +45,7 @@ class TasksController:
         try:
             db.connect(reuse_if_open=True)
             task = Task.create(**task_data)
+            activity_logger.log('Tasks', 'Created', task.title)
             return task
         except Exception as e:
             print(f"Error creating task: {e}")
@@ -56,12 +58,14 @@ class TasksController:
         try:
             db.connect(reuse_if_open=True)
             task = Task.get_by_id(task_id)
+            title = task.title
             
             for key, value in task_data.items():
                 setattr(task, key, value)
             
             task.updated_at = datetime.now()
             task.save()
+            activity_logger.log('Tasks', 'Updated', title)
             return True
         except Exception as e:
             print(f"Error updating task: {e}")
@@ -74,7 +78,9 @@ class TasksController:
         try:
             db.connect(reuse_if_open=True)
             task = Task.get_by_id(task_id)
+            title = task.title
             task.delete_instance()
+            activity_logger.log('Tasks', 'Deleted', title)
             return True
         except Exception as e:
             print(f"Error deleting task: {e}")
@@ -91,6 +97,8 @@ class TasksController:
             task.completed_at = datetime.now() if task.completed else None
             task.updated_at = datetime.now()
             task.save()
+            status = "Completed" if task.completed else "Uncompleted"
+            activity_logger.log('Tasks', status, task.title)
             return True
         except Exception as e:
             print(f"Error toggling task: {e}")

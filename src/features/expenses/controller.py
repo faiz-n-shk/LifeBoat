@@ -7,6 +7,7 @@ from datetime import datetime, date
 
 from src.models.expense import Expense, Income
 from src.core.database import db
+from src.core.activity_logger import activity_logger
 
 
 class ExpensesController:
@@ -91,6 +92,7 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             expense = Expense.create(**data)
+            activity_logger.log("Expenses", "created", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
             return expense
         except Exception as e:
             print(f"Error creating expense: {e}")
@@ -103,6 +105,7 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             income = Income.create(**data)
+            activity_logger.log("Expenses", "created income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
             return income
         except Exception as e:
             print(f"Error creating income: {e}")
@@ -118,6 +121,7 @@ class ExpensesController:
             for key, value in data.items():
                 setattr(expense, key, value)
             expense.save()
+            activity_logger.log("Expenses", "updated", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
             return True
         except Exception as e:
             print(f"Error updating expense: {e}")
@@ -133,6 +137,7 @@ class ExpensesController:
             for key, value in data.items():
                 setattr(income, key, value)
             income.save()
+            activity_logger.log("Expenses", "updated income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
             return True
         except Exception as e:
             print(f"Error updating income: {e}")
@@ -145,7 +150,10 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             expense = Expense.get_by_id(expense_id)
+            category = expense.category
+            amount = expense.amount
             expense.delete_instance()
+            activity_logger.log("Expenses", "deleted", f"{category} - {amount}")
             return True
         except Exception as e:
             print(f"Error deleting expense: {e}")
@@ -158,7 +166,10 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             income = Income.get_by_id(income_id)
+            source = income.source
+            amount = income.amount
             income.delete_instance()
+            activity_logger.log("Expenses", "deleted income", f"{source} - {amount}")
             return True
         except Exception as e:
             print(f"Error deleting income: {e}")

@@ -89,11 +89,21 @@ class Config:
         
         config[keys[-1]] = value
     
-    def save(self) -> bool:
-        """Save configuration to file"""
+    def save(self, log_changes: bool = True) -> bool:
+        """
+        Save configuration to file
+        
+        Args:
+            log_changes: Whether to log the save action
+        """
         try:
             with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
                 yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
+            
+            if log_changes:
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "saved", "Configuration updated")
+            
             return True
         except Exception as e:
             print(f"Error saving config: {e}")

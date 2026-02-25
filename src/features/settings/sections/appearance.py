@@ -164,25 +164,54 @@ class AppearanceSection(QWidget):
         scroll_area = self.get_scroll_area()
         scroll_pos = scroll_area.verticalScrollBar().value() if scroll_area else 0
         
+        # Track changes for logging
+        changes = []
+        
         # Save to config
-        config.set('appearance.font_family', self.font_combo.currentText())
-        config.set('appearance.font_size', self.size_spin.value())
-        config.set('appearance.enable_animations', self.animations_check.isChecked())
+        old_font = config.get('appearance.font_family')
+        new_font = self.font_combo.currentText()
+        if old_font != new_font:
+            changes.append(f"Font: {old_font} → {new_font}")
+        config.set('appearance.font_family', new_font)
+        
+        old_size = config.get('appearance.font_size')
+        new_size = self.size_spin.value()
+        if old_size != new_size:
+            changes.append(f"Font size: {old_size} → {new_size}")
+        config.set('appearance.font_size', new_size)
+        
+        old_animations = config.get('appearance.enable_animations')
+        new_animations = self.animations_check.isChecked()
+        if old_animations != new_animations:
+            changes.append(f"Animations: {'enabled' if new_animations else 'disabled'}")
+        config.set('appearance.enable_animations', new_animations)
         
         # Save monitor selection if multiple monitors
         if len(self.monitors) > 1 and hasattr(self, 'monitor_combo'):
-            config.set('window.monitor', self.monitor_combo.currentIndex())
+            old_monitor = config.get('window.monitor')
+            new_monitor = self.monitor_combo.currentIndex()
+            if old_monitor != new_monitor:
+                changes.append(f"Monitor: {old_monitor} → {new_monitor}")
+            config.set('window.monitor', new_monitor)
         
         # Save resolution
         if self.resolution_combo.currentIndex() >= 0:
             res_value = self.available_resolutions[self.resolution_combo.currentIndex()][1]
+            old_resolution = config.get('window.resolution')
+            if old_resolution != res_value:
+                changes.append(f"Resolution: {old_resolution} → {res_value}")
             config.set('window.resolution', res_value)
             
             # Apply resolution if not custom
             if res_value != 'custom':
                 self.apply_resolution(res_value)
         
-        if config.save():
+        if config.save(log_changes=False):
+            # Log changes if any
+            if changes:
+                from src.core.activity_logger import activity_logger
+                activity_logger.log("Settings", "updated appearance", ", ".join(changes))
+            
             # Emit signal to reload UI
             config.signals.appearance_changed.emit()
             

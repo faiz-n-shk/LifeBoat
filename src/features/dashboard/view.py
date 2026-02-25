@@ -70,14 +70,14 @@ class DashboardView(QWidget):
         
         # Create animated stat cards
         self.tasks_card = StatCard("Active Tasks", "📝")
+        self.todos_card = StatCard("Active Todos", "✓")
         self.events_card = StatCard("Upcoming Events", "📅")
         self.goals_card = StatCard("Active Goals", "🎯")
-        self.habits_card = StatCard("Habits Tracked", "🔄")
         
         cards_layout.addWidget(self.tasks_card)
+        cards_layout.addWidget(self.todos_card)
         cards_layout.addWidget(self.events_card)
         cards_layout.addWidget(self.goals_card)
-        cards_layout.addWidget(self.habits_card)
         
         content_layout.addLayout(cards_layout)
         
@@ -207,14 +207,14 @@ class DashboardView(QWidget):
         currency_symbol = config.get('currency.symbol', '$')
         
         self.notes_stat = self.create_stat_item("📝 Notes", "0")
+        self.overdue_stat = self.create_stat_item("⚠️ Overdue Todos", "0")
         self.expenses_stat = self.create_stat_item("💰 Expenses This Month", f"{currency_symbol}0")
         self.events_week_stat = self.create_stat_item("📅 Events This Week", "0")
-        self.overdue_stat = self.create_stat_item("⚠️ Overdue Tasks", "0")
         
         stats_grid.addWidget(self.notes_stat, 0, 0)
-        stats_grid.addWidget(self.expenses_stat, 0, 1)
-        stats_grid.addWidget(self.events_week_stat, 1, 0)
-        stats_grid.addWidget(self.overdue_stat, 1, 1)
+        stats_grid.addWidget(self.overdue_stat, 0, 1)
+        stats_grid.addWidget(self.expenses_stat, 1, 0)
+        stats_grid.addWidget(self.events_week_stat, 1, 1)
         
         stats_layout.addLayout(stats_grid)
         content_layout.addWidget(stats_section)
@@ -358,6 +358,11 @@ class DashboardView(QWidget):
             active_tasks = Task.select().where(Task.completed == False).count()
             self.tasks_card.set_value(active_tasks, animate=should_animate)
             
+            # Count active todos
+            from src.models.todo import Todo
+            active_todos = Todo.select().where(Todo.completed == False).count()
+            self.todos_card.set_value(active_todos, animate=should_animate)
+            
             # Count upcoming events (next 7 days)
             today = datetime.now().date()
             week_later = today + timedelta(days=7)
@@ -369,10 +374,6 @@ class DashboardView(QWidget):
             # Count active goals
             active_goals = Goal.select().where(Goal.completed == False).count()
             self.goals_card.set_value(active_goals, animate=should_animate)
-            
-            # Count habits
-            habit_count = Habit.select().count()
-            self.habits_card.set_value(habit_count, animate=should_animate)
             
             # Calculate task completion rate
             total_tasks = Task.select().count()
@@ -510,6 +511,13 @@ class DashboardView(QWidget):
             note_count = Note.select().count()
             self.update_stat_item(self.notes_stat, str(note_count))
             
+            # Overdue todos
+            overdue_todos = Todo.select().where(
+                (Todo.completed == False) & 
+                (Todo.due_date < today)
+            ).count()
+            self.update_stat_item(self.overdue_stat, str(overdue_todos))
+            
             # Expenses this month
             from src.core.config import config
             currency_symbol = config.get('currency.symbol', '$')
@@ -525,13 +533,7 @@ class DashboardView(QWidget):
             ).count()
             self.update_stat_item(self.events_week_stat, str(events_week))
             
-            # Overdue tasks
-            overdue_tasks = Task.select().where(
-                (Task.completed == False) & (Task.due_date < today)
-            ).count()
-            self.update_stat_item(self.overdue_stat, str(overdue_tasks))
-            
-            # Load recent activity
+            # Load recent activity from logs
             self.load_recent_activity()
             
             db.close()
@@ -539,10 +541,7 @@ class DashboardView(QWidget):
             print(f"Error loading dashboard data: {e}")
     
     def load_recent_activity(self):
-        """Load and display recent activity"""
-        from src.models import Task, Event, Note
-        from src.core.database import db
-        
+        """Load and display recent activity from logs"""
         # Clear existing items
         while self.recent_container.count():
             item = self.recent_container.takeAt(0)
@@ -550,53 +549,62 @@ class DashboardView(QWidget):
                 item.widget().deleteLater()
         
         try:
-            db.connect(reuse_if_open=True)
+            from src.core.activity_logger import activity_logger
             
-            activities = []
+            # Get recent activities excluding Settings
+            activities = activity_logger.get_recent_activities(limit=5, exclude_features=['Settings'])
             
-            # Recent tasks (last 5 completed)
-            recent_tasks = Task.select().where(Task.completed == True).order_by(Task.updated_at.desc()).limit(3)
-            for task in recent_tasks:
-                activities.append({
-                    'icon': '✅',
-                    'text': f"Completed task: {task.title}",
-                    'time': task.updated_at
-                })
-            
-            # Recent notes (last 3)
-            recent_notes = Note.select().order_by(Note.updated_at.desc()).limit(3)
-            for note in recent_notes:
-                activities.append({
-                    'icon': '📝',
-                    'text': f"Updated note: {note.title}",
-                    'time': note.updated_at
-                })
-            
-            # Sort by time
-            activities.sort(key=lambda x: x['time'], reverse=True)
-            
-            # Display top 5
-            for activity in activities[:5]:
-                item = self.create_activity_item(
-                    activity['icon'],
-                    activity['text'],
-                    activity['time']
-                )
-                self.recent_container.addLayout(item)
-            
-            if not activities:
+            if activities:
+                for activity in activities:
+                    # Map feature to icon
+                    icon_map = {
+                        'Tasks': '✓',
+                        'Todos': '✓',
+                        'Calendar': '📅',
+                        'Expenses': '💰',
+                        'Goals': '🎯',
+                        'Habits': '🔄',
+                        'Notes': '📝'
+                    }
+                    
+                    icon = icon_map.get(activity['feature'], '•')
+                    text = f"{activity['action']}"
+                    if activity['details']:
+                        text += f": {activity['details']}"
+                    
+                    item = self.create_activity_item(
+                        icon,
+                        text,
+                        activity['timestamp']
+                    )
+                    self.recent_container.addWidget(item)
+            else:
                 no_activity = QLabel("No recent activity")
                 no_activity.setProperty("class", "secondary-text")
                 no_activity.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.recent_container.addWidget(no_activity)
-            
-            db.close()
+        
         except Exception as e:
             print(f"Error loading recent activity: {e}")
     
-    def create_activity_item(self, icon: str, text: str, time: datetime) -> QHBoxLayout:
+    def create_activity_item(self, icon: str, text: str, time: datetime) -> QWidget:
         """Create an activity item"""
-        layout = QHBoxLayout()
+        item_widget = QFrame()
+        item_widget.setProperty("class", "activity-item")
+        item_widget.setStyleSheet("""
+            QFrame.activity-item {
+                background: rgba(255, 255, 255, 0.03);
+                border: 1px solid rgba(255, 255, 255, 0.05);
+                border-radius: 6px;
+                padding: 8px 12px;
+            }
+            QFrame.activity-item:hover {
+                background: rgba(255, 255, 255, 0.05);
+            }
+        """)
+        
+        layout = QHBoxLayout(item_widget)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
         
         # Icon
@@ -604,6 +612,8 @@ class DashboardView(QWidget):
         font = QFont()
         font.setPointSize(14)
         icon_label.setFont(font)
+        icon_label.setFixedWidth(24)
+        icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon_label)
         
         # Text
@@ -611,6 +621,7 @@ class DashboardView(QWidget):
         font = QFont()
         font.setPointSize(10)
         text_label.setFont(font)
+        text_label.setWordWrap(True)
         layout.addWidget(text_label, 1)
         
         # Time
@@ -620,9 +631,10 @@ class DashboardView(QWidget):
         font = QFont()
         font.setPointSize(9)
         time_label.setFont(font)
+        time_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         layout.addWidget(time_label)
         
-        return layout
+        return item_widget
     
     def refresh(self):
         """Refresh view to apply config changes"""

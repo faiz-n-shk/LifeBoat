@@ -17,10 +17,12 @@ class PathManager:
         self.default_themes = self.base_dir / "config" / "themes.yaml"
         self.default_db = self.base_dir / "data" / "lifeboat.db"
         self.default_db_template = self.base_dir / "data" / "default_settings.db"
+        self.default_logs = self.base_dir / "logs"
         
         # Ensure directories exist
         (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
         (self.base_dir / "data").mkdir(exist_ok=True, parents=True)
+        (self.base_dir / "logs").mkdir(exist_ok=True, parents=True)
         
         # Load custom paths
         self.custom_paths = self._load_custom_paths()
@@ -70,6 +72,15 @@ class PathManager:
             if path.exists():
                 return path
         return self.default_themes
+    
+    def get_logs_path(self):
+        """Get the active logs directory path"""
+        custom_path = self.custom_paths.get('logs_path')
+        if custom_path:
+            path = Path(custom_path)
+            if path.exists():
+                return path
+        return self.default_logs
     
     def set_custom_config_path(self, directory):
         """
@@ -140,6 +151,30 @@ class PathManager:
         except Exception as e:
             return False, f"Error setting custom themes path: {e}"
     
+    def set_custom_logs_path(self, directory):
+        """
+        Set custom directory for logs
+        Moves existing logs to new location
+        """
+        try:
+            directory = Path(directory)
+            if not directory.exists():
+                directory.mkdir(parents=True, exist_ok=True)
+            
+            # Move existing logs if any
+            if self.default_logs.exists():
+                for log_file in self.default_logs.glob("*.log"):
+                    dest = directory / log_file.name
+                    if not dest.exists():
+                        shutil.copy2(log_file, dest)
+            
+            self.custom_paths['logs_path'] = str(directory)
+            self._save_custom_paths()
+            
+            return True, f"Logs directory set to: {directory}"
+        except Exception as e:
+            return False, f"Error setting custom logs path: {e}"
+    
     def reset_config_to_default(self):
         """Reset config to default location"""
         if 'config_path' in self.custom_paths:
@@ -160,6 +195,13 @@ class PathManager:
             del self.custom_paths['themes_path']
             self._save_custom_paths()
         return True, "Themes reset to default location"
+    
+    def reset_logs_to_default(self):
+        """Reset logs to default location"""
+        if 'logs_path' in self.custom_paths:
+            del self.custom_paths['logs_path']
+            self._save_custom_paths()
+        return True, "Logs reset to default location"
     
     def restore_default_config(self):
         """
@@ -223,6 +265,11 @@ class PathManager:
                 'current': str(self.get_database_path()),
                 'default': str(self.default_db),
                 'is_custom': 'database_path' in self.custom_paths
+            },
+            'logs': {
+                'current': str(self.get_logs_path()),
+                'default': str(self.default_logs),
+                'is_custom': 'logs_path' in self.custom_paths
             }
         }
 
