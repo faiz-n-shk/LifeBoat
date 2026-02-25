@@ -87,6 +87,7 @@ class GoalsController:
             goal = Goal.get_by_id(goal_id)
             goal.progress = max(0, min(100, progress))
             
+            # Auto-complete if progress reaches 100
             if goal.progress >= 100:
                 goal.completed = True
             
@@ -105,6 +106,7 @@ class GoalsController:
             goal = Goal.get_by_id(goal_id)
             goal.completed = not goal.completed
             
+            # Set progress to 100 if completed, 0 if uncompleted
             if goal.completed:
                 goal.progress = 100
             

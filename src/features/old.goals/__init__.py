@@ -1,7 +1,3 @@
-"""
-Goals Feature
-Goal tracking and progress management
-"""
+"""Goals Feature"""
 from src.features.goals.view import GoalsView
-
 __all__ = ['GoalsView']

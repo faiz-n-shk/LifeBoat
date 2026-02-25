@@ -3,10 +3,30 @@ Goal Item Widget
 Individual goal display component
 """
 from PyQt6.QtWidgets import (
-    QFrame, QVBoxLayout, QHBoxLayout, QLabel, QPushButton
+    QFrame, QVBoxLayout, QHBoxLayout, QLabel,
+    QPushButton
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, pyqtProperty, QEvent
+from PyQt6.QtCore import Qt, pyqtSignal, QTimer, QPropertyAnimation, QEasingCurve, QObject, pyqtProperty, QEvent
 from PyQt6.QtGui import QFont
+
+
+class AnimatedProgress(QObject):
+    """Helper class for animating progress value"""
+    
+    progress_changed = pyqtSignal(int)
+    
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self._progress = 0
+    
+    @pyqtProperty(int)
+    def progress(self):
+        return self._progress
+    
+    @progress.setter
+    def progress(self, value):
+        self._progress = value
+        self.progress_changed.emit(value)
 
 
 class GoalItem(QFrame):
@@ -14,6 +34,7 @@ class GoalItem(QFrame):
     
     edit_requested = pyqtSignal(int)
     delete_requested = pyqtSignal(int)
+    toggle_requested = pyqtSignal(int)
     progress_updated = pyqtSignal(int, int)
     
     def __init__(self, goal, parent=None):
@@ -24,52 +45,48 @@ class GoalItem(QFrame):
         self._hold_timer = None
         self._hold_speed = 1
         self._hold_direction = 0
+        self._progress_set = False
         self.setup_ui()
     
     def set_progress(self, value, animate=True):
         """Set progress value with optional animation"""
+        self._progress_set = True
         self._target_progress = max(0, min(100, value))
         
         if animate:
             self.animate_progress()
         else:
             self._progress = self._target_progress
-            self.update()
+            self.update_progress_display(self._target_progress)
     
     def animate_progress(self):
-        """Animate progress change"""
+        """Animate progress from current to target"""
         from src.core.config import config
         if not config.get('appearance.enable_animations', True):
             self._progress = self._target_progress
-            self.update()
+            self.update_progress_display(self._target_progress)
             return
         
-        self.animation = QPropertyAnimation(self, b"progress")
+        self.animated_progress = AnimatedProgress(self)
+        self.animated_progress.progress_changed.connect(self.update_progress_display)
+        
+        self.animation = QPropertyAnimation(self.animated_progress, b"progress")
         self.animation.setDuration(800)
-        self.animation.setStartValue(float(self._progress))
-        self.animation.setEndValue(float(self._target_progress))
+        self.animation.setStartValue(self._progress)
+        self.animation.setEndValue(self._target_progress)
         self.animation.setEasingCurve(QEasingCurve.Type.OutCubic)
         self.animation.start()
     
-    @pyqtProperty(float)
-    def progress(self):
-        return self._progress
-    
-    @progress.setter
-    def progress(self, value):
-        self._progress = value
-        self.update()
-    
-    def update(self):
-        """Update the display"""
-        super().update()
+    def update_progress_display(self, progress):
+        """Update the visual progress bar and percentage"""
+        self._progress = progress
         
         if hasattr(self, 'progress_percent'):
-            self.progress_percent.setText(f"{int(self._progress)}%")
+            self.progress_percent.setText(f"{progress}%")
             
-            if self._progress >= 100:
+            if progress >= 100:
                 self.progress_percent.setProperty("class", "active-label")
-            elif self._progress >= 75:
+            elif progress >= 75:
                 self.progress_percent.setProperty("class", "accent-label")
             else:
                 self.progress_percent.setProperty("class", "")
@@ -80,10 +97,10 @@ class GoalItem(QFrame):
         if hasattr(self, 'progress_bar_container') and hasattr(self, 'progress_fill'):
             container_width = self.progress_bar_container.width() - 2
             
-            if self._progress >= 100:
+            if progress >= 100:
                 fill_width = container_width
-            elif self._progress > 0:
-                fill_width = max(4, int((self._progress / 100) * container_width))
+            elif progress > 0:
+                fill_width = max(4, int((progress / 100) * container_width))
             else:
                 fill_width = 0
             
@@ -92,7 +109,7 @@ class GoalItem(QFrame):
             from src.core.theme_manager import theme_manager
             theme = theme_manager.get_theme_by_name(theme_manager.get_active_theme())
             if theme:
-                progress_color = theme.success if self._progress >= 100 else theme.accent
+                progress_color = theme.success if progress >= 100 else theme.accent
                 
                 self.progress_fill.setStyleSheet(f"""
                     QFrame {{
@@ -135,6 +152,14 @@ class GoalItem(QFrame):
         progress_btn.installEventFilter(self)
         self.progress_btn = progress_btn
         header_row.addWidget(progress_btn)
+        
+        complete_btn = QPushButton("✓" if not self.goal.completed else "↻")
+        complete_btn.setToolTip("Mark as complete" if not self.goal.completed else "Mark as incomplete")
+        complete_btn.setFixedSize(32, 32)
+        complete_btn.clicked.connect(lambda: self.toggle_requested.emit(self.goal.id))
+        if self.goal.completed:
+            complete_btn.setProperty("class", "success-button")
+        header_row.addWidget(complete_btn)
         
         layout.addLayout(header_row)
         
@@ -261,6 +286,14 @@ class GoalItem(QFrame):
         layout.addLayout(actions_row)
         self.setLayout(layout)
     
+    def resizeEvent(self, event):
+        """Handle resize"""
+        super().resizeEvent(event)
+        if not self._progress_set:
+            return
+        if hasattr(self, '_progress'):
+            self.update_progress_display(self._progress)
+    
     def eventFilter(self, obj, event):
         """Handle mouse events for progress button"""
         if obj == self.progress_btn:
@@ -292,16 +325,16 @@ class GoalItem(QFrame):
         """Stop hold timer"""
         if self._hold_timer:
             self._hold_timer.stop()
-            self.progress_updated.emit(self.goal.id, int(self._progress))
+            self.progress_updated.emit(self.goal.id, self._progress)
     
     def on_hold_tick(self):
         """Handle hold tick"""
         self._hold_speed = min(self._hold_speed + 0.1, 5)
         new_progress = self._progress + (self._hold_direction * self._hold_speed)
-        new_progress = max(0, min(100, new_progress))
+        new_progress = max(0, min(100, int(new_progress)))
         
         if new_progress != self._progress:
             self._progress = new_progress
             self._target_progress = new_progress
-            self.goal.progress = int(new_progress)
-            self.update()
+            self.goal.progress = new_progress
+            self.update_progress_display(new_progress)

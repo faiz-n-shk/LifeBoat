@@ -21,9 +21,8 @@ class GoalsView(QWidget):
         super().__init__(parent)
         self.controller = GoalsController()
         self.goal_items = []
-        self.initial_load = True
         self.setup_ui()
-        QTimer.singleShot(100, self.load_data_with_animation)
+        QTimer.singleShot(100, self.load_goals)
     
     def setup_ui(self):
         """Setup goals UI"""
@@ -46,7 +45,7 @@ class GoalsView(QWidget):
         # Filter dropdown
         self.filter_combo = QComboBox()
         self.filter_combo.addItems(["All Goals", "Active", "Completed"])
-        self.filter_combo.currentTextChanged.connect(self.load_data_with_animation)
+        self.filter_combo.currentTextChanged.connect(self.load_goals)
         header_row.addWidget(self.filter_combo)
         
         # Add goal button
@@ -71,24 +70,10 @@ class GoalsView(QWidget):
         
         self.setLayout(layout)
     
-    def load_data_with_animation(self):
-        """Load goals and trigger animations"""
+    def load_goals(self):
+        """Load goals and set their progress"""
         from src.core.config import config
-        
-        # Reset all progress to 0 before loading
-        if config.get('appearance.enable_animations', True) and self.initial_load:
-            for goal_item in self.goal_items:
-                goal_item._progress = 0
-                goal_item._target_progress = 0
-                goal_item.update()
-        
-        self.load_data()
-    
-    def load_data(self):
-        """Load goals from database"""
-        from src.core.config import config
-        should_animate = config.get('appearance.enable_animations', True) and self.initial_load
-        self.initial_load = False
+        should_animate = config.get('appearance.enable_animations', True)
         
         # Clear existing goals
         while self.goals_layout.count():
@@ -119,32 +104,28 @@ class GoalsView(QWidget):
             self.goals_layout.addWidget(empty_label)
             return
         
-        # Create goal items
+        # Create goal items (all start at 0 progress)
         for goal in goals:
             goal_item = GoalItem(goal)
             goal_item.edit_requested.connect(self.edit_goal)
             goal_item.delete_requested.connect(self.delete_goal)
+            goal_item.toggle_requested.connect(self.toggle_complete)
             goal_item.progress_updated.connect(self.update_progress)
             self.goals_layout.addWidget(goal_item)
             self.goal_items.append(goal_item)
         
-        # Set progress with animation
+        # Set progress after a delay (like dashboard does)
+        QTimer.singleShot(50, lambda: self.set_all_progress(should_animate))
+    
+    def set_all_progress(self, animate):
+        """Set progress for all goal items"""
         for goal_item in self.goal_items:
-            goal_item.set_progress(goal_item.goal.progress, animate=should_animate)
+            goal_item.set_progress(goal_item.goal.progress, animate=animate)
     
     def showEvent(self, event):
-        """Handle show event to trigger animations"""
+        """Handle show event"""
         super().showEvent(event)
-        
-        from src.core.config import config
-        if config.get('appearance.enable_animations', True):
-            for goal_item in self.goal_items:
-                goal_item._progress = 0
-                goal_item._target_progress = 0
-                goal_item.update()
-        
-        self.initial_load = True
-        QTimer.singleShot(50, self.load_data_with_animation)
+        QTimer.singleShot(50, self.load_goals)
     
     def add_goal(self):
         """Open dialog to add new goal"""
@@ -153,8 +134,7 @@ class GoalsView(QWidget):
             data = dialog.get_goal_data()
             if data['title']:
                 self.controller.create_goal(**data)
-                # Reload without animation
-                self.load_data()
+                self.load_goals()
     
     def edit_goal(self, goal_id):
         """Open dialog to edit goal"""
@@ -171,8 +151,7 @@ class GoalsView(QWidget):
                 data = dialog.get_goal_data()
                 if data['title']:
                     self.controller.update_goal(goal_id, **data)
-                    # Reload without animation
-                    self.load_data()
+                    self.load_goals()
         except Exception as e:
             print(f"Error editing goal: {e}")
     
@@ -187,8 +166,12 @@ class GoalsView(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             self.controller.delete_goal(goal_id)
-            # Reload without animation
-            self.load_data()
+            self.load_goals()
+    
+    def toggle_complete(self, goal_id):
+        """Toggle goal completion status"""
+        self.controller.toggle_complete(goal_id)
+        self.load_goals()
     
     def update_progress(self, goal_id, new_progress):
         """Update goal progress"""
@@ -196,12 +179,4 @@ class GoalsView(QWidget):
     
     def refresh(self):
         """Refresh view"""
-        from src.core.config import config
-        if config.get('appearance.enable_animations', True):
-            for goal_item in self.goal_items:
-                goal_item._progress = 0
-                goal_item._target_progress = 0
-                goal_item.update()
-        
-        self.initial_load = True
-        self.load_data_with_animation()
+        self.load_goals()
