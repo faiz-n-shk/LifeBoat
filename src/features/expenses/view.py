@@ -111,20 +111,14 @@ class ExpensesView(QWidget):
     def create_summary_card(self, title: str, value: str, color: str) -> QFrame:
         """Create a summary card"""
         card = QFrame()
-        card.setStyleSheet(f"""
-            QFrame {{
-                background-color: #2d2d2d;
-                border: 1px solid #4d4d4d;
-                border-left: 4px solid {color};
-                border-radius: 8px;
-                padding: 20px;
-            }}
-        """)
+        card.setObjectName("summary-card")
+        card.setProperty("border-color", color)
         
         layout = QVBoxLayout(card)
         
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 14px; color: #b0b0b0;")
+        title_label.setProperty("class", "secondary-text")
+        title_label.setStyleSheet("font-size: 14px;")
         layout.addWidget(title_label)
         
         value_label = QLabel(value)
@@ -166,7 +160,8 @@ class ExpensesView(QWidget):
         
         if not expenses:
             empty = QLabel("No expenses yet")
-            empty.setStyleSheet("color: #b0b0b0; padding: 40px;")
+            empty.setProperty("class", "secondary-text")
+            empty.setStyleSheet("padding: 40px;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.expenses_layout.addWidget(empty)
         else:
@@ -188,7 +183,8 @@ class ExpensesView(QWidget):
         
         if not income:
             empty = QLabel("No income yet")
-            empty.setStyleSheet("color: #b0b0b0; padding: 40px;")
+            empty.setProperty("class", "secondary-text")
+            empty.setStyleSheet("padding: 40px;")
             empty.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.income_layout.addWidget(empty)
         else:

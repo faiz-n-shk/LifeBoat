@@ -62,7 +62,8 @@ class DashboardView(QWidget):
         
         # Placeholder for recent items
         self.recent_placeholder = QLabel("No recent activity")
-        self.recent_placeholder.setStyleSheet("color: #b0b0b0; padding: 20px;")
+        self.recent_placeholder.setProperty("class", "secondary-text")
+        self.recent_placeholder.setStyleSheet("padding: 20px;")
         self.recent_placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
         content_layout.addWidget(self.recent_placeholder)
         
@@ -117,14 +118,6 @@ class DashboardView(QWidget):
         """Create a summary card widget"""
         card = QFrame()
         card.setObjectName("summary-card")
-        card.setStyleSheet("""
-            #summary-card {
-                background-color: #2d2d2d;
-                border: 1px solid #4d4d4d;
-                border-radius: 8px;
-                padding: 20px;
-            }
-        """)
         
         layout = QVBoxLayout(card)
         layout.setSpacing(10)
@@ -143,7 +136,8 @@ class DashboardView(QWidget):
         
         # Title
         title_label = QLabel(title)
-        title_label.setStyleSheet("font-size: 14px; color: #b0b0b0;")
+        title_label.setProperty("class", "secondary-text")
+        title_label.setStyleSheet("font-size: 14px;")
         title_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(title_label)
         

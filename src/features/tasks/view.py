@@ -82,7 +82,8 @@ class TasksView(QWidget):
         if not tasks:
             # Show empty state
             empty_label = QLabel("No tasks yet. Click '+ Add Task' to create one.")
-            empty_label.setStyleSheet("color: #b0b0b0; padding: 40px;")
+            empty_label.setProperty("class", "secondary-text")
+            empty_label.setStyleSheet("padding: 40px;")
             empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
             self.tasks_layout.addWidget(empty_label)
             self.task_items.append(empty_label)

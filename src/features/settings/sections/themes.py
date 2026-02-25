@@ -27,7 +27,7 @@ class ThemesSection(QWidget):
         
         # Description
         desc = QLabel("Select a theme or create your own custom theme")
-        desc.setStyleSheet("color: #b0b0b0;")
+        desc.setProperty("class", "secondary-text")
         layout.addWidget(desc)
         
         # Themes container (no scroll, just list)
@@ -84,13 +84,7 @@ class ThemesSection(QWidget):
     def create_system_theme_item(self):
         """Create System theme item"""
         item = QFrame()
-        item.setStyleSheet("""
-            QFrame {
-                background-color: #3d3d3d;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        item.setProperty("class", "theme-item")
         
         layout = QHBoxLayout(item)
         
@@ -102,7 +96,7 @@ class ThemesSection(QWidget):
         info_layout.addWidget(name_label)
         
         desc_label = QLabel("Automatically switches between Dark and Light based on OS theme")
-        desc_label.setStyleSheet("color: #b0b0b0; font-size: 11px;")
+        desc_label.setProperty("class", "small-text")
         info_layout.addWidget(desc_label)
         
         layout.addLayout(info_layout, 1)
@@ -111,7 +105,7 @@ class ThemesSection(QWidget):
         current_theme = theme_manager.get_active_theme()
         if current_theme == "System":
             active_label = QLabel("✓ Active")
-            active_label.setStyleSheet("color: #28a745; font-weight: bold;")
+            active_label.setProperty("class", "active-label")
             layout.addWidget(active_label)
         else:
             apply_btn = QPushButton("Apply")
@@ -124,13 +118,7 @@ class ThemesSection(QWidget):
     def create_theme_item(self, theme, is_active):
         """Create a theme item widget"""
         item = QFrame()
-        item.setStyleSheet("""
-            QFrame {
-                background-color: #3d3d3d;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        item.setProperty("class", "theme-item")
         
         layout = QHBoxLayout(item)
         
@@ -168,7 +156,8 @@ class ThemesSection(QWidget):
         
         if theme.is_custom:
             custom_label = QLabel("Custom Theme")
-            custom_label.setStyleSheet("color: #0078d4; font-size: 11px;")
+            custom_label.setProperty("class", "accent-label")
+            custom_label.setStyleSheet("font-size: 11px;")
             info_layout.addWidget(custom_label)
         
         layout.addLayout(info_layout, 1)
@@ -179,7 +168,7 @@ class ThemesSection(QWidget):
         
         if is_active:
             active_label = QLabel("✓ Active")
-            active_label.setStyleSheet("color: #28a745; font-weight: bold;")
+            active_label.setProperty("class", "active-label")
             actions_layout.addWidget(active_label)
         else:
             apply_btn = QPushButton("Apply")
@@ -194,15 +183,8 @@ class ThemesSection(QWidget):
             actions_layout.addWidget(edit_btn)
             
             delete_btn = QPushButton("Delete")
+            delete_btn.setProperty("class", "danger-button")
             delete_btn.setFixedWidth(60)
-            delete_btn.setStyleSheet("""
-                QPushButton {
-                    background-color: #dc3545;
-                }
-                QPushButton:hover {
-                    background-color: #c82333;
-                }
-            """)
             delete_btn.clicked.connect(lambda: self.on_delete_theme(theme))
             actions_layout.addWidget(delete_btn)
         else:

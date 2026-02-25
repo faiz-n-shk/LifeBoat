@@ -27,17 +27,6 @@ class TaskItem(QFrame):
     def setup_ui(self):
         """Setup task item UI"""
         self.setObjectName("task-item")
-        self.setStyleSheet("""
-            #task-item {
-                background-color: #2d2d2d;
-                border: 1px solid #4d4d4d;
-                border-radius: 8px;
-                padding: 15px;
-            }
-            #task-item:hover {
-                border-color: #0078d4;
-            }
-        """)
         
         main_layout = QHBoxLayout(self)
         main_layout.setSpacing(15)
@@ -73,7 +62,7 @@ class TaskItem(QFrame):
         
         if meta_parts:
             meta_label = QLabel(" • ".join(meta_parts))
-            meta_label.setStyleSheet("font-size: 12px; color: #b0b0b0;")
+            meta_label.setProperty("class", "meta-text")
             info_layout.addWidget(meta_label)
         
         main_layout.addLayout(info_layout, 1)
@@ -90,15 +79,8 @@ class TaskItem(QFrame):
         
         # Delete button
         delete_btn = QPushButton("Delete")
+        delete_btn.setProperty("class", "danger-button")
         delete_btn.setFixedWidth(60)
-        delete_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #dc3545;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
-            }
-        """)
         delete_btn.clicked.connect(self.on_delete)
         actions_layout.addWidget(delete_btn)
         

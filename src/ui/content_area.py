@@ -26,7 +26,8 @@ class ContentArea(QWidget):
         # Default placeholder
         placeholder = QLabel("Select a feature from the sidebar")
         placeholder.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        placeholder.setStyleSheet("font-size: 18px; color: #b0b0b0;")
+        placeholder.setProperty("class", "secondary-text")
+        placeholder.setStyleSheet("font-size: 18px;")
         self.stack.addWidget(placeholder)
         
         self.setLayout(layout)

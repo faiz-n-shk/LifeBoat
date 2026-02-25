@@ -24,7 +24,7 @@ class PathsSection(QWidget):
         
         # Description
         desc = QLabel("Customize where your configuration and database files are stored")
-        desc.setStyleSheet("color: #b0b0b0;")
+        desc.setProperty("class", "secondary-text")
         desc.setWordWrap(True)
         layout.addWidget(desc)
         
@@ -55,13 +55,7 @@ class PathsSection(QWidget):
         
         # Warning message
         warning = QFrame()
-        warning.setStyleSheet("""
-            QFrame {
-                background-color: #3d3d3d;
-                border-radius: 6px;
-                padding: 15px;
-            }
-        """)
+        warning.setProperty("class", "warning-box")
         warning_layout = QVBoxLayout(warning)
         
         warning_title = QLabel("⚠ Important")
@@ -74,7 +68,7 @@ class PathsSection(QWidget):
             "• Use 'Restore Defaults' if files become corrupted\n"
             "• Always manually backup 'config.yaml' and 'lifeboat.db' for safety"
         )
-        warning_text.setStyleSheet("color: #b0b0b0; font-size: 12px;")
+        warning_text.setProperty("class", "meta-text")
         warning_layout.addWidget(warning_text)
         
         layout.addWidget(warning)
@@ -84,13 +78,7 @@ class PathsSection(QWidget):
     def create_path_section(self, title, current_path, is_custom, on_browse, on_reset, on_restore):
         """Create a path configuration section"""
         container = QFrame()
-        container.setStyleSheet("""
-            QFrame {
-                background-color: #3d3d3d;
-                border-radius: 8px;
-                padding: 15px;
-            }
-        """)
+        container.setProperty("class", "path-container")
         
         layout = QVBoxLayout(container)
         layout.setSpacing(10)
@@ -103,11 +91,12 @@ class PathsSection(QWidget):
         # Status and path
         status_text = "Custom Location" if is_custom else "Default Location"
         status_label = QLabel(status_text)
-        status_label.setStyleSheet(f"color: {'#0078d4' if is_custom else '#b0b0b0'}; font-size: 11px;")
+        status_label.setProperty("class", "accent-label" if is_custom else "secondary-text")
+        status_label.setStyleSheet("font-size: 11px;")
         layout.addWidget(status_label)
         
         path_label = QLabel(current_path)
-        path_label.setStyleSheet("color: #b0b0b0; font-size: 11px;")
+        path_label.setProperty("class", "small-text")
         path_label.setWordWrap(True)
         layout.addWidget(path_label)
         
@@ -126,15 +115,8 @@ class PathsSection(QWidget):
             btn_layout.addWidget(reset_btn)
         
         restore_btn = QPushButton("Restore Defaults")
+        restore_btn.setProperty("class", "warning-button")
         restore_btn.setFixedWidth(130)
-        restore_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #d97706;
-            }
-            QPushButton:hover {
-                background-color: #b45309;
-            }
-        """)
         restore_btn.clicked.connect(on_restore)
         btn_layout.addWidget(restore_btn)
         

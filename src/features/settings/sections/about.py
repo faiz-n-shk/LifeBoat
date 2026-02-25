@@ -36,20 +36,23 @@ class AboutSection(QWidget):
         
         # Version
         version = QLabel(f"Version {APP_VERSION}")
-        version.setStyleSheet("font-size: 14px; color: #b0b0b0;")
+        version.setProperty("class", "secondary-text")
+        version.setStyleSheet("font-size: 14px;")
         version.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version)
         
         # Description
         description = QLabel(APP_DESCRIPTION)
-        description.setStyleSheet("font-size: 13px; color: #b0b0b0;")
+        description.setProperty("class", "secondary-text")
+        description.setStyleSheet("font-size: 13px;")
         description.setAlignment(Qt.AlignmentFlag.AlignCenter)
         description.setWordWrap(True)
         layout.addWidget(description)
         
         # Author
         author = QLabel(f"Made by {APP_AUTHOR}")
-        author.setStyleSheet("font-size: 12px; color: #b0b0b0;")
+        author.setProperty("class", "secondary-text")
+        author.setStyleSheet("font-size: 12px;")
         author.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(author)
         
@@ -71,7 +74,8 @@ class AboutSection(QWidget):
         
         # Copyright
         copyright_label = QLabel("© 2025 Lifeboat Team. All rights reserved.")
-        copyright_label.setStyleSheet("font-size: 11px; color: #616161; margin-top: 20px;")
+        copyright_label.setProperty("class", "small-text")
+        copyright_label.setStyleSheet("margin-top: 20px;")
         copyright_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(copyright_label)
         

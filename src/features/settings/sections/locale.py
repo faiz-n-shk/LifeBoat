@@ -78,7 +78,8 @@ class LocaleSection(QWidget):
         
         # Show currency code (read-only)
         self.code_label = QLabel()
-        self.code_label.setStyleSheet("color: #b0b0b0; margin-left: 10px;")
+        self.code_label.setProperty("class", "secondary-text")
+        self.code_label.setStyleSheet("margin-left: 10px;")
         self.update_currency_code()
         self.currency_combo.currentTextChanged.connect(self.update_currency_code)
         currency_layout.addWidget(self.code_label)

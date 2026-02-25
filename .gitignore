@@ -37,3 +37,8 @@ main.py.txt
 build/
 dist/
 *.spec
+
+#config
+config.yaml
+/config
+themes.yaml

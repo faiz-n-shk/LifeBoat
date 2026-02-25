@@ -5,12 +5,12 @@ DO NOT MODIFY - These values are set by the application
 
 # Application Metadata (Read-only)
 APP_NAME = "Lifeboat"
-APP_VERSION = "2.0.0beta"
+APP_VERSION = "2.1beta"
 APP_AUTHOR = "Fayz212"
 APP_DESCRIPTION = "Personal Life Management Application"
 
 # Build Information
-BUILD_TYPE = "beta" # Options: "debug", "release", "beta"
+BUILD_TYPE = "beta" # Options: 'alpha', 'beta', 'release'
 MIN_PYTHON_VERSION = "3.8"
 
 # Internal Paths

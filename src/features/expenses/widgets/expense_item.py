@@ -27,18 +27,7 @@ class ExpenseItem(QFrame):
         """Setup item UI"""
         color = "#dc3545" if self.item_type == "expense" else "#28a745"
         
-        self.setStyleSheet(f"""
-            QFrame {{
-                background-color: #2d2d2d;
-                border: 1px solid #4d4d4d;
-                border-left: 4px solid {color};
-                border-radius: 8px;
-                padding: 15px;
-            }}
-            QFrame:hover {{
-                border-color: #0078d4;
-            }}
-        """)
+        self.setProperty("class", f"{self.item_type}-item")
         
         main_layout = QHBoxLayout(self)
         
@@ -63,11 +52,11 @@ class ExpenseItem(QFrame):
         # Description and date
         if self.item.description:
             desc_label = QLabel(self.item.description)
-            desc_label.setStyleSheet("font-size: 12px; color: #b0b0b0;")
+            desc_label.setProperty("class", "meta-text")
             info_layout.addWidget(desc_label)
         
         date_label = QLabel(self.item.date.strftime("%d %B %Y"))
-        date_label.setStyleSheet("font-size: 11px; color: #616161;")
+        date_label.setProperty("class", "small-text")
         info_layout.addWidget(date_label)
         
         main_layout.addLayout(info_layout, 1)
@@ -81,15 +70,8 @@ class ExpenseItem(QFrame):
         actions_layout.addWidget(edit_btn)
         
         delete_btn = QPushButton("Delete")
+        delete_btn.setProperty("class", "danger-button")
         delete_btn.setFixedWidth(60)
-        delete_btn.setStyleSheet("""
-            QPushButton {
-                background-color: #dc3545;
-            }
-            QPushButton:hover {
-                background-color: #c82333;
-            }
-        """)
         delete_btn.clicked.connect(self.on_delete)
         actions_layout.addWidget(delete_btn)
         

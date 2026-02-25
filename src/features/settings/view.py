@@ -60,14 +60,6 @@ class SettingsView(QWidget):
         """Create a settings section container"""
         container = QFrame()
         container.setObjectName("settings-section")
-        container.setStyleSheet("""
-            #settings-section {
-                background-color: #2d2d2d;
-                border: 1px solid #4d4d4d;
-                border-radius: 8px;
-                padding: 20px;
-            }
-        """)
         
         layout = QVBoxLayout(container)
         layout.setSpacing(15)

@@ -566,6 +566,96 @@ QLabel {{
     border-radius: 8px;
     padding: 20px;
 }}
+
+#task-item {{
+    background-color: {theme.bg_secondary};
+    border: 1px solid {theme.border};
+    border-radius: 8px;
+    padding: 15px;
+}}
+
+#task-item:hover {{
+    border-color: {theme.accent};
+}}
+
+/* Expense/Income Items */
+QFrame[class="expense-item"], QFrame[class="income-item"] {{
+    background-color: {theme.bg_secondary};
+    border: 1px solid {theme.border};
+    border-radius: 8px;
+    padding: 15px;
+}}
+
+QFrame[class="expense-item"]:hover, QFrame[class="income-item"]:hover {{
+    border-color: {theme.accent};
+}}
+
+/* Warning/Info Boxes */
+QFrame[class="warning-box"], QFrame[class="info-box"] {{
+    background-color: {theme.bg_tertiary};
+    border-radius: 6px;
+    padding: 15px;
+}}
+
+/* Path/Settings Containers */
+QFrame[class="path-container"], QFrame[class="theme-item"] {{
+    background-color: {theme.bg_tertiary};
+    border-radius: 8px;
+    padding: 15px;
+}}
+
+/* Secondary Text */
+QLabel[class="secondary-text"] {{
+    color: {theme.fg_secondary};
+}}
+
+QLabel[class="small-text"] {{
+    color: {theme.fg_secondary};
+    font-size: 11px;
+}}
+
+QLabel[class="meta-text"] {{
+    color: {theme.fg_secondary};
+    font-size: 12px;
+}}
+
+/* Success/Warning/Danger Buttons */
+QPushButton[class="danger-button"] {{
+    background-color: {theme.danger};
+}}
+
+QPushButton[class="danger-button"]:hover {{
+    background-color: {theme.danger};
+    opacity: 0.9;
+}}
+
+QPushButton[class="warning-button"] {{
+    background-color: {theme.warning};
+}}
+
+QPushButton[class="warning-button"]:hover {{
+    background-color: {theme.warning};
+    opacity: 0.9;
+}}
+
+QPushButton[class="success-button"] {{
+    background-color: {theme.success};
+}}
+
+QPushButton[class="success-button"]:hover {{
+    background-color: {theme.success};
+    opacity: 0.9;
+}}
+
+/* Active/Status Labels */
+QLabel[class="active-label"] {{
+    color: {theme.success};
+    font-weight: bold;
+}}
+
+QLabel[class="accent-label"] {{
+    color: {theme.accent};
+}}
 """
             return stylesheet
             
