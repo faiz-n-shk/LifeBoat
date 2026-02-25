@@ -6,9 +6,10 @@ from PyQt6.QtWidgets import (
     QLineEdit, QTextEdit, QComboBox, QDateEdit,
     QPushButton, QFormLayout, QDoubleSpinBox
 )
-from PyQt6.QtCore import QDate
+from PyQt6.QtCore import QDate, QTime
 
 from src.core.config import config
+from src.shared.widgets import TimePicker
 
 
 class IncomeDialog(QDialog):
@@ -58,7 +59,15 @@ class IncomeDialog(QDialog):
         self.date_input = QDateEdit()
         self.date_input.setCalendarPopup(True)
         self.date_input.setDate(QDate.currentDate())
+        
+        # Apply locale settings for calendar
+        self.apply_locale_to_calendar()
+        
         form.addRow("Date:", self.date_input)
+        
+        # Time
+        self.time_picker = TimePicker(self)
+        form.addRow("Time:", self.time_picker)
         
         # Source
         self.source_input = QLineEdit()
@@ -88,15 +97,37 @@ class IncomeDialog(QDialog):
         if self.income.description:
             self.description_input.setPlainText(self.income.description)
         self.date_input.setDate(QDate(self.income.date))
+        if self.income.time:
+            time = QTime(self.income.time)
+            self.time_picker.set_time(time.hour(), time.minute())
         if self.income.source:
             self.source_input.setText(self.income.source)
     
     def get_data(self):
         """Get form data"""
+        hour, minute = self.time_picker.get_time()
+        time_obj = QTime(hour, minute)
+        
         return {
             'amount': self.amount_input.value(),
             'category': self.category_combo.currentText(),
             'description': self.description_input.toPlainText().strip() or None,
             'date': self.date_input.date().toPyDate(),
+            'time': time_obj.toPyTime(),
             'source': self.source_input.text().strip() or None,
         }
+    
+    def apply_locale_to_calendar(self):
+        """Apply locale settings to calendar widget"""
+        from PyQt6.QtCore import Qt
+        
+        # Get week start setting
+        week_start = config.get('datetime.week_start', 'Monday')
+        
+        # Get the calendar widget
+        calendar = self.date_input.calendarWidget()
+        if calendar:
+            if week_start == 'Sunday':
+                calendar.setFirstDayOfWeek(Qt.DayOfWeek.Sunday)
+            else:
+                calendar.setFirstDayOfWeek(Qt.DayOfWeek.Monday)

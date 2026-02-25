@@ -147,6 +147,24 @@ QPushButton:disabled {{
     color: {theme.fg_secondary};
 }}
 
+/* Checkable Buttons (for AM/PM toggle) */
+QPushButton:checkable {{
+    background-color: {theme.bg_secondary};
+    color: {theme.fg_secondary};
+    border: 1px solid {theme.border};
+}}
+
+QPushButton:checked {{
+    background-color: {theme.accent};
+    color: {theme.fg_primary};
+    border: 2px solid {theme.accent};
+    font-weight: bold;
+}}
+
+QPushButton:checkable:hover {{
+    border: 1px solid {theme.accent};
+}}
+
 /* Input Fields */
 QLineEdit, QTextEdit, QPlainTextEdit {{
     background-color: {theme.bg_secondary};
@@ -414,7 +432,8 @@ QDateEdit:hover, QTimeEdit:hover, QDateTimeEdit:hover {{
     border: 1px solid {theme.accent};
 }}
 
-QDateEdit::drop-down, QTimeEdit::drop-down, QDateTimeEdit::drop-down {{
+/* DateEdit dropdown button with calendar icon */
+QDateEdit::drop-down {{
     subcontrol-origin: border;
     subcontrol-position: center right;
     background-color: {theme.bg_tertiary};
@@ -424,11 +443,44 @@ QDateEdit::drop-down, QTimeEdit::drop-down, QDateTimeEdit::drop-down {{
     width: 20px;
 }}
 
-QDateEdit::drop-down:hover, QTimeEdit::drop-down:hover, QDateTimeEdit::drop-down:hover {{
+QDateEdit::drop-down:hover {{
     background-color: {theme.accent};
 }}
 
-QDateEdit::down-arrow, QTimeEdit::down-arrow, QDateTimeEdit::down-arrow {{
+QDateEdit::down-arrow {{
+    image: url(assets/icons/calendar.svg);
+    width: 12px;
+    height: 12px;
+}}
+
+/* TimeEdit - no dropdown button */
+QTimeEdit::drop-down {{
+    width: 0px;
+    border: none;
+}}
+
+QTimeEdit::down-arrow {{
+    image: none;
+    width: 0px;
+    height: 0px;
+}}
+
+/* DateTimeEdit dropdown button */
+QDateTimeEdit::drop-down {{
+    subcontrol-origin: border;
+    subcontrol-position: center right;
+    background-color: {theme.bg_tertiary};
+    border-left: 1px solid {theme.border};
+    border-top-right-radius: 5px;
+    border-bottom-right-radius: 5px;
+    width: 20px;
+}}
+
+QDateTimeEdit::drop-down:hover {{
+    background-color: {theme.accent};
+}}
+
+QDateTimeEdit::down-arrow {{
     image: url(assets/icons/calendar.svg);
     width: 12px;
     height: 12px;
