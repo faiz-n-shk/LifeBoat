@@ -76,7 +76,8 @@ class BaseDialog(QDialog):
         desc_container.addWidget(self.description_input)
         
         resize_handle = QLabel()
-        pixmap = QPixmap("assets/icons/resize-grip.svg")
+        from src.core.path_manager import get_resource_path
+        pixmap = QPixmap(get_resource_path("assets/icons/resize-grip.svg"))
         resize_handle.setPixmap(pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, 
                                               Qt.TransformationMode.SmoothTransformation))
         resize_handle.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)

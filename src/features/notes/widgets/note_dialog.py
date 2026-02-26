@@ -61,9 +61,10 @@ class NoteDialog(BaseDialog):
         content_container.addWidget(self.content_input)
         
         # Resize grip
+        from src.core.path_manager import get_resource_path
         resize_handle = QLabel()
         try:
-            pixmap = QPixmap("assets/icons/resize-grip.svg")
+            pixmap = QPixmap(get_resource_path("assets/icons/resize-grip.svg"))
             resize_handle.setPixmap(pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, 
                                                   Qt.TransformationMode.SmoothTransformation))
         except:

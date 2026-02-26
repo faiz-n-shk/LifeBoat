@@ -279,7 +279,8 @@ class AppearanceSection(QWidget):
         fonts.update(default_fonts)
         
         # Load custom fonts from assets/fonts directory
-        fonts_dir = "assets/fonts"
+        from src.core.path_manager import get_resource_path
+        fonts_dir = get_resource_path("assets/fonts")
         if os.path.exists(fonts_dir):
             for filename in os.listdir(fonts_dir):
                 if filename.lower().endswith(('.ttf', '.otf')):
@@ -305,7 +306,8 @@ class AppearanceSection(QWidget):
         if file_path:
             try:
                 # Create fonts directory if it doesn't exist
-                fonts_dir = "assets/fonts"
+                from src.core.path_manager import get_resource_path
+                fonts_dir = get_resource_path("assets/fonts")
                 os.makedirs(fonts_dir, exist_ok=True)
                 
                 # Copy font file to assets/fonts

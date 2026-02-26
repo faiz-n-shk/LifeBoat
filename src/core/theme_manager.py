@@ -129,6 +129,20 @@ class ThemeManager(QObject):
             font_family = config.get('appearance.font_family', 'Segoe UI')
             font_size = config.get('appearance.font_size', 13)
             
+            # Helper to get absolute paths for CSS url()
+            from src.core.path_manager import get_resource_path
+            import os
+            def css_url(relative_path):
+                """Convert relative asset path to absolute path for CSS"""
+                abs_path = str(get_resource_path(relative_path)).replace('\\', '/')
+                return f"url({abs_path})"
+            
+            # Pre-generate all icon URLs
+            arrow_down_url = css_url("assets/icons/arrow-down.svg")
+            arrow_up_url = css_url("assets/icons/arrow-up.svg")
+            calendar_url = css_url("assets/icons/calendar.svg")
+            check_url = css_url("assets/icons/check.svg")
+            
             stylesheet = f"""
 /* {theme_name} Theme - Generated Stylesheet */
 
@@ -298,7 +312,7 @@ QComboBox::drop-down {{
 }}
 
 QComboBox::down-arrow {{
-    image: url(assets/icons/arrow-down.svg);
+    image: {arrow_down_url};
     width: 12px;
     height: 12px;
 }}
@@ -377,13 +391,13 @@ QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
 }}
 
 QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
-    image: url(assets/icons/arrow-up.svg);
+    image: {arrow_up_url};
     width: 10px;
     height: 10px;
 }}
 
 QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
-    image: url(assets/icons/arrow-down.svg);
+    image: {arrow_down_url};
     width: 10px;
     height: 10px;
 }}
@@ -411,7 +425,7 @@ QCheckBox::indicator:hover {{
 QCheckBox::indicator:checked {{
     background-color: {theme.accent};
     border-color: {theme.accent};
-    image: url(assets/icons/check.svg);
+    image: {check_url};
 }}
 
 /* RadioButton */
@@ -547,7 +561,7 @@ QDateEdit::drop-down:hover {{
 }}
 
 QDateEdit::down-arrow {{
-    image: url(assets/icons/calendar.svg);
+    image: {calendar_url};
     width: 12px;
     height: 12px;
 }}
@@ -568,7 +582,7 @@ QDateTimeEdit::drop-down:hover {{
 }}
 
 QDateTimeEdit::down-arrow {{
-    image: url(assets/icons/calendar.svg);
+    image: {calendar_url};
     width: 12px;
     height: 12px;
 }}
@@ -602,13 +616,13 @@ QTimeEdit::down-button:hover {{
 }}
 
 QTimeEdit::up-arrow {{
-    image: url(assets/icons/arrow-up.svg);
+    image: {arrow_up_url};
     width: 10px;
     height: 10px;
 }}
 
 QTimeEdit::down-arrow {{
-    image: url(assets/icons/arrow-down.svg);
+    image: {arrow_down_url};
     width: 10px;
     height: 10px;
 }}
@@ -682,13 +696,13 @@ QCalendarWidget QSpinBox::down-button:hover {{
 }}
 
 QCalendarWidget QSpinBox::up-arrow {{
-    image: url(assets/icons/arrow-up.svg);
+    image: {arrow_up_url};
     width: 10px;
     height: 10px;
 }}
 
 QCalendarWidget QSpinBox::down-arrow {{
-    image: url(assets/icons/arrow-down.svg);
+    image: {arrow_down_url};
     width: 10px;
     height: 10px;
 }}

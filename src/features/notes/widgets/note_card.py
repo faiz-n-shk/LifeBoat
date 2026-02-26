@@ -457,13 +457,15 @@ class NoteCard(QFrame):
         actions_layout.setSpacing(6)
         
         # Pin button
+        from src.core.path_manager import get_resource_path
+        
         pin_btn = QPushButton()
         pin_btn.setFixedSize(size, size)
         pin_btn.setToolTip("Pin" if not self.note.pinned else "Unpin")
         pin_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
         try:
-            pin_icon = QIcon("assets/icons/check.svg")
+            pin_icon = QIcon(get_resource_path("assets/icons/check.svg"))
             pin_btn.setIcon(pin_icon)
             pin_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
         except:
@@ -479,7 +481,7 @@ class NoteCard(QFrame):
         edit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
         try:
-            edit_icon = QIcon("assets/icons/edit.svg")
+            edit_icon = QIcon(get_resource_path("assets/icons/edit.svg"))
             edit_btn.setIcon(edit_icon)
             edit_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
         except:
@@ -495,7 +497,7 @@ class NoteCard(QFrame):
         delete_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
         try:
-            delete_icon = QIcon("assets/icons/delete.svg")
+            delete_icon = QIcon(get_resource_path("assets/icons/delete.svg"))
             delete_btn.setIcon(delete_icon)
             delete_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
         except:

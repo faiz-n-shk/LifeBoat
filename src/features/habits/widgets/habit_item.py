@@ -99,9 +99,11 @@ class HabitItem(QFrame):
         title.setFont(font)
         top_row.addWidget(title, 1)
         
+        from src.core.path_manager import get_resource_path
+        
         # Action buttons (inline)
         edit_btn = QPushButton()
-        edit_btn.setIcon(QIcon("assets/icons/edit.svg"))
+        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/edit.svg")))
         edit_btn.setFixedSize(24, 24)
         edit_btn.setToolTip("Edit")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -110,7 +112,7 @@ class HabitItem(QFrame):
         top_row.addWidget(edit_btn)
         
         delete_btn = QPushButton()
-        delete_btn.setIcon(QIcon("assets/icons/delete.svg"))
+        delete_btn.setIcon(QIcon(get_resource_path("assets/icons/delete.svg")))
         delete_btn.setFixedSize(24, 24)
         delete_btn.setToolTip("Delete")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
