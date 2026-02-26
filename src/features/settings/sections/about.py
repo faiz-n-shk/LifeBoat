@@ -233,7 +233,7 @@ class AboutSection(QWidget):
         # Fetch changelog from GitHub
         try:
             # Fetch CHANGELOG.md from GitHub repository
-            changelog_url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/documentation/CHANGELOG.md"
+            changelog_url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/changelogs/CHANGELOG.md"
             response = requests.get(changelog_url, timeout=5)
             
             if response.status_code == 200:
@@ -250,7 +250,7 @@ class AboutSection(QWidget):
 **Note:** Could not fetch changelog from GitHub (Status: {response.status_code}).
 
 The changelog file should be at:
-`documentation/CHANGELOG.md` in the main branch of the Lifeboat repository.
+`changelogs/CHANGELOG.md` in the main branch of the Lifeboat repository.
 
 Visit the repository for full changelog:
 [https://github.com/faiz-n-shk/LifeBoat](https://github.com/faiz-n-shk/LifeBoat)
@@ -268,7 +268,7 @@ Visit the repository for full changelog:
 Error: {str(e)}
 
 Please check your internet connection or visit:
-[https://github.com/faiz-n-shk/LifeBoat/blob/main/documentation/CHANGELOG.md](https://github.com/faiz-n-shk/LifeBoat/blob/main/documentation/CHANGELOG.md)
+[https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md](https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md)
 """)
         
         except Exception as e:
