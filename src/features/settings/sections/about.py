@@ -99,32 +99,36 @@ class AboutSection(QWidget):
     
     def on_check_updates(self):
         """Handle check for updates"""
-        from PyQt6.QtWidgets import QMessageBox
-        from PyQt6.QtCore import QUrl
+        from PyQt6.QtWidgets import QMessageBox, QApplication
+        from PyQt6.QtCore import QUrl, Qt
         from PyQt6.QtGui import QDesktopServices
         import requests
         
+        msg = None
         try:
             # Show checking message
             msg = QMessageBox(self)
             msg.setWindowTitle("Checking for Updates")
             msg.setText("Checking for updates...")
             msg.setStandardButtons(QMessageBox.StandardButton.NoButton)
+            msg.setWindowModality(Qt.WindowModality.ApplicationModal)
             msg.show()
-            msg.repaint()
+            QApplication.processEvents()
             
             # Fetch latest version from GitHub API
-            # Using lifeboat repo latest releases page
             api_url = "https://api.github.com/repos/faiz-n-shk/LifeBoat/releases/latest"
             response = requests.get(api_url, timeout=5)
             
+            # Close and delete the checking message
             msg.close()
+            msg.deleteLater()
+            msg = None
+            QApplication.processEvents()
             
             if response.status_code == 200:
                 data = response.json()
                 latest_version = data.get('tag_name', '').lstrip('v')
                 release_url = data.get('html_url', '')
-                release_notes = data.get('body', 'No release notes available.')
                 
                 # Compare versions
                 if latest_version > APP_VERSION:
@@ -160,6 +164,13 @@ class AboutSection(QWidget):
                 )
         
         except requests.exceptions.RequestException as e:
+            # Close checking message if still open
+            if msg:
+                msg.close()
+                msg.deleteLater()
+                msg = None
+                QApplication.processEvents()
+            
             # Network error
             QMessageBox.warning(
                 self,
@@ -170,6 +181,13 @@ class AboutSection(QWidget):
                 f"https://github.com/faiz-n-shk/LifeBoat/releases"
             )
         except Exception as e:
+            # Close checking message if still open
+            if msg:
+                msg.close()
+                msg.deleteLater()
+                msg = None
+                QApplication.processEvents()
+            
             # Other errors
             QMessageBox.critical(
                 self,
@@ -179,7 +197,7 @@ class AboutSection(QWidget):
     
     def on_view_changelog(self):
         """Handle view changelog"""
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextEdit, QPushButton, QHBoxLayout, QMessageBox
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QPushButton, QHBoxLayout, QMessageBox
         from PyQt6.QtCore import Qt
         import requests
         
@@ -191,11 +209,12 @@ class AboutSection(QWidget):
         layout = QVBoxLayout(dialog)
         
         # Text area for changelog
-        text_edit = QTextEdit()
-        text_edit.setReadOnly(True)
-        text_edit.setPlainText("Loading changelog from GitHub...")
+        text_browser = QTextBrowser()
+        text_browser.setReadOnly(True)
+        text_browser.setOpenExternalLinks(True)  # Enable clickable links
+        text_browser.setPlainText("Loading changelog from GitHub...")
         
-        layout.addWidget(text_edit)
+        layout.addWidget(text_browser)
         
         # Close button
         button_layout = QHBoxLayout()
@@ -214,17 +233,16 @@ class AboutSection(QWidget):
         # Fetch changelog from GitHub
         try:
             # Fetch CHANGELOG.md from GitHub repository
-            # Using the CHANGELOG.md file in git repo
-            changelog_url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/documentations/CHANGELOG.md"
+            changelog_url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/documentation/CHANGELOG.md"
             response = requests.get(changelog_url, timeout=5)
             
             if response.status_code == 200:
                 # Successfully fetched changelog
                 changelog_content = response.text
-                text_edit.setMarkdown(changelog_content)
+                text_browser.setMarkdown(changelog_content)
             else:
                 # File not found or other error
-                text_edit.setMarkdown(f"""
+                text_browser.setMarkdown(f"""
 # Changelog
 
 ## Version {APP_VERSION}
@@ -235,12 +253,12 @@ The changelog file should be at:
 `documentation/CHANGELOG.md` in the main branch of the Lifeboat repository.
 
 Visit the repository for full changelog:
-https://github.com/faiz-n-shk/LifeBoat
+[https://github.com/faiz-n-shk/LifeBoat](https://github.com/faiz-n-shk/LifeBoat)
 """)
         
         except requests.exceptions.RequestException as e:
             # Network error
-            text_edit.setMarkdown(f"""
+            text_browser.setMarkdown(f"""
 # Changelog
 
 ## Version {APP_VERSION}
@@ -250,11 +268,11 @@ https://github.com/faiz-n-shk/LifeBoat
 Error: {str(e)}
 
 Please check your internet connection or visit:
-https://github.com/faiz-n-shk/LifeBoat/blob/main/documentations/CHANGELOG.md
+[https://github.com/faiz-n-shk/LifeBoat/blob/main/documentation/CHANGELOG.md](https://github.com/faiz-n-shk/LifeBoat/blob/main/documentation/CHANGELOG.md)
 """)
         
         except Exception as e:
             # Other errors
-            text_edit.setPlainText(f"Error loading changelog: {str(e)}")
+            text_browser.setPlainText(f"Error loading changelog: {str(e)}")
         
         dialog.exec()
