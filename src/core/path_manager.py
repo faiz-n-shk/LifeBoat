@@ -26,10 +26,15 @@ class PathManager:
     """Manages custom file paths for config and database"""
     
     def __init__(self):
-        self.base_dir = Path(__file__).parent.parent.parent
-        
         # Determine if running as bundled app or in development
         self.is_bundled = getattr(sys, 'frozen', False)
+        
+        if self.is_bundled:
+            # For bundled app, base_dir is the directory containing the executable
+            self.base_dir = Path(sys.executable).parent
+        else:
+            # For development, base_dir is the project root
+            self.base_dir = Path(__file__).parent.parent.parent
         
         # For production (bundled), check for portable mode
         if self.is_bundled:
