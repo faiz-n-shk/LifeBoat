@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 
-from src.core.constants import APP_NAME, APP_VERSION, APP_AUTHOR, APP_DESCRIPTION
+from src.core.constants import APP_NAME, APP_VERSION, APP_AUTHOR, APP_DESCRIPTION, BUILD_TYPE
 
 
 class AboutSection(QWidget):
@@ -48,6 +48,17 @@ class AboutSection(QWidget):
         version.setProperty("class", "title-text")
         version.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(version)
+        
+        # Build type
+        import sys
+        if getattr(sys, 'frozen', False):
+            build_text = f"Production Build ({BUILD_TYPE.capitalize()})"
+        else:
+            build_text = f"Development Build ({BUILD_TYPE.capitalize()})"
+        build_label = QLabel(build_text)
+        build_label.setProperty("class", "secondary-text")
+        build_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        layout.addWidget(build_label)
         
         # Description
         description = QLabel(APP_DESCRIPTION)
