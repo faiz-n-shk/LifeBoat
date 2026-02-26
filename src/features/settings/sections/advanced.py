@@ -38,6 +38,38 @@ class AdvancedSection(QWidget):
         info_label.setWordWrap(True)
         layout.addWidget(info_label)
         
+        # Separator
+        layout.addSpacing(10)
+        
+        # Recent Activity Mode
+        activity_label = QLabel("Recent Activity Display:")
+        activity_label.setProperty("class", "section-label")
+        layout.addWidget(activity_label)
+        
+        from PyQt6.QtWidgets import QComboBox
+        activity_layout = QHBoxLayout()
+        activity_desc = QLabel("Show activities from:")
+        activity_layout.addWidget(activity_desc)
+        
+        self.activity_combo = QComboBox()
+        self.activity_combo.addItems(["Today Only", "Last 7 Days (Standard)", "Disabled"])
+        
+        # Map config values to combo box indices
+        activity_mode = config.get('advanced.recent_activity_mode', 'standard')
+        mode_map = {'today': 0, 'standard': 1, 'none': 2}
+        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 1))
+        self.activity_combo.currentIndexChanged.connect(self.on_value_changed)
+        activity_layout.addWidget(self.activity_combo)
+        activity_layout.addStretch()
+        
+        layout.addLayout(activity_layout)
+        
+        # Activity info label
+        activity_info = QLabel("Controls what recent activities are shown on the Dashboard.")
+        activity_info.setProperty("class", "secondary-text")
+        activity_info.setWordWrap(True)
+        layout.addWidget(activity_info)
+        
         # Apply and Cancel buttons
         apply_layout = QHBoxLayout()
         apply_layout.addStretch()
@@ -70,12 +102,21 @@ class AdvancedSection(QWidget):
         # Track changes for logging
         changes = []
         
-        # Save to config
+        # Save debug buttons setting
         old_debug = config.get('advanced.show_debug_buttons')
         new_debug = self.debug_check.isChecked()
         if old_debug != new_debug:
             changes.append(f"Debug buttons: {'enabled' if new_debug else 'disabled'}")
         config.set('advanced.show_debug_buttons', new_debug)
+        
+        # Save recent activity mode
+        mode_map = {0: 'today', 1: 'standard', 2: 'none'}
+        old_activity = config.get('advanced.recent_activity_mode', 'standard')
+        new_activity = mode_map[self.activity_combo.currentIndex()]
+        if old_activity != new_activity:
+            mode_names = {'today': 'Today Only', 'standard': 'Last 7 Days', 'none': 'Disabled'}
+            changes.append(f"Recent activity: {mode_names[new_activity]}")
+        config.set('advanced.recent_activity_mode', new_activity)
         
         if config.save(log_changes=False):
             # Log changes if any
@@ -113,6 +154,11 @@ class AdvancedSection(QWidget):
         """Cancel advanced changes and revert to saved values"""
         # Reload values from config
         self.debug_check.setChecked(config.get('advanced.show_debug_buttons', False))
+        
+        # Reload activity mode
+        activity_mode = config.get('advanced.recent_activity_mode', 'standard')
+        mode_map = {'today': 0, 'standard': 1, 'none': 2}
+        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 1))
         
         # Disable buttons
         self.apply_btn.setEnabled(False)

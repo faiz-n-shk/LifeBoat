@@ -107,6 +107,15 @@ notes:
 # Advanced Settings
 advanced:
   show_debug_buttons: false  # Show reload/restart buttons in navigation
+  recent_activity_mode: "standard"  # Options: "today", "standard" (7 days), "none"
+
+# Behavior Settings
+behavior:
+  start_on_startup: false  # Start app when Windows starts
+  start_minimized: false  # Start app minimized to tray
+  minimize_to_tray: false  # Minimize to system tray instead of taskbar
+  close_to_tray: false  # Close button minimizes to tray instead of quitting
+
 """
 
 

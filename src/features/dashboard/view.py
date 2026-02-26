@@ -550,9 +550,36 @@ class DashboardView(QWidget):
         
         try:
             from src.core.activity_logger import activity_logger
+            from src.core.config import config
             
-            # Get recent activities excluding Settings
-            activities = activity_logger.get_recent_activities(limit=5, exclude_features=['Settings'])
+            # Get activity mode from settings
+            activity_mode = config.get('advanced.recent_activity_mode', 'standard')
+            
+            # If disabled, show message with link to settings
+            if activity_mode == 'none':
+                disabled_widget = QFrame()
+                disabled_layout = QVBoxLayout(disabled_widget)
+                disabled_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                
+                disabled_label = QLabel("Recent Activity is disabled")
+                disabled_label.setProperty("class", "secondary-text")
+                disabled_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                disabled_layout.addWidget(disabled_label)
+                
+                enable_btn = QPushButton("Enable in Settings")
+                enable_btn.setProperty("class", "secondary-button")
+                enable_btn.clicked.connect(self.open_activity_settings)
+                disabled_layout.addWidget(enable_btn, 0, Qt.AlignmentFlag.AlignCenter)
+                
+                self.recent_container.addWidget(disabled_widget)
+                return
+            
+            # Get recent activities excluding Settings and System
+            activities = activity_logger.get_recent_activities(
+                mode=activity_mode,
+                limit=5,
+                exclude_features=['Settings', 'System']
+            )
             
             if activities:
                 for activity in activities:
@@ -586,6 +613,18 @@ class DashboardView(QWidget):
         
         except Exception as e:
             print(f"Error loading recent activity: {e}")
+    
+    def open_activity_settings(self):
+        """Open settings and navigate to advanced section"""
+        try:
+            # Emit signal to switch to settings
+            from src.core.signals import signals
+            signals.navigate_requested.emit('Settings')
+            
+            # TODO: Navigate to advanced section within settings
+            # This would require the settings view to support direct section navigation
+        except Exception as e:
+            print(f"Error opening settings: {e}")
     
     def create_activity_item(self, icon: str, text: str, time: datetime) -> QWidget:
         """Create an activity item"""

@@ -12,6 +12,7 @@ from src.core.constants import (
 )
 from src.core.config import config
 from src.core.theme_manager import theme_manager
+from src.core.system_tray import SystemTrayManager
 from src.ui.main_window import MainWindow
 
 
@@ -40,6 +41,11 @@ class LifeboatApp(QMainWindow):
         # Track resize state
         self.programmatic_resize = False
         self.resize_timer = None
+        
+        # Initialize system tray
+        self.tray_manager = SystemTrayManager(self)
+        self.tray_manager.show_window_requested.connect(self.show_from_tray)
+        self.tray_manager.quit_requested.connect(self.quit_application)
     
     def setup_window(self):
         """Setup window size and position"""
@@ -79,13 +85,20 @@ class LifeboatApp(QMainWindow):
     
     def closeEvent(self, event):
         """Handle window close event"""
+        # Check if close button should minimize to tray
+        if config.get('behavior.close_to_tray', False):
+            event.ignore()
+            self.hide()
+            return
+        
         # Save window size if enabled
         if config.get('window.remember_size', True):
             config.set('window.width', self.width())
             config.set('window.height', self.height())
             config.save()
         
-        event.accept()
+        # Quit application
+        self.quit_application()
     
     def resizeEvent(self, event):
         """Handle window resize event"""
@@ -130,3 +143,37 @@ class LifeboatApp(QMainWindow):
                     appearance_section.update_resolution_display()
         except Exception as e:
             print(f"Error updating settings display: {e}")
+    
+    def changeEvent(self, event):
+        """Handle window state changes"""
+        super().changeEvent(event)
+        
+        # Check if window was minimized and minimize to tray is enabled
+        if event.type() == event.Type.WindowStateChange:
+            if self.isMinimized() and config.get('behavior.minimize_to_tray', False):
+                # Hide window to tray
+                self.hide()
+                event.ignore()
+    
+    def show_from_tray(self):
+        """Show window from system tray"""
+        self.show()
+        self.setWindowState(self.windowState() & ~Qt.WindowState.WindowMinimized | Qt.WindowState.WindowActive)
+        self.activateWindow()
+        self.raise_()
+    
+    def quit_application(self):
+        """Quit the application properly"""
+        # Save window size if enabled
+        if config.get('window.remember_size', True):
+            config.set('window.width', self.width())
+            config.set('window.height', self.height())
+            config.save()
+        
+        # Hide tray icon
+        if hasattr(self, 'tray_manager'):
+            self.tray_manager.hide()
+        
+        # Quit application
+        from PyQt6.QtWidgets import QApplication
+        QApplication.quit()

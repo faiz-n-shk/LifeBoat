@@ -1,15 +1,15 @@
 """
 Activity Logger
-Logs user activities across the application
+Logs user activities across the application with session-based log rotation
 """
 import os
-from datetime import datetime
+from datetime import datetime, timedelta
 from pathlib import Path
 from src.core.path_manager import path_manager
 
 
 class ActivityLogger:
-    """Singleton activity logger"""
+    """Singleton activity logger with session-based rotation"""
     
     _instance = None
     
@@ -24,37 +24,42 @@ class ActivityLogger:
             return
         
         self._initialized = True
-        self.current_date = datetime.now().date()
+        self.session_start = datetime.now()
         self.log_file = None
+        self._rotate_on_start()
         self._ensure_log_file()
     
-    def _ensure_log_file(self):
-        """Ensure log file exists and rotate if needed"""
+    def _rotate_on_start(self):
+        """Rotate log on app start - archive previous latest.log"""
         logs_dir = path_manager.get_logs_path()
         logs_dir.mkdir(parents=True, exist_ok=True)
         
-        today = datetime.now().date()
+        latest_log = logs_dir / "latest.log"
         
-        # Check if we need to rotate log
-        if self.current_date != today and self.log_file:
-            self._rotate_log()
-            self.current_date = today
-        
-        self.log_file = logs_dir / "latest.log"
+        # If latest.log exists, archive it with timestamp
+        if latest_log.exists():
+            try:
+                # Get file modification time for accurate archiving
+                mod_time = datetime.fromtimestamp(latest_log.stat().st_mtime)
+                archive_name = f"{mod_time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
+                archive_path = logs_dir / archive_name
+                
+                # Rename to archived log
+                latest_log.rename(archive_path)
+                print(f"[ActivityLogger] Archived previous log to: {archive_name}")
+            except Exception as e:
+                print(f"[ActivityLogger] Error archiving log: {e}")
     
-    def _rotate_log(self):
-        """Rotate current log file"""
-        if not self.log_file or not self.log_file.exists():
-            return
-        
+    def _ensure_log_file(self):
+        """Ensure log file exists"""
         logs_dir = path_manager.get_logs_path()
-        old_log_name = f"{self.current_date.strftime('%Y-%m-%d')}_log.log"
-        old_log_path = logs_dir / old_log_name
+        logs_dir.mkdir(parents=True, exist_ok=True)
+        self.log_file = logs_dir / "latest.log"
         
-        try:
-            self.log_file.rename(old_log_path)
-        except Exception as e:
-            print(f"Error rotating log: {e}")
+        # Log session start
+        if not self.log_file.exists():
+            with open(self.log_file, 'w', encoding='utf-8') as f:
+                f.write(f"[{self.session_start.strftime('%Y-%m-%d %H:%M:%S')}] [System] App started\n")
     
     def log(self, feature: str, action: str, details: str = None):
         """
@@ -80,77 +85,109 @@ class ActivityLogger:
                 f.write(log_entry)
         
         except Exception as e:
-            print(f"Error writing to log: {e}")
+            print(f"[ActivityLogger] Error writing to log: {e}")
     
-    def get_recent_activities(self, limit: int = 10, exclude_features: list = None):
+    def get_recent_activities(self, mode: str = "standard", limit: int = 10, exclude_features: list = None):
         """
-        Get recent activities from log
+        Get recent activities from logs
         
         Args:
+            mode: "today", "standard" (last 7 days), or "all"
             limit: Maximum number of activities to return
-            exclude_features: List of features to exclude (e.g., ['Settings'])
+            exclude_features: List of features to exclude (e.g., ['Settings', 'System'])
         
         Returns:
             List of activity dictionaries
         """
         try:
-            self._ensure_log_file()
+            logs_dir = path_manager.get_logs_path()
             
-            if not self.log_file.exists():
+            if not logs_dir.exists():
                 return []
+            
+            # Determine time filter
+            now = datetime.now()
+            if mode == "today":
+                cutoff_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif mode == "standard":
+                cutoff_time = now - timedelta(days=7)
+            else:  # "all"
+                cutoff_time = None
             
             activities = []
             
-            with open(self.log_file, 'r', encoding='utf-8') as f:
-                lines = f.readlines()
+            # Get all log files sorted by modification time (newest first)
+            log_files = sorted(
+                [f for f in logs_dir.glob("*.log")],
+                key=lambda x: x.stat().st_mtime,
+                reverse=True
+            )
             
-            # Read from end to get most recent first
-            for line in reversed(lines):
+            # Read logs from newest to oldest
+            for log_file in log_files:
                 if len(activities) >= limit:
                     break
                 
-                line = line.strip()
-                if not line:
-                    continue
-                
-                # Parse log entry: [timestamp] [feature] action - details
                 try:
-                    parts = line.split('] ', 2)
-                    if len(parts) < 3:
-                        continue
+                    with open(log_file, 'r', encoding='utf-8') as f:
+                        lines = f.readlines()
                     
-                    timestamp_str = parts[0].replace('[', '')
-                    feature = parts[1].replace('[', '')
-                    action_details = parts[2]
-                    
-                    # Skip excluded features
-                    if exclude_features and feature in exclude_features:
-                        continue
-                    
-                    # Split action and details
-                    if ' - ' in action_details:
-                        action, details = action_details.split(' - ', 1)
-                    else:
-                        action = action_details
-                        details = None
-                    
-                    timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
-                    
-                    activities.append({
-                        'timestamp': timestamp,
-                        'feature': feature,
-                        'action': action,
-                        'details': details
-                    })
+                    # Read from end to get most recent first
+                    for line in reversed(lines):
+                        if len(activities) >= limit:
+                            break
+                        
+                        line = line.strip()
+                        if not line:
+                            continue
+                        
+                        # Parse log entry: [timestamp] [feature] action - details
+                        try:
+                            parts = line.split('] ', 2)
+                            if len(parts) < 3:
+                                continue
+                            
+                            timestamp_str = parts[0].replace('[', '')
+                            feature = parts[1].replace('[', '')
+                            action_details = parts[2]
+                            
+                            # Parse timestamp
+                            timestamp = datetime.strptime(timestamp_str, "%Y-%m-%d %H:%M:%S")
+                            
+                            # Apply time filter
+                            if cutoff_time and timestamp < cutoff_time:
+                                continue
+                            
+                            # Skip excluded features
+                            if exclude_features and feature in exclude_features:
+                                continue
+                            
+                            # Split action and details
+                            if ' - ' in action_details:
+                                action, details = action_details.split(' - ', 1)
+                            else:
+                                action = action_details
+                                details = None
+                            
+                            activities.append({
+                                'timestamp': timestamp,
+                                'feature': feature,
+                                'action': action,
+                                'details': details
+                            })
+                        
+                        except Exception as e:
+                            # Skip malformed lines
+                            continue
                 
                 except Exception as e:
-                    print(f"Error parsing log line: {e}")
+                    print(f"[ActivityLogger] Error reading log file {log_file.name}: {e}")
                     continue
             
             return activities
         
         except Exception as e:
-            print(f"Error reading activities: {e}")
+            print(f"[ActivityLogger] Error reading activities: {e}")
             return []
 
 

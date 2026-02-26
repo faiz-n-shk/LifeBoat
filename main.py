@@ -9,7 +9,7 @@ from PyQt6.QtGui import QIcon
 
 from src.core.app import LifeboatApp
 from src.core.database import initialize_database
-from src.core.config import ensure_config_exists
+from src.core.config import ensure_config_exists, config
 
 
 def main():
@@ -64,7 +64,14 @@ def main():
     
     # Create and show main window
     window = LifeboatApp()
-    window.show()
+    
+    # Check if should start minimized
+    if config.get('behavior.start_minimized', False):
+        # Start hidden in system tray
+        window.hide()
+    else:
+        # Show window normally
+        window.show()
     
     # Run application
     sys.exit(app.exec())
