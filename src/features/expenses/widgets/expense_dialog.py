@@ -29,7 +29,10 @@ class ExpenseDialog(BaseDialog):
         amount_label = QLabel("Amount:")
         self.amount_input = QDoubleSpinBox()
         self.amount_input.setRange(0, 999999999)
-        self.amount_input.setDecimals(2)
+        
+        # Get decimal places from config
+        decimal_places = config.get('currency.decimal_places', 2)
+        self.amount_input.setDecimals(decimal_places)
         
         # Set currency prefix from config
         currency_symbol = config.get('currency.symbol', '₹')
