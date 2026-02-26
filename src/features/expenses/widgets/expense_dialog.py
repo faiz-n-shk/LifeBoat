@@ -34,9 +34,16 @@ class ExpenseDialog(BaseDialog):
         decimal_places = config.get('currency.decimal_places', 2)
         self.amount_input.setDecimals(decimal_places)
         
-        # Set currency prefix from config
+        # Set currency symbol and position from config
         currency_symbol = config.get('currency.symbol', '₹')
-        self.amount_input.setPrefix(f"{currency_symbol} ")
+        currency_position = config.get('currency.position', 'prefix')
+        
+        if currency_position == 'prefix':
+            self.amount_input.setPrefix(f"{currency_symbol} ")
+            self.amount_input.setSuffix("")
+        else:  # suffix
+            self.amount_input.setPrefix("")
+            self.amount_input.setSuffix(f" {currency_symbol}")
         
         self.layout.addWidget(amount_label)
         self.layout.addWidget(self.amount_input)
