@@ -13,3 +13,6 @@ PyYAML==6.0.3
 
 # OS Theme Detection
 darkdetect==0.8.0
+
+# HTTP Requests (for update checking)
+requests==2.32.5
