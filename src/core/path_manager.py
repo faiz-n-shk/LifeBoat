@@ -31,19 +31,27 @@ class PathManager:
         # Determine if running as bundled app or in development
         self.is_bundled = getattr(sys, 'frozen', False)
         
-        # For production (bundled), use AppData; for development, use project directory
+        # For production (bundled), check for portable mode
         if self.is_bundled:
-            # Production: Use %APPDATA%/Lifeboat for user data
-            appdata = os.getenv('APPDATA')
-            if not appdata:
-                # Fallback if APPDATA not found
-                appdata = Path.home() / 'AppData' / 'Roaming'
-            self.user_data_dir = Path(appdata) / 'Lifeboat'
+            # Check for portable mode marker file
+            portable_marker = self.base_dir / "portable.txt"
+            
+            if portable_marker.exists():
+                # PORTABLE MODE: Store everything in local UserData folder
+                self.user_data_dir = self.base_dir / "UserData"
+                print(f"[PathManager] Portable mode enabled, using: {self.user_data_dir}")
+            else:
+                # STANDARD MODE: Use AppData/Roaming for user data
+                appdata = os.getenv('APPDATA')
+                if not appdata:
+                    appdata = Path.home() / 'AppData' / 'Roaming'
+                self.user_data_dir = Path(appdata) / 'Lifeboat'
+                print(f"[PathManager] Standard mode, using AppData: {self.user_data_dir}")
             
             # Ensure user data directory exists
             self.user_data_dir.mkdir(exist_ok=True, parents=True)
             
-            # Default paths in AppData
+            # Default paths in user data directory
             self.paths_config_file = self.user_data_dir / "custom_paths.json"
             self.default_config = self.user_data_dir / "config.yaml"
             self.default_themes = self.user_data_dir / "themes.yaml"
@@ -51,7 +59,6 @@ class PathManager:
             self.default_db_template = self.user_data_dir / "default_settings.db"
             self.default_logs = self.user_data_dir / "logs"
             
-            print(f"[PathManager] Running as bundled app, using AppData: {self.user_data_dir}")
         else:
             # Development: Use project directory
             self.user_data_dir = self.base_dir
@@ -62,7 +69,7 @@ class PathManager:
             self.default_db_template = self.base_dir / "data" / "default_settings.db"
             self.default_logs = self.base_dir / "logs"
             
-            print(f"[PathManager] Running in development mode, using project directory: {self.base_dir}")
+            print(f"[PathManager] Development mode, using: {self.base_dir}")
             
             # Ensure directories exist (development only)
             (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
@@ -72,7 +79,7 @@ class PathManager:
         # Ensure logs directory exists
         self.default_logs.mkdir(exist_ok=True, parents=True)
         
-        # User fonts directory (always writable, in AppData for production)
+        # User fonts directory (always writable, relative to user data)
         if self.is_bundled:
             self.user_fonts_dir = self.user_data_dir / "fonts"
         else:

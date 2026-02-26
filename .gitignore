@@ -41,6 +41,7 @@ main.py.txt
 build/
 dist/
 *.spec
+*.iss
 
 #config
 config.yaml
