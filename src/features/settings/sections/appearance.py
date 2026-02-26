@@ -278,13 +278,24 @@ class AppearanceSection(QWidget):
         ]
         fonts.update(default_fonts)
         
-        # Load custom fonts from assets/fonts directory
-        from src.core.path_manager import get_resource_path
+        # Load bundled fonts from assets/fonts directory
+        from src.core.path_manager import get_resource_path, path_manager
         fonts_dir = get_resource_path("assets/fonts")
         if os.path.exists(fonts_dir):
             for filename in os.listdir(fonts_dir):
                 if filename.lower().endswith(('.ttf', '.otf')):
                     font_path = os.path.join(fonts_dir, filename)
+                    font_id = QFontDatabase.addApplicationFont(font_path)
+                    if font_id != -1:
+                        font_families = QFontDatabase.applicationFontFamilies(font_id)
+                        fonts.update(font_families)
+        
+        # Load user-imported fonts from user fonts directory
+        user_fonts_dir = path_manager.get_user_fonts_dir()
+        if os.path.exists(user_fonts_dir):
+            for filename in os.listdir(user_fonts_dir):
+                if filename.lower().endswith(('.ttf', '.otf')):
+                    font_path = os.path.join(user_fonts_dir, filename)
                     font_id = QFontDatabase.addApplicationFont(font_path)
                     if font_id != -1:
                         font_families = QFontDatabase.applicationFontFamilies(font_id)
@@ -305,12 +316,11 @@ class AppearanceSection(QWidget):
         
         if file_path:
             try:
-                # Create fonts directory if it doesn't exist
-                from src.core.path_manager import get_resource_path
-                fonts_dir = get_resource_path("assets/fonts")
-                os.makedirs(fonts_dir, exist_ok=True)
+                # Get user fonts directory (writable location)
+                from src.core.path_manager import path_manager
+                fonts_dir = path_manager.get_user_fonts_dir()
                 
-                # Copy font file to assets/fonts
+                # Copy font file to user fonts directory
                 filename = os.path.basename(file_path)
                 dest_path = os.path.join(fonts_dir, filename)
                 

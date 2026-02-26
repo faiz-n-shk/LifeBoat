@@ -37,17 +37,25 @@ def main():
     app.setOrganizationName("Fayz212")
     
     # Set application icon (for all windows and dialogs)
-    from src.core.path_manager import get_resource_path
+    from src.core.path_manager import get_resource_path, path_manager
     icon_path = get_resource_path("assets/lifeboat.ico")
     app.setWindowIcon(QIcon(icon_path))
     
-    # Load custom fonts from assets/fonts
+    # Load bundled fonts from assets/fonts
     from PyQt6.QtGui import QFontDatabase
     fonts_dir = get_resource_path("assets/fonts")
     if os.path.exists(fonts_dir):
         for filename in os.listdir(fonts_dir):
             if filename.lower().endswith(('.ttf', '.otf')):
                 font_path = os.path.join(fonts_dir, filename)
+                QFontDatabase.addApplicationFont(font_path)
+    
+    # Load user-imported fonts from user fonts directory
+    user_fonts_dir = path_manager.get_user_fonts_dir()
+    if os.path.exists(user_fonts_dir):
+        for filename in os.listdir(user_fonts_dir):
+            if filename.lower().endswith(('.ttf', '.otf')):
+                font_path = os.path.join(user_fonts_dir, filename)
                 QFontDatabase.addApplicationFont(font_path)
     
     # Initialize configuration and database

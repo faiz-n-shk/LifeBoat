@@ -27,17 +27,57 @@ class PathManager:
     
     def __init__(self):
         self.base_dir = Path(__file__).parent.parent.parent
-        self.paths_config_file = self.base_dir / "data" / "custom_paths.json"
-        self.default_config = self.base_dir / "config" / "config.yaml"
-        self.default_themes = self.base_dir / "config" / "themes.yaml"
-        self.default_db = self.base_dir / "data" / "lifeboat.db"
-        self.default_db_template = self.base_dir / "data" / "default_settings.db"
-        self.default_logs = self.base_dir / "logs"
         
-        # Ensure directories exist
-        (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
-        (self.base_dir / "data").mkdir(exist_ok=True, parents=True)
-        (self.base_dir / "logs").mkdir(exist_ok=True, parents=True)
+        # Determine if running as bundled app or in development
+        self.is_bundled = getattr(sys, 'frozen', False)
+        
+        # For production (bundled), use AppData; for development, use project directory
+        if self.is_bundled:
+            # Production: Use %APPDATA%/Lifeboat for user data
+            appdata = os.getenv('APPDATA')
+            if not appdata:
+                # Fallback if APPDATA not found
+                appdata = Path.home() / 'AppData' / 'Roaming'
+            self.user_data_dir = Path(appdata) / 'Lifeboat'
+            
+            # Ensure user data directory exists
+            self.user_data_dir.mkdir(exist_ok=True, parents=True)
+            
+            # Default paths in AppData
+            self.paths_config_file = self.user_data_dir / "custom_paths.json"
+            self.default_config = self.user_data_dir / "config.yaml"
+            self.default_themes = self.user_data_dir / "themes.yaml"
+            self.default_db = self.user_data_dir / "lifeboat.db"
+            self.default_db_template = self.user_data_dir / "default_settings.db"
+            self.default_logs = self.user_data_dir / "logs"
+            
+            print(f"[PathManager] Running as bundled app, using AppData: {self.user_data_dir}")
+        else:
+            # Development: Use project directory
+            self.user_data_dir = self.base_dir
+            self.paths_config_file = self.base_dir / "data" / "custom_paths.json"
+            self.default_config = self.base_dir / "config" / "config.yaml"
+            self.default_themes = self.base_dir / "config" / "themes.yaml"
+            self.default_db = self.base_dir / "data" / "lifeboat.db"
+            self.default_db_template = self.base_dir / "data" / "default_settings.db"
+            self.default_logs = self.base_dir / "logs"
+            
+            print(f"[PathManager] Running in development mode, using project directory: {self.base_dir}")
+            
+            # Ensure directories exist (development only)
+            (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
+            (self.base_dir / "data").mkdir(exist_ok=True, parents=True)
+            (self.base_dir / "logs").mkdir(exist_ok=True, parents=True)
+        
+        # Ensure logs directory exists
+        self.default_logs.mkdir(exist_ok=True, parents=True)
+        
+        # User fonts directory (always writable, in AppData for production)
+        if self.is_bundled:
+            self.user_fonts_dir = self.user_data_dir / "fonts"
+        else:
+            self.user_fonts_dir = self.base_dir / "assets" / "fonts"
+        self.user_fonts_dir.mkdir(exist_ok=True, parents=True)
         
         # Load custom paths
         self.custom_paths = self._load_custom_paths()
@@ -99,6 +139,10 @@ class PathManager:
             return path
         print(f"[PathManager.get_logs_path] Using default: {self.default_logs}")
         return self.default_logs
+    
+    def get_user_fonts_dir(self):
+        """Get the user fonts directory (writable location for imported fonts)"""
+        return self.user_fonts_dir
     
     def set_custom_config_path(self, directory):
         """
