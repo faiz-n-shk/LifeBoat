@@ -322,10 +322,12 @@ class PathsSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "restored config", "To default settings")
                 
-                QMessageBox.information(
-                    self,
-                    "Success",
-                    f"{message}"
+                # Show restart dialog
+                self.show_restart_dialog(
+                    "Config Restored",
+                    f"{message}\n\n"
+                    "Restart Now: Apply changes immediately and restart the application\n"
+                    "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
                 QMessageBox.critical(self, "Error", message)
@@ -361,11 +363,18 @@ class PathsSection(QWidget):
                     from src.core.activity_logger import activity_logger
                     activity_logger.log("Settings", "restored database", "To default state")
                     
-                    QMessageBox.information(
+                    # Force immediate restart for database restore
+                    reply3 = QMessageBox.information(
                         self,
-                        "Success",
-                        f"{message}"
+                        "Database Restored",
+                        f"{message}\n\n"
+                        "The application will now restart to complete the restore.",
+                        QMessageBox.StandardButton.Ok
                     )
+                    
+                    # Trigger restart
+                    from src.core.config import config
+                    config.signals.restart_requested.emit()
                 else:
                     QMessageBox.critical(self, "Error", message)
     
@@ -443,11 +452,87 @@ class PathsSection(QWidget):
     
     def refresh_ui(self):
         """Refresh UI to show updated paths"""
-        # Clear and rebuild
+        # Get the current layout
         layout = self.layout()
+        
+        # Clear all widgets from layout
         while layout.count():
             item = layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
         
-        self.setup_ui()
+        # Rebuild the UI content in the existing layout
+        layout.setSpacing(15)
+        
+        # Description
+        desc = QLabel("Customize where your configuration and database files are stored")
+        desc.setProperty("class", "secondary-text")
+        desc.setWordWrap(True)
+        layout.addWidget(desc)
+        
+        # Get current paths info
+        paths_info = path_manager.get_current_paths_info()
+        
+        # Config file section
+        self.config_section = self.create_path_section(
+            "Configuration File (config.yaml)",
+            paths_info['config']['current'],
+            paths_info['config']['is_custom'],
+            self.on_browse_config,
+            self.on_reset_config,
+            self.on_restore_config
+        )
+        layout.addWidget(self.config_section)
+        
+        # Themes file section
+        self.themes_section = self.create_path_section(
+            "Themes File (themes.yaml)",
+            paths_info['themes']['current'],
+            paths_info['themes']['is_custom'],
+            self.on_browse_themes,
+            self.on_reset_themes,
+            None
+        )
+        layout.addWidget(self.themes_section)
+        
+        # Database file section
+        self.database_section = self.create_path_section(
+            "Database File (lifeboat.db)",
+            paths_info['database']['current'],
+            paths_info['database']['is_custom'],
+            self.on_browse_database,
+            self.on_reset_database,
+            self.on_restore_database
+        )
+        layout.addWidget(self.database_section)
+        
+        # Logs directory section
+        self.logs_section = self.create_path_section(
+            "Logs Directory",
+            paths_info['logs']['current'],
+            paths_info['logs']['is_custom'],
+            self.on_browse_logs,
+            self.on_reset_logs,
+            None
+        )
+        layout.addWidget(self.logs_section)
+        
+        # Warning message
+        warning = QFrame()
+        warning.setProperty("class", "warning-box")
+        warning_layout = QVBoxLayout(warning)
+        
+        warning_title = QLabel("⚠ Important")
+        warning_title.setStyleSheet("font-weight: bold;")
+        warning_layout.addWidget(warning_title)
+        
+        warning_text = QLabel(
+            "• Changing file locations requires restarting the application\n"
+            "• Original files remain in the app directory as backup\n"
+            "• Use 'Restore Defaults' if files become corrupted\n"
+            "• Always manually backup 'config.yaml' and 'lifeboat.db' for safety"
+        )
+        warning_text.setProperty("class", "meta-text")
+        warning_layout.addWidget(warning_text)
+        
+        layout.addWidget(warning)

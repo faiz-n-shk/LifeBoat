@@ -83,7 +83,7 @@ class AdvancedSection(QWidget):
                 from src.core.activity_logger import activity_logger
                 activity_logger.log("Settings", "updated advanced", ", ".join(changes))
             
-            # Emit signal to reload UI
+            # Emit signal to reload UI with new advanced settings
             config.signals.advanced_changed.emit()
             
             # Restore scroll position after UI refresh
@@ -99,7 +99,7 @@ class AdvancedSection(QWidget):
             QMessageBox.information(
                 self,
                 "Success",
-                "Advanced settings applied successfully!\n\nRestart the app to see changes."
+                "Advanced settings applied successfully!"
             )
         else:
             from PyQt6.QtWidgets import QMessageBox

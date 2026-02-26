@@ -29,6 +29,7 @@ class ConfigSignals(QObject):
     appearance_changed = pyqtSignal()
     locale_changed = pyqtSignal()
     advanced_changed = pyqtSignal()
+    restart_requested = pyqtSignal()
 
 
 class Config:
@@ -41,14 +42,25 @@ class Config:
     
     def load(self) -> None:
         """Load configuration from file"""
-        if not CONFIG_FILE.exists():
-            create_default_config(CONFIG_FILE)
+        # Use path_manager to get the correct config path
+        from src.core.path_manager import path_manager
+        config_file = path_manager.get_config_path()
+        
+        print(f"[Config.load] Loading config from: {config_file}")
+        print(f"[Config.load] Custom paths: {path_manager.custom_paths}")
+        
+        if not config_file.exists():
+            print(f"[Config.load] Config doesn't exist, creating default at: {config_file}")
+            create_default_config(config_file)
         
         try:
-            with open(CONFIG_FILE, 'r', encoding='utf-8') as f:
+            with open(config_file, 'r', encoding='utf-8') as f:
                 self._config = yaml.safe_load(f) or {}
+            print(f"[Config.load] Successfully loaded config from: {config_file}")
         except Exception as e:
-            print(f"Error loading config: {e}")
+            print(f"[Config.load] ERROR loading config from {config_file}: {e}")
+            import traceback
+            traceback.print_exc()
             self._config = {}
     
     def reload(self, emit_signal: bool = True) -> None:
@@ -97,8 +109,17 @@ class Config:
             log_changes: Whether to log the save action
         """
         try:
-            with open(CONFIG_FILE, 'w', encoding='utf-8') as f:
+            # Use path_manager to get the correct config path
+            from src.core.path_manager import path_manager
+            config_file = path_manager.get_config_path()
+            
+            print(f"[Config.save] Saving config to: {config_file}")
+            print(f"[Config.save] Custom paths: {path_manager.custom_paths}")
+            
+            with open(config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
+            
+            print(f"[Config.save] Successfully saved config to: {config_file}")
             
             if log_changes:
                 from src.core.activity_logger import activity_logger
@@ -106,7 +127,9 @@ class Config:
             
             return True
         except Exception as e:
-            print(f"Error saving config: {e}")
+            print(f"[Config.save] ERROR saving config: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
 
@@ -116,6 +139,9 @@ config = Config()
 
 def ensure_config_exists() -> None:
     """Ensure config.yaml exists"""
-    if not CONFIG_FILE.exists():
-        create_default_config(CONFIG_FILE)
+    from src.core.path_manager import path_manager
+    config_file = path_manager.get_config_path()
+    
+    if not config_file.exists():
+        create_default_config(config_file)
         config.load()

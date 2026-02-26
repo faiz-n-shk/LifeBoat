@@ -6,13 +6,19 @@ from peewee import *
 from datetime import datetime
 from pathlib import Path
 
-from src.core.config import DATA_DIR
+# Get database path from path_manager
+def get_database_path():
+    """Get the correct database path (custom or default)"""
+    from src.core.path_manager import path_manager
+    db_path = path_manager.get_database_path()
+    print(f"[Database.get_database_path] Resolved to: {db_path}")
+    return db_path
 
-# Database path
-DATABASE_PATH = DATA_DIR / "lifeboat.db"
+# Initialize database with dynamic path
+DATABASE_PATH = get_database_path()
+db = SqliteDatabase(str(DATABASE_PATH))
 
-# Initialize database
-db = SqliteDatabase(DATABASE_PATH)
+print(f"[Database] Using database at: {DATABASE_PATH}")
 
 
 class BaseModel(Model):
@@ -74,9 +80,9 @@ def initialize_database():
         try:
             template_path = DATABASE_PATH.parent / "default_settings.db"
             shutil.copy2(DATABASE_PATH, template_path)
-            print(f"Created database template at: {template_path}")
+            print(f"[Database] Created database template at: {template_path}")
         except Exception as e:
-            print(f"Warning: Could not create database template: {e}")
+            print(f"[Database] Warning: Could not create database template: {e}")
         
         db.connect()
     else:

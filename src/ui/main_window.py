@@ -114,6 +114,7 @@ class MainWindow(QWidget):
         config.signals.appearance_changed.connect(self.on_appearance_changed)
         config.signals.locale_changed.connect(self.on_locale_changed)
         config.signals.advanced_changed.connect(self.on_advanced_changed)
+        config.signals.restart_requested.connect(self.on_restart)
 
     
     def on_navigate(self, feature_name: str):

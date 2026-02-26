@@ -75,8 +75,9 @@ class PathManager:
         custom_path = self.custom_paths.get('database_path')
         if custom_path:
             path = Path(custom_path)
-            if path.exists():
-                return path
+            print(f"[PathManager.get_database_path] Using custom: {path}")
+            return path
+        print(f"[PathManager.get_database_path] Using default: {self.default_db}")
         return self.default_db
     
     def get_themes_path(self):
@@ -84,8 +85,9 @@ class PathManager:
         custom_path = self.custom_paths.get('themes_path')
         if custom_path:
             path = Path(custom_path)
-            if path.exists():
-                return path
+            print(f"[PathManager.get_themes_path] Using custom: {path}")
+            return path
+        print(f"[PathManager.get_themes_path] Using default: {self.default_themes}")
         return self.default_themes
     
     def get_logs_path(self):
@@ -93,14 +95,15 @@ class PathManager:
         custom_path = self.custom_paths.get('logs_path')
         if custom_path:
             path = Path(custom_path)
-            if path.exists():
-                return path
+            print(f"[PathManager.get_logs_path] Using custom: {path}")
+            return path
+        print(f"[PathManager.get_logs_path] Using default: {self.default_logs}")
         return self.default_logs
     
     def set_custom_config_path(self, directory):
         """
         Set custom directory for config file
-        Copies config to new location if it doesn't exist
+        Does NOT copy if file already exists at custom location
         """
         try:
             directory = Path(directory)
@@ -109,12 +112,21 @@ class PathManager:
             
             custom_config = directory / "config.yaml"
             
-            # Copy config if it doesn't exist in custom location
+            # Only copy config if it doesn't exist in custom location
+            # This prevents overwriting existing custom configs
             if not custom_config.exists():
                 shutil.copy2(self.default_config, custom_config)
+                print(f"[PathManager] Copied default config to: {custom_config}")
+            else:
+                print(f"[PathManager] Using existing config at: {custom_config}")
             
             self.custom_paths['config_path'] = str(custom_config)
             self._save_custom_paths()
+            
+            # Reload config from the new custom location
+            from src.core.config import config
+            print(f"[PathManager] Reloading config from custom location: {custom_config}")
+            config.reload()
             
             return True, f"Config file set to: {custom_config}"
         except Exception as e:
@@ -123,7 +135,7 @@ class PathManager:
     def set_custom_database_path(self, directory):
         """
         Set custom directory for database file
-        Copies database to new location if it doesn't exist
+        Does NOT copy if file already exists at custom location
         """
         try:
             directory = Path(directory)
@@ -132,9 +144,12 @@ class PathManager:
             
             custom_db = directory / "lifeboat.db"
             
-            # Copy database if it doesn't exist in custom location
+            # Only copy database if it doesn't exist in custom location
             if not custom_db.exists() and self.default_db.exists():
                 shutil.copy2(self.default_db, custom_db)
+                print(f"[PathManager] Copied default database to: {custom_db}")
+            else:
+                print(f"[PathManager] Using existing database at: {custom_db}")
             
             self.custom_paths['database_path'] = str(custom_db)
             self._save_custom_paths()
@@ -146,7 +161,7 @@ class PathManager:
     def set_custom_themes_path(self, directory):
         """
         Set custom directory for themes file
-        Copies themes to new location if it doesn't exist
+        Does NOT copy if file already exists at custom location
         """
         try:
             directory = Path(directory)
@@ -155,9 +170,12 @@ class PathManager:
             
             custom_themes = directory / "themes.yaml"
             
-            # Copy themes if it doesn't exist in custom location
+            # Only copy themes if it doesn't exist in custom location
             if not custom_themes.exists():
                 shutil.copy2(self.default_themes, custom_themes)
+                print(f"[PathManager] Copied default themes to: {custom_themes}")
+            else:
+                print(f"[PathManager] Using existing themes at: {custom_themes}")
             
             self.custom_paths['themes_path'] = str(custom_themes)
             self._save_custom_paths()
@@ -169,19 +187,22 @@ class PathManager:
     def set_custom_logs_path(self, directory):
         """
         Set custom directory for logs
-        Moves existing logs to new location
+        Only copies logs that don't already exist at custom location
         """
         try:
             directory = Path(directory)
             if not directory.exists():
                 directory.mkdir(parents=True, exist_ok=True)
             
-            # Move existing logs if any
+            # Only copy logs that don't exist in custom location
             if self.default_logs.exists():
                 for log_file in self.default_logs.glob("*.log"):
                     dest = directory / log_file.name
                     if not dest.exists():
                         shutil.copy2(log_file, dest)
+                        print(f"[PathManager] Copied log file to: {dest}")
+                    else:
+                        print(f"[PathManager] Log file already exists at: {dest}")
             
             self.custom_paths['logs_path'] = str(directory)
             self._save_custom_paths()
@@ -195,27 +216,39 @@ class PathManager:
         if 'config_path' in self.custom_paths:
             del self.custom_paths['config_path']
             self._save_custom_paths()
+            
+            # Force reload config from default location
+            from src.core.config import config
+            print("[PathManager] Reloading config from default location after reset")
+            config.reload()
+            
         return True, "Config reset to default location"
     
     def reset_database_to_default(self):
         """Reset database to default location"""
+        print(f"[PathManager.reset_database_to_default] Current custom paths: {self.custom_paths}")
         if 'database_path' in self.custom_paths:
             del self.custom_paths['database_path']
             self._save_custom_paths()
+            print("[PathManager.reset_database_to_default] Database path reset to default")
         return True, "Database reset to default location"
     
     def reset_themes_to_default(self):
         """Reset themes to default location"""
+        print(f"[PathManager.reset_themes_to_default] Current custom paths: {self.custom_paths}")
         if 'themes_path' in self.custom_paths:
             del self.custom_paths['themes_path']
             self._save_custom_paths()
+            print("[PathManager.reset_themes_to_default] Themes path reset to default")
         return True, "Themes reset to default location"
     
     def reset_logs_to_default(self):
         """Reset logs to default location"""
+        print(f"[PathManager.reset_logs_to_default] Current custom paths: {self.custom_paths}")
         if 'logs_path' in self.custom_paths:
             del self.custom_paths['logs_path']
             self._save_custom_paths()
+            print("[PathManager.reset_logs_to_default] Logs path reset to default")
         return True, "Logs reset to default location"
     
     def restore_default_config(self):
@@ -225,16 +258,53 @@ class PathManager:
         """
         try:
             from src.core.config_template import create_default_config
-            current_config = self.get_config_path()
             
-            # Delete existing config
+            # Get the current config path (could be custom or default)
+            current_config = self.get_config_path()
+            print(f"Restoring config at: {current_config}")
+            print(f"Custom paths: {self.custom_paths}")
+            
+            # Create backup first if file exists
             if current_config.exists():
+                backup_path = current_config.with_suffix('.yaml.backup')
+                import shutil
+                shutil.copy2(current_config, backup_path)
+                print(f"Backup created at: {backup_path}")
+                
+                # Delete the config
                 current_config.unlink()
+                print(f"Deleted config at: {current_config}")
+            else:
+                print(f"Config file doesn't exist at: {current_config}")
+            
+            # Ensure the directory exists
+            current_config.parent.mkdir(parents=True, exist_ok=True)
             
             # Create fresh config from template
-            create_default_config(current_config)
-            return True, "Config restored to default settings. Please restart the app."
+            success = create_default_config(current_config)
+            print(f"Create default config result: {success}")
+            
+            if success:
+                # Verify the file was created
+                if current_config.exists():
+                    print(f"Config file created successfully at: {current_config}")
+                    
+                    # Force reload the config in memory
+                    from src.core.config import config
+                    config.reload()
+                    print("Config reloaded from file")
+                    
+                    return True, f"Config restored to default settings at:\n{current_config}\n\nA backup was created. Please restart the app to see all changes."
+                else:
+                    print(f"ERROR: Config file was not created at: {current_config}")
+                    return False, f"Config file was not created at: {current_config}"
+            else:
+                return False, "Failed to create default config file"
+                
         except Exception as e:
+            print(f"Error in restore_default_config: {e}")
+            import traceback
+            traceback.print_exc()
             return False, f"Error restoring config: {e}"
     
     def restore_default_database(self):
@@ -246,21 +316,25 @@ class PathManager:
             current_db = self.get_database_path()
             template_path = current_db.parent / "default_settings.db"
             
+            print(f"[PathManager.restore_default_database] Current DB: {current_db}")
+            print(f"[PathManager.restore_default_database] Template path: {template_path}")
+            
             # Backup current database
             if current_db.exists():
                 backup = current_db.with_suffix('.db.backup')
                 shutil.copy2(current_db, backup)
                 current_db.unlink()
-                print(f"Backup saved to: {backup}")
+                print(f"[PathManager.restore_default_database] Backup saved to: {backup}")
             
             # Delete old template if exists (might have outdated schema)
             if template_path.exists():
                 template_path.unlink()
-                print("Removed old template")
+                print("[PathManager.restore_default_database] Removed old template")
             
             # Database will be recreated with current schema on next app start
             return True, "Database reset. Please restart the app to complete."
         except Exception as e:
+            print(f"[PathManager.restore_default_database] ERROR: {e}")
             return False, f"Error restoring database: {e}"
     
     def get_current_paths_info(self):
