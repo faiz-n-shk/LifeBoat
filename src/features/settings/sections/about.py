@@ -232,7 +232,7 @@ class AboutSection(QWidget):
 **Note:** Could not fetch changelog from GitHub (Status: {response.status_code}).
 
 The changelog file should be at:
-`docs/CHANGELOG.md` in the main branch of the Lifeboat repository.
+`documentation/CHANGELOG.md` in the main branch of the Lifeboat repository.
 
 Visit the repository for full changelog:
 https://github.com/faiz-n-shk/LifeBoat
