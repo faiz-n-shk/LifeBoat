@@ -42,6 +42,7 @@ build/
 dist/
 *.spec
 *.iss
+installer_output/
 
 #config
 config.yaml
