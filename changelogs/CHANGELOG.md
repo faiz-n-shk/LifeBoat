@@ -1,6 +1,84 @@
 # Changelog
 
-## [v2.7.2] - 2026-02-26 (Current Beta)
+## [v2.7.3] - 2026-02-27 (Current Beta)
+
+**Commit:** `592edd4`  
+**Tag:** `v2.7.3`  
+**Build Type:** Beta
+
+### Major Features
+
+- **Custom Dialog System**: Complete overhaul of dialog windows with modern frameless design
+  - Custom title bar with draggable functionality
+  - Small square close button (28x28px) with SVG icon
+  - Fade in/out animations (150ms) respecting animation settings
+  - Escape key support for closing dialogs
+  - Theme-integrated styling with drop shadows and rounded corners
+
+- **No-Scroll Input Fields**: Fixed annoying scroll behavior on input widgets
+  - Created NoScroll wrapper classes: `NoScrollComboBox`, `NoScrollSpinBox`, `NoScrollDoubleSpinBox`, `NoScrollDateEdit`
+  - Applied to 40+ input fields across all features
+  - QTimeEdit fields intentionally kept scrollable
+  - Improved UX when navigating forms with mouse wheel
+
+- **Installer Update Detection**: Smart installer behavior for updates
+  - Detects existing installations via registry
+  - Shows "Update" vs "Install" messaging
+  - Yes/No/Cancel options for user choice
+  - Version numbers synced across app and installers
+
+### Added
+
+- `src/shared/dialogs.py` - Shared dialog system with NoScroll classes
+  - `BaseDialog` class for custom frameless dialogs
+  - `NoScrollComboBox`, `NoScrollSpinBox`, `NoScrollDoubleSpinBox`, `NoScrollDateEdit` classes
+  - Helper functions: `show_warning()`, `show_information()`, `show_critical()`, `show_question()`
+  - `create_message_box()` for custom message dialogs
+- `assets/icons/cross_mark.svg` - Custom close button icon
+- Single instance check using QSharedMemory in `main.py`
+- Update detection logic in installer scripts
+
+### Changed
+
+- Updated 30+ files to use shared dialog system instead of QMessageBox
+- All dropdown fields and spin boxes now use NoScroll versions
+- Theme editor dialog now extends BaseDialog
+- Installer scripts updated with version 2.7.3
+- Improved installer user experience with clear messaging
+
+### Fixed
+
+- **App Instance Bug (Issue #1)**: Multiple app instances can no longer be launched
+  - Implemented QSharedMemory single instance check
+  - Shows error dialog when trying to launch second instance
+  - Only one instance of Lifeboat can run at a time
+- **Window Management (Issue #1)**: Dialog minimize behavior fixed
+  - Dialogs are now independent frameless windows
+  - Custom dialogs don't minimize the main app window
+  - Proper window management with escape key support
+
+- **Visual Glitches (Issue #1)**: UI consistency improvements
+  - Emojis and icons no longer cropped in task items
+  - Notes search icon positioning fixed (moved outside text field)
+  - Improved visual consistency across all views
+
+- **Text Field Behavior (Issue #1)**: Scroll behavior removed from input fields
+  - Created NoScroll wrapper classes for all scrollable inputs
+  - Applied to 40+ input widgets across all features
+  - Mouse wheel now scrolls the window, not the input fields
+  - QTimeEdit fields intentionally kept scrollable
+
+- Theme editor dialog not using shared dialog system
+- Dialog animations not respecting animation settings
+- Installer version mismatch (now synced to 2.7.3)
+
+### Commits
+
+```
+592edd4 - fix dialogs, and scrolling UI issues
+```
+
+## [v2.7.2] - 2026-02-26
 
 **Commit:** `a00366a`  
 **Build Type:** Beta
@@ -801,27 +879,28 @@ This is a complete rewrite. Users upgrading from v1.x will need to:
 
 ## Version History Summary
 
-| Version  | Date       | Framework     | Status | Key Features                              |
-| -------- | ---------- | ------------- | ------ | ----------------------------------------- |
-| v2.7.2   | 2026-02-26 | PyQt6         | Beta   | Installers, Update Checker, Logging       |
-| v3.7\*   | 2026-02-25 | PyQt6         | Beta   | Application Icon (versioning error)       |
-| v3.6\*   | 2026-02-25 | PyQt6         | Beta   | Goals Patch 2 (versioning error)          |
-| v3.5\*   | 2026-02-25 | PyQt6         | Beta   | Goals Fixes (versioning error)            |
-| v3.4\*   | 2026-02-25 | PyQt6         | Beta   | Settings QoL (versioning error)           |
-| v3.2\*   | 2026-02-25 | PyQt6         | Beta   | Goals Updates (versioning error)          |
-| v3.1\*   | 2026-02-25 | PyQt6         | Beta   | Window Border Fix (versioning error)      |
-| v2.9\*   | 2026-02-25 | PyQt6         | Beta   | Goals Rework (versioning error)           |
-| v2.8.2\* | 2026-02-25 | PyQt6         | Beta   | YAML Themes (versioning error)            |
-| v2.8.1\* | 2026-02-25 | PyQt6         | Beta   | Chart Revamp (versioning error)           |
-| v2.7.4\* | 2026-02-25 | PyQt6         | Beta   | Theme Manager (versioning error)          |
-| v2.7.3\* | 2026-02-25 | PyQt6         | Beta   | Activity Logger (versioning error)        |
-| v2.7.1\* | 2026-02-25 | PyQt6         | Beta   | Todo Feature (versioning error)           |
-| v2.6.0   | 2026-02-25 | PyQt6         | Beta   | Notes, Goals, Habits, Todo (consolidated) |
-| v2.5.0   | 2026-02-25 | PyQt6         | Beta   | Goals & Habits Foundation                 |
-| v2.1.0   | 2026-02-25 | PyQt6         | Beta   | Calendar, Icons, Fonts                    |
-| v2.0.0   | 2026-02-25 | PyQt6         | Beta   | Complete PyQt6 Rewrite                    |
-| v1.1.0   | 2025-02-21 | CustomTkinter | Stable | Config System, Hot-reload                 |
-| v1.0.0   | 2025-02-19 | CustomTkinter | Stable | Initial Release                           |
+| Version  | Date       | Framework     | Status | Key Features                                       |
+| -------- | ---------- | ------------- | ------ | -------------------------------------------------- |
+| v2.7.3   | 2026-02-27 | PyQt6         | Beta   | Custom Dialogs, NoScroll Inputs, Installer Updates |
+| v2.7.2   | 2026-02-26 | PyQt6         | Beta   | Installers, Update Checker, Logging                |
+| v3.7\*   | 2026-02-25 | PyQt6         | Beta   | Application Icon (versioning error)                |
+| v3.6\*   | 2026-02-25 | PyQt6         | Beta   | Goals Patch 2 (versioning error)                   |
+| v3.5\*   | 2026-02-25 | PyQt6         | Beta   | Goals Fixes (versioning error)                     |
+| v3.4\*   | 2026-02-25 | PyQt6         | Beta   | Settings QoL (versioning error)                    |
+| v3.2\*   | 2026-02-25 | PyQt6         | Beta   | Goals Updates (versioning error)                   |
+| v3.1\*   | 2026-02-25 | PyQt6         | Beta   | Window Border Fix (versioning error)               |
+| v2.9\*   | 2026-02-25 | PyQt6         | Beta   | Goals Rework (versioning error)                    |
+| v2.8.2\* | 2026-02-25 | PyQt6         | Beta   | YAML Themes (versioning error)                     |
+| v2.8.1\* | 2026-02-25 | PyQt6         | Beta   | Chart Revamp (versioning error)                    |
+| v2.7.4\* | 2026-02-25 | PyQt6         | Beta   | Theme Manager (versioning error)                   |
+| v2.7.3\* | 2026-02-25 | PyQt6         | Beta   | Activity Logger (versioning error)                 |
+| v2.7.1\* | 2026-02-25 | PyQt6         | Beta   | Todo Feature (versioning error)                    |
+| v2.6.0   | 2026-02-25 | PyQt6         | Beta   | Notes, Goals, Habits, Todo (consolidated)          |
+| v2.5.0   | 2026-02-25 | PyQt6         | Beta   | Goals & Habits Foundation                          |
+| v2.1.0   | 2026-02-25 | PyQt6         | Beta   | Calendar, Icons, Fonts                             |
+| v2.0.0   | 2026-02-25 | PyQt6         | Beta   | Complete PyQt6 Rewrite                             |
+| v1.1.0   | 2025-02-21 | CustomTkinter | Stable | Config System, Hot-reload                          |
+| v1.0.0   | 2025-02-19 | CustomTkinter | Stable | Initial Release                                    |
 
 **Note:** Versions marked with \* (v2.7.1 through v3.7) had incorrect version numbers in constants.py due to versioning mistakes. These releases are documented individually above but are functionally part of the v2.6.0 development cycle.
 

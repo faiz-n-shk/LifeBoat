@@ -10,7 +10,7 @@ APP_AUTHOR = "Fayz212"
 APP_DESCRIPTION = "Personal Life Management Application"
 
 # Build Information
-BUILD_TYPE = "beta" # Options: "alpha", "beta", "release"
+BUILD_TYPE = "beta" # Options: "alpha", "beta", "stable"
 MIN_PYTHON_VERSION = "3.8"
 
 # Internal Paths
