@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.goals.controller import GoalsController
 from src.features.goals.widgets.goal_dialog import GoalDialog
@@ -44,7 +45,7 @@ class GoalsView(QWidget):
         header_row.addStretch()
         
         # Filter dropdown
-        self.filter_combo = QComboBox()
+        self.filter_combo = NoScrollComboBox()
         self.filter_combo.addItems(["All Goals", "Active", "Completed"])
         self.filter_combo.currentTextChanged.connect(self.load_data_with_animation)
         header_row.addWidget(self.filter_combo)
@@ -185,7 +186,10 @@ class GoalsView(QWidget):
     
     def delete_goal(self, goal_id):
         """Delete a goal"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import show_question
+        from PyQt6.QtWidgets import QMessageBox
+        
+        reply = show_question(
             self,
             "Delete Goal",
             "Are you sure you want to delete this goal?",

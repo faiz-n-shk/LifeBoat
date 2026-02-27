@@ -5,6 +5,7 @@ Dialog for creating and editing todos
 from PyQt6.QtWidgets import QLabel, QLineEdit, QComboBox, QDateEdit, QPushButton, QHBoxLayout
 from PyQt6.QtCore import Qt, QDate
 from datetime import date
+from src.shared.dialogs import NoScrollComboBox, NoScrollDateEdit
 
 from src.shared.dialogs import BaseDialog
 from src.core.config import config
@@ -31,7 +32,7 @@ class TodoDialog(BaseDialog):
         priority_label = QLabel("Priority:")
         self.layout.addWidget(priority_label)
         
-        self.priority_input = QComboBox()
+        self.priority_input = NoScrollComboBox()
         priorities = config.get('tasks.priorities', ['Low', 'Medium', 'High', 'Urgent'])
         self.priority_input.addItems(priorities)
         self.priority_input.setCurrentText("Medium")
@@ -44,7 +45,7 @@ class TodoDialog(BaseDialog):
         due_row = QHBoxLayout()
         due_row.setSpacing(10)
         
-        self.due_date_input = QDateEdit()
+        self.due_date_input = NoScrollDateEdit()
         self.due_date_input.setCalendarPopup(True)
         self.due_date_input.setDate(QDate.currentDate())
         self.due_date_input.setDisplayFormat("dd-MM-yyyy")
@@ -60,7 +61,7 @@ class TodoDialog(BaseDialog):
         category_label = QLabel("Category:")
         self.layout.addWidget(category_label)
         
-        self.category_input = QComboBox()
+        self.category_input = NoScrollComboBox()
         self.category_input.setEditable(True)
         
         # Load existing categories

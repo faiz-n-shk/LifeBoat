@@ -237,16 +237,18 @@ class NavigationSidebar(QWidget):
     
     def on_restart(self):
         """Handle restart button click"""
+        from src.shared.dialogs import create_message_box
         from PyQt6.QtWidgets import QMessageBox
         
-        reply = QMessageBox.question(
+        msg = create_message_box(
             self,
             "Confirm Restart",
             "Are you sure you want to restart the application?",
+            QMessageBox.Icon.Question,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             self.restart_requested.emit()
     
     def update_debug_buttons_visibility(self):

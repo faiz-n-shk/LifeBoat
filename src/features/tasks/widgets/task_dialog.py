@@ -4,6 +4,7 @@ Dialog for creating/editing tasks
 """
 from PyQt6.QtWidgets import QLabel, QComboBox, QLineEdit
 from PyQt6.QtCore import QDate, QTime
+from src.shared.dialogs import NoScrollComboBox, NoScrollDateEdit
 
 from src.models.task import Task
 from src.core.config import config
@@ -35,7 +36,7 @@ class TaskDialog(BaseDialog):
         
         # Priority
         priority_label = QLabel("Priority:")
-        self.priority_combo = QComboBox()
+        self.priority_combo = NoScrollComboBox()
         priorities = config.get('tasks.priorities', ["Low", "Medium", "High", "Urgent"])
         self.priority_combo.addItems(priorities)
         self.priority_combo.setCurrentText("Medium")
@@ -44,7 +45,7 @@ class TaskDialog(BaseDialog):
         
         # Status
         status_label = QLabel("Status:")
-        self.status_combo = QComboBox()
+        self.status_combo = NoScrollComboBox()
         statuses = config.get('tasks.statuses', 
                              ["Not Started", "In Progress", "Completed", "On Hold", "Cancelled"])
         self.status_combo.addItems(statuses)
@@ -82,8 +83,8 @@ class TaskDialog(BaseDialog):
     def on_save(self):
         """Handle save button click"""
         if not self.title_input.text().strip():
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Validation Error", "Please enter a task title.")
+            from src.shared.dialogs import show_warning
+            show_warning(self, "Validation Error", "Please enter a task title.")
             return
         
         self.accept()

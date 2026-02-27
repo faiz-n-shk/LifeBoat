@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QCheckBox, QPushButton
 )
 from PyQt6.QtCore import Qt
+from src.shared.dialogs import NoScrollComboBox
 
 from src.core.config import config
 
@@ -51,7 +52,7 @@ class AdvancedSection(QWidget):
         activity_desc = QLabel("Show activities from:")
         activity_layout.addWidget(activity_desc)
         
-        self.activity_combo = QComboBox()
+        self.activity_combo = NoScrollComboBox()
         self.activity_combo.addItems(["Today Only", "Last 7 Days (Standard)", "Disabled"])
         
         # Map config values to combo box indices
@@ -136,15 +137,15 @@ class AdvancedSection(QWidget):
             self.cancel_btn.setEnabled(False)
             
             # Show success notification
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.information(
+            from src.shared.dialogs import show_information
+            show_information(
                 self,
                 "Success",
                 "Advanced settings applied successfully!"
             )
         else:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Error",
                 "Failed to save advanced settings."

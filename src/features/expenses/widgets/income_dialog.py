@@ -3,6 +3,7 @@ Income Dialog
 """
 from PyQt6.QtWidgets import QLabel, QComboBox, QDoubleSpinBox, QLineEdit
 from PyQt6.QtCore import QTime
+from src.shared.dialogs import NoScrollComboBox, NoScrollDoubleSpinBox, NoScrollDateEdit
 
 from src.core.config import config
 from src.shared.dialogs import BaseDialog
@@ -27,7 +28,7 @@ class IncomeDialog(BaseDialog):
         """Setup income-specific fields"""
         # Amount
         amount_label = QLabel("Amount:")
-        self.amount_input = QDoubleSpinBox()
+        self.amount_input = NoScrollDoubleSpinBox()
         self.amount_input.setRange(0, 999999999)
         
         # Get decimal places from config
@@ -50,7 +51,7 @@ class IncomeDialog(BaseDialog):
         
         # Category
         category_label = QLabel("Category:")
-        self.category_combo = QComboBox()
+        self.category_combo = NoScrollComboBox()
         categories = config.get('categories.income', [])
         self.category_combo.addItems(categories)
         self.layout.addWidget(category_label)
@@ -94,8 +95,8 @@ class IncomeDialog(BaseDialog):
     def on_save(self):
         """Validate and save"""
         if self.amount_input.value() <= 0:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Validation Error", "Please enter a valid amount.")
+            from src.shared.dialogs import show_warning
+            show_warning(self, "Validation Error", "Please enter a valid amount.")
             return
         
         self.accept()

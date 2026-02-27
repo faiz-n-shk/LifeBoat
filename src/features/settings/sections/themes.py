@@ -4,13 +4,14 @@ Themes Settings Section
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QDialog,
-    QFormLayout, QColorDialog, QLineEdit
+    QFormLayout, QColorDialog, QLineEdit, QScrollArea
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
+from PyQt6.QtGui import QColor, QFont
 
 from src.core.theme_manager import theme_manager
 from src.core.config import config
+from src.shared.dialogs import BaseDialog
 
 
 class ThemesSection(QWidget):
@@ -91,7 +92,6 @@ class ThemesSection(QWidget):
         # Info section
         info_layout = QVBoxLayout()
         
-        from PyQt6.QtGui import QFont
         name_label = QLabel("System")
         font = QFont()
         font.setPointSize(11)
@@ -153,7 +153,6 @@ class ThemesSection(QWidget):
         # Theme info
         info_layout = QVBoxLayout()
         
-        from PyQt6.QtGui import QFont
         name_label = QLabel(theme.name)
         font = QFont()
         font.setPointSize(11)
@@ -228,8 +227,8 @@ class ThemesSection(QWidget):
                 self.load_themes()
             else:
                 print("Failed to create custom theme")
-                from PyQt6.QtWidgets import QMessageBox
-                QMessageBox.warning(
+                from src.shared.dialogs import show_warning
+                show_warning(
                     self,
                     "Error",
                     "Failed to create custom theme. Check console for details."
@@ -256,8 +255,8 @@ class ThemesSection(QWidget):
                     config.signals.appearance_changed.emit()
                 self.load_themes()
             else:
-                from PyQt6.QtWidgets import QMessageBox
-                QMessageBox.warning(
+                from src.shared.dialogs import show_warning
+                show_warning(
                     self,
                     "Error",
                     "Failed to update theme. The name might already exist."
@@ -279,8 +278,8 @@ class ThemesSection(QWidget):
                 self.load_themes()
             else:
                 print(f"Failed to create custom theme based on {theme.name}")
-                from PyQt6.QtWidgets import QMessageBox
-                QMessageBox.warning(
+                from src.shared.dialogs import show_warning
+                show_warning(
                     self,
                     "Error",
                     "Failed to create custom theme. Check console for details."
@@ -288,15 +287,16 @@ class ThemesSection(QWidget):
     
     def on_delete_theme(self, theme):
         """Delete a custom theme"""
+        from src.shared.dialogs import show_question
         from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
+        
+        result = show_question(
             self,
             "Confirm Delete",
-            f"Delete theme '{theme.name}'?\n\nThis action cannot be undone.",
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            f"Delete theme '{theme.name}'?\n\nThis action cannot be undone."
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if result == QMessageBox.StandardButton.Yes:
             if theme_manager.delete_theme(theme.name):
                 # Log theme deletion
                 from src.core.activity_logger import activity_logger
@@ -305,46 +305,26 @@ class ThemesSection(QWidget):
                 self.load_themes()
 
 
-class ThemeEditorDialog(QDialog):
+class ThemeEditorDialog(BaseDialog):
     """Dialog for creating/editing themes"""
     
     def __init__(self, parent=None, base_theme=None, is_new=False):
-        super().__init__(parent)
         self.base_theme = base_theme
         self.is_new = is_new
         self.color_inputs = {}
-        self.setup_ui()
+        
+        if self.is_new and self.base_theme:
+            title = f"Customize {self.base_theme.name}"
+        elif self.base_theme:
+            title = f"Edit {self.base_theme.name}"
+        else:
+            title = "Create Custom Theme"
+        
+        super().__init__(parent, title=title, width=500, height=700)
+        self.setup_content()
     
-    def setup_ui(self):
-        """Setup dialog UI"""
-        if self.is_new and self.base_theme:
-            self.setWindowTitle(f"Customize {self.base_theme.name}")
-        elif self.base_theme:
-            self.setWindowTitle(f"Edit {self.base_theme.name}")
-        else:
-            self.setWindowTitle("Create Custom Theme")
-        
-        self.setMinimumWidth(500)
-        self.setMinimumHeight(700)
-        
-        layout = QVBoxLayout(self)
-        layout.setSpacing(20)
-        
-        # Title
-        from PyQt6.QtGui import QFont
-        if self.is_new and self.base_theme:
-            title = QLabel(f"Creating custom theme based on {self.base_theme.name}")
-        elif self.base_theme:
-            title = QLabel(f"Editing: {self.base_theme.name}")
-        else:
-            title = QLabel("Create Custom Theme")
-        
-        font = QFont()
-        font.setPointSize(12)
-        font.setBold(True)
-        title.setFont(font)
-        layout.addWidget(title)
-        
+    def setup_content(self):
+        """Setup dialog content"""
         # Theme name input
         name_layout = QHBoxLayout()
         name_label = QLabel("Theme Name:")
@@ -353,27 +333,19 @@ class ThemeEditorDialog(QDialog):
         
         self.name_input = QLineEdit()
         if self.base_theme and not self.is_new:
-            # Editing existing theme - allow renaming
             self.name_input.setText(self.base_theme.name)
         else:
-            # Creating new theme
             self.name_input.setPlaceholderText("Enter theme name...")
             if self.base_theme:
                 self.name_input.setText(f"{self.base_theme.name} Custom")
         name_layout.addWidget(self.name_input)
-        layout.addLayout(name_layout)
+        self.layout.addLayout(name_layout)
         
-        # Scroll area for color pickers
-        from PyQt6.QtWidgets import QScrollArea
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-        
+        # Color fields form
         form_widget = QWidget()
         form = QFormLayout(form_widget)
         form.setSpacing(15)
         
-        # Color fields
         color_fields = [
             ("bg_primary", "Background Primary"),
             ("bg_secondary", "Background Secondary"),
@@ -394,25 +366,10 @@ class ThemeEditorDialog(QDialog):
             self.color_inputs[field] = color_input
             form.addRow(label + ":", color_input)
         
-        scroll.setWidget(form_widget)
-        layout.addWidget(scroll)
+        self.layout.addWidget(form_widget)
         
         # Buttons
-        btn_layout = QHBoxLayout()
-        btn_layout.addStretch()
-        
-        cancel_btn = QPushButton("Cancel")
-        cancel_btn.clicked.connect(self.reject)
-        btn_layout.addWidget(cancel_btn)
-        
-        save_btn = QPushButton("Save")
-        save_btn.clicked.connect(self.accept)
-        save_btn.setDefault(True)
-        btn_layout.addWidget(save_btn)
-        
-        layout.addLayout(btn_layout)
-        
-        self.setLayout(layout)
+        self.add_buttons(save_text="Save", cancel_text="Cancel")
     
     def get_colors(self):
         """Get color values and theme name from inputs"""

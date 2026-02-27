@@ -6,6 +6,7 @@ from PyQt6.QtWidgets import (
     QComboBox, QPushButton, QLineEdit, QSpinBox
 )
 from PyQt6.QtCore import Qt
+from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox
 
 from src.core.config import config
 from src.shared.formatters import get_available_currencies, get_currency_code
@@ -43,7 +44,7 @@ class LocaleSection(QWidget):
         time_label.setFixedWidth(150)
         time_layout.addWidget(time_label)
         
-        self.time_combo = QComboBox()
+        self.time_combo = NoScrollComboBox()
         self.time_combo.addItems(["12hr", "24hr"])
         self.time_combo.setCurrentText(config.get('datetime.time_mode', '12hr'))
         self.time_combo.currentTextChanged.connect(self.on_value_changed)
@@ -57,7 +58,7 @@ class LocaleSection(QWidget):
         week_label.setFixedWidth(150)
         week_layout.addWidget(week_label)
         
-        self.week_combo = QComboBox()
+        self.week_combo = NoScrollComboBox()
         self.week_combo.addItems(["Monday", "Sunday"])
         self.week_combo.setCurrentText(config.get('datetime.week_start', 'Monday'))
         self.week_combo.currentTextChanged.connect(self.on_value_changed)
@@ -71,7 +72,7 @@ class LocaleSection(QWidget):
         currency_label.setFixedWidth(150)
         currency_layout.addWidget(currency_label)
         
-        self.currency_combo = QComboBox()
+        self.currency_combo = NoScrollComboBox()
         currencies = get_available_currencies()
         self.currency_combo.addItems(currencies)
         current_symbol = config.get('currency.symbol', '₹')
@@ -98,7 +99,7 @@ class LocaleSection(QWidget):
         position_label.setFixedWidth(150)
         position_layout.addWidget(position_label)
         
-        self.position_combo = QComboBox()
+        self.position_combo = NoScrollComboBox()
         self.position_combo.addItems(["prefix", "suffix"])
         self.position_combo.setCurrentText(config.get('currency.position', 'prefix'))
         self.position_combo.currentTextChanged.connect(self.on_value_changed)
@@ -112,7 +113,7 @@ class LocaleSection(QWidget):
         decimal_label.setFixedWidth(150)
         decimal_layout.addWidget(decimal_label)
         
-        self.decimal_spin = QSpinBox()
+        self.decimal_spin = NoScrollSpinBox()
         self.decimal_spin.setRange(0, 4)
         self.decimal_spin.setValue(config.get('currency.decimal_places', 2))
         self.decimal_spin.valueChanged.connect(self.on_value_changed)
@@ -217,15 +218,15 @@ class LocaleSection(QWidget):
             self.cancel_btn.setEnabled(False)
             
             # Show success notification
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.information(
+            from src.shared.dialogs import show_information
+            show_information(
                 self,
                 "Success",
                 "Locale settings applied successfully!"
             )
         else:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Error",
                 "Failed to save locale settings."

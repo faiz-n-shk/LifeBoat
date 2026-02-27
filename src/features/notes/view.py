@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.notes.controller import NotesController
 from src.features.notes.widgets.note_dialog import NoteDialog
@@ -56,7 +57,7 @@ class NotesView(QWidget):
         view_label = QLabel("View:")
         header_layout.addWidget(view_label)
         
-        self.view_mode_combo = QComboBox()
+        self.view_mode_combo = NoScrollComboBox()
         self.view_mode_combo.addItems(["Auto", "Grid", "List", "Compact"])
         self.view_mode_combo.setCurrentText(self.current_view_mode)
         self.view_mode_combo.setMinimumWidth(100)
@@ -76,15 +77,26 @@ class NotesView(QWidget):
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(10)
         
-        # Search
+        # Search with icon outside
+        search_container = QHBoxLayout()
+        search_container.setSpacing(8)
+        
+        search_icon = QLabel("🔍")
+        font = QFont()
+        font.setPointSize(12)
+        search_icon.setFont(font)
+        search_container.addWidget(search_icon)
+        
         self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("🔍 Search notes...")
+        self.search_input.setPlaceholderText("Search notes...")
         self.search_input.setMinimumHeight(36)
         self.search_input.textChanged.connect(self.on_search)
-        controls_layout.addWidget(self.search_input, 3)
+        search_container.addWidget(self.search_input, 1)
+        
+        controls_layout.addLayout(search_container, 3)
         
         # Tag filter
-        self.tag_filter = QComboBox()
+        self.tag_filter = NoScrollComboBox()
         self.tag_filter.setMinimumHeight(36)
         self.tag_filter.setMinimumWidth(150)
         self.tag_filter.addItem("All Tags")
@@ -284,14 +296,17 @@ class NotesView(QWidget):
     
     def on_delete_note(self, note_id: int):
         """Handle delete note"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import create_message_box
+        
+        msg = create_message_box(
             self,
             "Delete Note",
             "Are you sure you want to delete this note?",
+            QMessageBox.Icon.Question,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             if self.controller.delete_note(note_id):
                 self.update_tag_filter()
                 self.load_notes()

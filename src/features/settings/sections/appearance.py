@@ -9,6 +9,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFontDatabase, QScreen
 import os
 import shutil
+from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox
 
 from src.core.config import config
 
@@ -33,7 +34,7 @@ class AppearanceSection(QWidget):
         font_label.setFixedWidth(150)
         font_layout.addWidget(font_label)
         
-        self.font_combo = QComboBox()
+        self.font_combo = NoScrollComboBox()
         self.load_available_fonts()
         current_font = config.get('appearance.font_family', 'Segoe UI')
         if current_font in [self.font_combo.itemText(i) for i in range(self.font_combo.count())]:
@@ -54,7 +55,7 @@ class AppearanceSection(QWidget):
         size_label.setFixedWidth(150)
         size_layout.addWidget(size_label)
         
-        self.size_spin = QSpinBox()
+        self.size_spin = NoScrollSpinBox()
         self.size_spin.setRange(5, 20)  # min max font size
         self.size_spin.setValue(config.get('appearance.font_size', 13))
         self.size_spin.valueChanged.connect(self.on_size_changed)
@@ -83,7 +84,7 @@ class AppearanceSection(QWidget):
             monitor_label.setFixedWidth(150)
             monitor_layout.addWidget(monitor_label)
             
-            self.monitor_combo = QComboBox()
+            self.monitor_combo = NoScrollComboBox()
             for i, monitor in enumerate(self.monitors):
                 self.monitor_combo.addItem(f"Monitor {i + 1} ({monitor['width']}x{monitor['height']})")
             
@@ -102,7 +103,7 @@ class AppearanceSection(QWidget):
         res_label.setFixedWidth(150)
         res_layout.addWidget(res_label)
         
-        self.resolution_combo = QComboBox()
+        self.resolution_combo = NoScrollComboBox()
         self.load_available_resolutions()
         
         # Get current resolution setting
@@ -224,15 +225,15 @@ class AppearanceSection(QWidget):
             self.cancel_btn.setEnabled(False)
             
             # Show success notification
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.information(
+            from src.shared.dialogs import show_information
+            show_information(
                 self,
                 "Success",
                 "Appearance settings applied successfully!"
             )
         else:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Error",
                 "Failed to save appearance settings."
@@ -325,13 +326,16 @@ class AppearanceSection(QWidget):
                 dest_path = os.path.join(fonts_dir, filename)
                 
                 if os.path.exists(dest_path):
-                    reply = QMessageBox.question(
+                    from src.shared.dialogs import create_message_box
+                    
+                    msg = create_message_box(
                         self,
                         "Font Exists",
                         f"Font '{filename}' already exists. Replace it?",
+                        QMessageBox.Icon.Question,
                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                     )
-                    if reply != QMessageBox.StandardButton.Yes:
+                    if msg.exec() != QMessageBox.StandardButton.Yes:
                         return
                 
                 shutil.copy2(file_path, dest_path)
@@ -351,25 +355,29 @@ class AppearanceSection(QWidget):
                         self.font_combo.setCurrentText(font_name)
                         self.apply_btn.setEnabled(True)
                         
-                        QMessageBox.information(
+                        from src.shared.dialogs import show_information
+                        show_information(
                             self,
                             "Success",
                             f"Font '{font_name}' imported successfully!\n\nClick 'Apply Changes' to use it."
                         )
                     else:
-                        QMessageBox.warning(
+                        from src.shared.dialogs import show_warning
+                        show_warning(
                             self,
                             "Error",
                             "Failed to load font family from file."
                         )
                 else:
-                    QMessageBox.warning(
+                    from src.shared.dialogs import show_warning
+                    show_warning(
                         self,
                         "Error",
                         "Failed to load font file. The file may be corrupted or invalid."
                     )
             except Exception as e:
-                QMessageBox.critical(
+                from src.shared.dialogs import show_critical
+                show_critical(
                     self,
                     "Error",
                     f"Failed to import font: {str(e)}"

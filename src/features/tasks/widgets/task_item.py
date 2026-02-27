@@ -70,16 +70,20 @@ class TaskItem(QFrame):
         
         # Actions
         actions_layout = QHBoxLayout()
-        actions_layout.setSpacing(5)
+        actions_layout.setSpacing(8)
         
         # Edit button
         edit_btn = QPushButton("Edit")
+        edit_btn.setMinimumWidth(60)
+        edit_btn.setMinimumHeight(28)
         edit_btn.clicked.connect(self.on_edit)
         actions_layout.addWidget(edit_btn)
         
         # Delete button
         delete_btn = QPushButton("Delete")
         delete_btn.setProperty("class", "danger-button")
+        delete_btn.setMinimumWidth(60)
+        delete_btn.setMinimumHeight(28)
         delete_btn.clicked.connect(self.on_delete)
         actions_layout.addWidget(delete_btn)
         

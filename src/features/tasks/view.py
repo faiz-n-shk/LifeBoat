@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.tasks.controller import TasksController
 from src.features.tasks.widgets.task_dialog import TaskDialog
@@ -48,7 +49,7 @@ class TasksView(QWidget):
         view_label = QLabel("View:")
         header.addWidget(view_label)
         
-        self.view_combo = QComboBox()
+        self.view_combo = NoScrollComboBox()
         self.view_combo.addItems(["📋 List", "📊 Board", "📑 Table"])
         self.view_combo.currentIndexChanged.connect(self.on_view_changed)
         header.addWidget(self.view_combo)
@@ -57,7 +58,7 @@ class TasksView(QWidget):
         filter_label = QLabel("Filter:")
         header.addWidget(filter_label)
         
-        self.filter_combo = QComboBox()
+        self.filter_combo = NoScrollComboBox()
         self.filter_combo.addItems(["All", "Active", "Completed"])
         self.filter_combo.currentTextChanged.connect(self.on_filter_changed)
         header.addWidget(self.filter_combo)
@@ -149,6 +150,8 @@ class TasksView(QWidget):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
         board_widget = QWidget()
         board_layout = QHBoxLayout(board_widget)
@@ -164,6 +167,8 @@ class TasksView(QWidget):
             column = self.create_board_column(status, [t for t in tasks if t.status == status])
             board_layout.addWidget(column)
         
+        board_layout.addStretch()
+        
         scroll.setWidget(board_widget)
         self.content_layout.addWidget(scroll)
     
@@ -171,27 +176,48 @@ class TasksView(QWidget):
         """Create a column for board view"""
         column = QFrame()
         column.setObjectName("settings-section")
-        column.setMinimumWidth(250)
-        column.setMaximumWidth(300)
+        column.setMinimumWidth(280)
+        column.setMaximumWidth(350)
         
         layout = QVBoxLayout(column)
         layout.setSpacing(10)
+        layout.setContentsMargins(12, 12, 12, 12)
         
         # Column header
         header = QLabel(f"{status} ({len(tasks)})")
         font = QFont()
         font.setBold(True)
+        font.setPointSize(11)
         header.setFont(font)
         layout.addWidget(header)
+        
+        # Scroll area for tasks in this column
+        column_scroll = QScrollArea()
+        column_scroll.setWidgetResizable(True)
+        column_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        column_scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        column_scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        
+        tasks_container = QWidget()
+        tasks_layout = QVBoxLayout(tasks_container)
+        tasks_layout.setSpacing(10)
+        tasks_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
         # Tasks in column
         for task in tasks:
             item = TaskItem(task, self)
             item.task_updated.connect(self.on_task_updated)
             item.task_deleted.connect(self.on_task_deleted)
-            layout.addWidget(item)
+            tasks_layout.addWidget(item)
         
-        layout.addStretch()
+        if not tasks:
+            empty_label = QLabel("No tasks")
+            empty_label.setProperty("class", "secondary-text")
+            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            tasks_layout.addWidget(empty_label)
+        
+        column_scroll.setWidget(tasks_container)
+        layout.addWidget(column_scroll, 1)
         
         return column
     
@@ -299,15 +325,18 @@ class TasksView(QWidget):
     
     def on_delete_task(self, task):
         """Handle delete task"""
+        from src.shared.dialogs import create_message_box
         from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
+        
+        msg = create_message_box(
             self,
             "Confirm Delete",
             f"Delete task '{task.title}'?",
+            QMessageBox.Icon.Question,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             self.controller.delete_task(task.id)
             self.load_tasks()
     

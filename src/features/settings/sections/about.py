@@ -133,28 +133,33 @@ class AboutSection(QWidget):
                 # Compare versions
                 if latest_version > APP_VERSION:
                     # New version available
-                    result = QMessageBox.information(
+                    from src.shared.dialogs import create_message_box
+                    
+                    msg = create_message_box(
                         self,
                         "Update Available",
                         f"A new version is available!\n\n"
                         f"Current Version: {APP_VERSION}\n"
                         f"Latest Version: {latest_version}\n\n"
                         f"Would you like to download it?",
+                        QMessageBox.Icon.Information,
                         QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                     )
                     
-                    if result == QMessageBox.StandardButton.Yes:
+                    if msg.exec() == QMessageBox.StandardButton.Yes:
                         QDesktopServices.openUrl(QUrl(release_url))
                 else:
                     # Already up to date
-                    QMessageBox.information(
+                    from src.shared.dialogs import show_information
+                    show_information(
                         self,
                         "Up to Date",
                         f"You are running the latest version ({APP_VERSION})."
                     )
             else:
                 # API error
-                QMessageBox.warning(
+                from src.shared.dialogs import show_warning
+                show_warning(
                     self,
                     "Update Check Failed",
                     f"Could not check for updates.\n\n"
@@ -172,7 +177,8 @@ class AboutSection(QWidget):
                 QApplication.processEvents()
             
             # Network error
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Connection Error",
                 f"Could not connect to update server.\n\n"
@@ -189,7 +195,8 @@ class AboutSection(QWidget):
                 QApplication.processEvents()
             
             # Other errors
-            QMessageBox.critical(
+            from src.shared.dialogs import show_critical
+            show_critical(
                 self,
                 "Error",
                 f"An error occurred while checking for updates:\n{str(e)}"

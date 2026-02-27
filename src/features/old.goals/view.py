@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.goals.controller import GoalsController
 from src.features.goals.widgets.goal_dialog import GoalDialog
@@ -43,7 +44,7 @@ class GoalsView(QWidget):
         header_row.addStretch()
         
         # Filter dropdown
-        self.filter_combo = QComboBox()
+        self.filter_combo = NoScrollComboBox()
         self.filter_combo.addItems(["All Goals", "Active", "Completed"])
         self.filter_combo.currentTextChanged.connect(self.load_goals)
         header_row.addWidget(self.filter_combo)

@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QIcon
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.todos.controller import TodosController
 from src.features.todos.widgets import TodoItem, TodoDialog
@@ -90,7 +91,7 @@ class TodosView(QWidget):
         filter_label = QLabel("Show:")
         filter_layout.addWidget(filter_label)
         
-        self.filter_combo = QComboBox()
+        self.filter_combo = NoScrollComboBox()
         self.filter_combo.addItems(["All", "Active", "Completed", "Today", "Overdue"])
         self.filter_combo.currentTextChanged.connect(self.on_filter_changed)
         filter_layout.addWidget(self.filter_combo)
@@ -99,7 +100,7 @@ class TodosView(QWidget):
         category_label = QLabel("Category:")
         filter_layout.addWidget(category_label)
         
-        self.category_combo = QComboBox()
+        self.category_combo = NoScrollComboBox()
         self.category_combo.addItem("All")
         self.category_combo.currentTextChanged.connect(self.on_category_changed)
         filter_layout.addWidget(self.category_combo)
@@ -263,14 +264,18 @@ class TodosView(QWidget):
     
     def on_delete_todo(self, todo_id):
         """Handle delete todo"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import create_message_box
+        from PyQt6.QtWidgets import QMessageBox
+        
+        msg = create_message_box(
             self,
             "Confirm Delete",
             "Delete this todo?\n\nThis action cannot be undone.",
+            QMessageBox.Icon.Question,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if reply == QMessageBox.StandardButton.Yes:
+        if msg.exec() == QMessageBox.StandardButton.Yes:
             self.controller.delete_todo(todo_id)
             self.load_todos()
     

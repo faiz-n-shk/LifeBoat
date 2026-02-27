@@ -4,6 +4,7 @@ Dialog for creating and editing goals
 """
 from PyQt6.QtWidgets import QLabel, QLineEdit, QComboBox, QDateEdit, QHBoxLayout, QSlider
 from PyQt6.QtCore import QDate, Qt
+from src.shared.dialogs import NoScrollComboBox, NoScrollDateEdit
 
 from src.shared.dialogs import BaseDialog
 
@@ -26,7 +27,7 @@ class GoalDialog(BaseDialog):
         
         # Category
         category_label = QLabel("Category:")
-        self.category_input = QComboBox()
+        self.category_input = NoScrollComboBox()
         self.category_input.setEditable(True)
         self.category_input.addItems([
             "Personal",
@@ -42,7 +43,7 @@ class GoalDialog(BaseDialog):
         
         # Target Date
         date_label = QLabel("Target Date:")
-        self.date_input = QDateEdit()
+        self.date_input = NoScrollDateEdit()
         self.date_input.setCalendarPopup(True)
         self.date_input.setDate(QDate.currentDate().addMonths(1))
         self.layout.addWidget(date_label)

@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 )
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox
 
 from src.features.habits.controller import HabitsController
 from src.features.habits.widgets.habit_dialog import HabitDialog
@@ -97,7 +98,7 @@ class HabitsView(QWidget):
         search_row.addWidget(self.search_input, 1)
         
         # Type filter
-        self.type_filter = QComboBox()
+        self.type_filter = NoScrollComboBox()
         self.type_filter.addItems(["All Types", "Good Habits", "Bad Habits"])
         self.type_filter.currentTextChanged.connect(self.filter_habits)
         search_row.addWidget(self.type_filter)
@@ -286,7 +287,10 @@ class HabitsView(QWidget):
     
     def delete_habit(self, habit_id):
         """Delete a habit"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import show_question
+        from PyQt6.QtWidgets import QMessageBox
+        
+        reply = show_question(
             self,
             "Delete Habit",
             "Are you sure you want to delete this habit? All tracking data will be lost.",

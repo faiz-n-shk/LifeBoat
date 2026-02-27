@@ -3,8 +3,8 @@ Lifeboat 2.0 - Personal Life Management Application
 Main entry point
 """
 import sys
-from PyQt6.QtWidgets import QApplication
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QMessageBox
+from PyQt6.QtCore import Qt, QSharedMemory
 from PyQt6.QtGui import QIcon
 
 from src.core.app import LifeboatApp
@@ -33,6 +33,31 @@ def main():
     
     # Create application
     app = QApplication(sys.argv)
+    
+    # Single instance check
+    shared_memory = QSharedMemory("LifeboatApp_SingleInstance")
+    
+    if not shared_memory.create(1):
+        # Another instance is already running
+        reply = QMessageBox.question(
+            None,
+            "Lifeboat Already Running",
+            "An instance of Lifeboat is already running.\n\nWhat would you like to do?",
+            QMessageBox.StandardButton.Open | QMessageBox.StandardButton.Ignore | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Open
+        )
+        
+        if reply == QMessageBox.StandardButton.Open:
+            # User wants to open the existing instance
+            # Note: We can't actually bring the other window to front from here
+            # The user will need to find it in their taskbar
+            sys.exit(0)
+        elif reply == QMessageBox.StandardButton.Ignore:
+            # User wants to run anyway - detach the shared memory and continue
+            shared_memory.detach()
+        else:
+            # User cancelled
+            sys.exit(0)
     app.setApplicationName("Lifeboat")
     app.setOrganizationName("Fayz212")
     

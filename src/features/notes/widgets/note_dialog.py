@@ -153,13 +153,13 @@ class NoteDialog(BaseDialog):
         data = self.get_data()
         
         if not data['title']:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Validation Error", "Title is required")
+            from src.shared.dialogs import show_warning
+            show_warning(self, "Validation Error", "Title is required")
             return False
         
         if not data['content']:
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Validation Error", "Content is required")
+            from src.shared.dialogs import show_warning
+            show_warning(self, "Validation Error", "Content is required")
             return False
         
         return True

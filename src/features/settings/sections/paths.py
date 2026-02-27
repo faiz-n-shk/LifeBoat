@@ -8,6 +8,7 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from src.core.path_manager import path_manager
+from src.shared.dialogs import show_question, show_warning, show_critical, show_information
 
 
 class PathsSection(QWidget):
@@ -169,7 +170,7 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_browse_database(self):
         """Browse for custom database directory"""
@@ -193,7 +194,7 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_browse_themes(self):
         """Browse for custom themes directory"""
@@ -217,11 +218,14 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_reset_config(self):
         """Reset config to default location"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import show_question
+        from PyQt6.QtWidgets import QMessageBox
+        
+        reply = show_question(
             self,
             "Confirm Reset",
             "Reset config file to default location?\n\n"
@@ -245,11 +249,14 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_reset_database(self):
         """Reset database to default location"""
-        reply = QMessageBox.question(
+        from src.shared.dialogs import show_question
+        from PyQt6.QtWidgets import QMessageBox
+        
+        reply = show_question(
             self,
             "Confirm Reset",
             "Reset database file to default location?\n\n"
@@ -273,11 +280,11 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_reset_themes(self):
         """Reset themes to default location"""
-        reply = QMessageBox.question(
+        reply = show_question(
             self,
             "Confirm Reset",
             "Reset themes file to default location?\n\n"
@@ -301,11 +308,11 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_restore_config(self):
         """Restore config to default settings"""
-        reply = QMessageBox.question(
+        reply = show_question(
             self,
             "Confirm Restore",
             "Restore config file to default settings?\n\n"
@@ -330,11 +337,11 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_restore_database(self):
         """Restore database to default state"""
-        reply = QMessageBox.warning(
+        reply = show_question(
             self,
             "Confirm Restore",
             "Restore database to default state?\n\n"
@@ -348,7 +355,7 @@ class PathsSection(QWidget):
         
         if reply == QMessageBox.StandardButton.Yes:
             # Double confirmation
-            reply2 = QMessageBox.warning(
+            reply2 = show_question(
                 self,
                 "Final Confirmation",
                 "This is your last chance!\n\n"
@@ -364,19 +371,18 @@ class PathsSection(QWidget):
                     activity_logger.log("Settings", "restored database", "To default state")
                     
                     # Force immediate restart for database restore
-                    reply3 = QMessageBox.information(
+                    show_information(
                         self,
                         "Database Restored",
                         f"{message}\n\n"
-                        "The application will now restart to complete the restore.",
-                        QMessageBox.StandardButton.Ok
+                        "The application will now restart to complete the restore."
                     )
                     
                     # Trigger restart
                     from src.core.config import config
                     config.signals.restart_requested.emit()
                 else:
-                    QMessageBox.critical(self, "Error", message)
+                    show_critical(self, "Error", message)
     
     def on_browse_logs(self):
         """Browse for custom logs directory"""
@@ -400,11 +406,11 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def on_reset_logs(self):
         """Reset logs to default location"""
-        reply = QMessageBox.question(
+        reply = show_question(
             self,
             "Confirm Reset",
             "Reset logs directory to default location?\n\n"
@@ -428,7 +434,7 @@ class PathsSection(QWidget):
                     "Restart Later: Changes will take effect on next manual restart"
                 )
             else:
-                QMessageBox.critical(self, "Error", message)
+                show_critical(self, "Error", message)
     
     def show_restart_dialog(self, title, message):
         """Show dialog with Restart Now and Restart Later options"""

@@ -4,6 +4,7 @@ Dialog for creating/editing calendar events
 """
 from PyQt6.QtWidgets import QLabel, QLineEdit, QCheckBox, QSpinBox, QHBoxLayout
 from PyQt6.QtCore import QDate, QTime
+from src.shared.dialogs import NoScrollSpinBox
 
 from src.models.event import Event
 from src.core.config import config
@@ -58,7 +59,7 @@ class EventDialog(BaseDialog):
         self.reminder_check.stateChanged.connect(self.on_reminder_changed)
         reminder_layout.addWidget(self.reminder_check)
         
-        self.reminder_spin = QSpinBox()
+        self.reminder_spin = NoScrollSpinBox()
         self.reminder_spin.setRange(5, 1440)
         self.reminder_spin.setValue(15)
         self.reminder_spin.setSuffix(" minutes before")
@@ -108,8 +109,8 @@ class EventDialog(BaseDialog):
         """Handle save button"""
         # Validate
         if not self.title_input.text().strip():
-            from PyQt6.QtWidgets import QMessageBox
-            QMessageBox.warning(self, "Validation Error", "Please enter an event title.")
+            from src.shared.dialogs import show_warning
+            show_warning(self, "Validation Error", "Please enter an event title.")
             return
         
         self.accept()

@@ -164,13 +164,15 @@ class BehaviorSection(QWidget):
             self.cancel_btn.setEnabled(False)
             
             # Show success notification
-            QMessageBox.information(
+            from src.shared.dialogs import show_information
+            show_information(
                 self,
                 "Success",
                 "Behavior settings applied successfully!"
             )
         else:
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Error",
                 "Failed to save behavior settings."
@@ -233,7 +235,8 @@ class BehaviorSection(QWidget):
             
         except Exception as e:
             print(f"[Behavior] Error setting startup: {e}")
-            QMessageBox.warning(
+            from src.shared.dialogs import show_warning
+            show_warning(
                 self,
                 "Startup Error",
                 f"Could not modify Windows startup settings:\n{e}"

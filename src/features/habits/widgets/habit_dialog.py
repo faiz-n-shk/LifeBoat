@@ -5,6 +5,7 @@ Dialog for creating and editing habits
 from PyQt6.QtWidgets import QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QHBoxLayout, QColorDialog
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QColor
+from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox
 
 from src.shared.dialogs import BaseDialog
 
@@ -29,7 +30,7 @@ class HabitDialog(BaseDialog):
         
         # Habit Type
         type_label = QLabel("Habit Type:")
-        self.type_input = QComboBox()
+        self.type_input = NoScrollComboBox()
         self.type_input.addItems(["Good", "Bad"])
         self.type_input.currentTextChanged.connect(self.update_ui_for_type)
         self.layout.addWidget(type_label)
@@ -39,7 +40,7 @@ class HabitDialog(BaseDialog):
         self.target_label = QLabel("Target Duration:")
         self.layout.addWidget(self.target_label)
         
-        self.target_input = QComboBox()
+        self.target_input = NoScrollComboBox()
         self.target_input.addItems([
             "1 Week (7 days)", 
             "1 Month (31 days)", 
@@ -52,7 +53,7 @@ class HabitDialog(BaseDialog):
         self.layout.addWidget(self.target_input)
         
         # Custom days input (hidden by default)
-        self.custom_days_input = QSpinBox()
+        self.custom_days_input = NoScrollSpinBox()
         self.custom_days_input.setMinimum(1)
         self.custom_days_input.setMaximum(365)
         self.custom_days_input.setValue(7)

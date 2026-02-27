@@ -158,8 +158,10 @@ class EventItem(QFrame):
     
     def on_delete(self):
         """Handle delete button"""
+        from src.shared.dialogs import show_question
         from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
+        
+        reply = show_question(
             self,
             "Confirm Delete",
             f"Delete event '{self.event.title}'?",

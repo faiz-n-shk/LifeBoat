@@ -95,9 +95,10 @@ class NoteCard(QFrame):
         if self.note.pinned:
             pin_icon = QLabel("📌")
             font = QFont()
-            font.setPointSize(12)
+            font.setPointSize(14)
             pin_icon.setFont(font)
-            pin_icon.setFixedWidth(20)
+            pin_icon.setFixedSize(24, 24)
+            pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
         
         main_layout.addLayout(title_layout)
@@ -190,8 +191,10 @@ class NoteCard(QFrame):
         if self.note.pinned:
             pin_icon = QLabel("📌")
             font = QFont()
-            font.setPointSize(12)
+            font.setPointSize(14)
             pin_icon.setFont(font)
+            pin_icon.setFixedSize(24, 24)
+            pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
         
         main_layout.addLayout(title_layout)
@@ -287,8 +290,10 @@ class NoteCard(QFrame):
         if self.note.pinned:
             pin_icon = QLabel("📌")
             font = QFont()
-            font.setPointSize(12)
+            font.setPointSize(14)
             pin_icon.setFont(font)
+            pin_icon.setFixedSize(24, 24)
+            pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
         
         title_layout.addStretch()
@@ -386,9 +391,10 @@ class NoteCard(QFrame):
         if self.note.pinned:
             pin_icon = QLabel("📌")
             font = QFont()
-            font.setPointSize(10)
+            font.setPointSize(12)
             pin_icon.setFont(font)
-            pin_icon.setFixedWidth(14)
+            pin_icon.setFixedSize(20, 20)
+            pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
         
         main_layout.addLayout(title_layout)
@@ -467,9 +473,17 @@ class NoteCard(QFrame):
         try:
             pin_icon = QIcon(get_resource_path("assets/icons/check.svg"))
             pin_btn.setIcon(pin_icon)
-            pin_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
+            pin_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         except:
-            pin_btn.setText("📌" if not self.note.pinned else "📍")
+            pin_label = QLabel("📌" if not self.note.pinned else "📍")
+            font = QFont()
+            font.setPointSize(int(size * 0.4))
+            pin_label.setFont(font)
+            pin_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            pin_btn.setText("")
+            pin_btn_layout = QVBoxLayout(pin_btn)
+            pin_btn_layout.setContentsMargins(0, 0, 0, 0)
+            pin_btn_layout.addWidget(pin_label)
         
         pin_btn.clicked.connect(lambda: self.pin_clicked.emit(self.note.id))
         actions_layout.addWidget(pin_btn)
@@ -483,9 +497,17 @@ class NoteCard(QFrame):
         try:
             edit_icon = QIcon(get_resource_path("assets/icons/edit.svg"))
             edit_btn.setIcon(edit_icon)
-            edit_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
+            edit_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         except:
-            edit_btn.setText("✏️")
+            edit_label = QLabel("✏️")
+            font = QFont()
+            font.setPointSize(int(size * 0.4))
+            edit_label.setFont(font)
+            edit_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            edit_btn.setText("")
+            edit_btn_layout = QVBoxLayout(edit_btn)
+            edit_btn_layout.setContentsMargins(0, 0, 0, 0)
+            edit_btn_layout.addWidget(edit_label)
         
         edit_btn.clicked.connect(lambda: self.clicked.emit(self.note.id))
         actions_layout.addWidget(edit_btn)
@@ -499,9 +521,17 @@ class NoteCard(QFrame):
         try:
             delete_icon = QIcon(get_resource_path("assets/icons/delete.svg"))
             delete_btn.setIcon(delete_icon)
-            delete_btn.setIconSize(QSize(int(size * 0.5), int(size * 0.5)))
+            delete_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         except:
-            delete_btn.setText("🗑️")
+            delete_label = QLabel("🗑️")
+            font = QFont()
+            font.setPointSize(int(size * 0.4))
+            delete_label.setFont(font)
+            delete_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            delete_btn.setText("")
+            delete_btn_layout = QVBoxLayout(delete_btn)
+            delete_btn_layout.setContentsMargins(0, 0, 0, 0)
+            delete_btn_layout.addWidget(delete_label)
         
         delete_btn.clicked.connect(lambda: self.delete_clicked.emit(self.note.id))
         actions_layout.addWidget(delete_btn)

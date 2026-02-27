@@ -205,8 +205,10 @@ class NoteViewer(BaseDialog):
     
     def on_delete(self):
         """Handle delete button"""
+        from src.shared.dialogs import show_question
         from PyQt6.QtWidgets import QMessageBox
-        reply = QMessageBox.question(
+        
+        reply = show_question(
             self,
             "Delete Note",
             "Are you sure you want to delete this note?",
