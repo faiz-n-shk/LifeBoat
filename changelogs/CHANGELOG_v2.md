@@ -4,7 +4,49 @@ This changelog documents all changes after v1.1.0, marking the transition from C
 
 ---
 
-## [v2.7.3] - 2026-02-27 (Current Beta)
+## [v2.7.4] - 2026-02-28 (Current Beta)
+
+**Commit:** `213894d`  
+**Tag:** `v2.7.4`  
+**Build Type:** Beta
+
+### Fixed
+
+- **Calendar Navigation Crash (LB-001)**: Fixed crash when navigating months on dates 29/30/31
+  - Normalized to day 1 before month replacement in `prev_month()` and `next_month()`
+- **Sidebar Active State Desync (LB-002)**: Fixed sidebar not highlighting correct section
+  - Moved `navigation.set_active()` call to after successful navigation confirmation
+- **Silent Error Handling (LB-003)**: Replaced blanket error suppressions with specific exceptions
+  - Created custom exception classes in `src/core/exceptions.py`
+  - Updated all 7 controllers (expenses, todos, tasks, notes, habits, goals, calendar)
+- **Todo Date Calculation**: Fixed crash using `timedelta(days=1)` instead of `replace(day=today.day + 1)`
+
+- **Dialog Rounded Corners**: Fixed square corners at bottom of all dialogs
+  - Applied mask-based clipping to `BaseDialog` for proper rounded corners
+  - Fixed globally for all features: todos, tasks, notes, habits, goals, expenses, calendar, settings
+
+### Added
+
+- `src/core/exceptions.py` - Custom exception classes
+  - `DatabaseError`, `RecordNotFoundError`, `DatabaseConnectionError`, `ValidationError`
+- `src/core/updater.py` - Lightweight GitHub releases checker
+  - Checks GitHub API for latest release
+  - Opens download page in browser
+
+### Changed
+
+- Update checker dialog improved with threaded checks and better UX
+- Dialog close buttons now consistent across all dialogs (28x28px with proper hover effects)
+- All dialogs centered on parent window with fade animations
+- Version bumped to 2.7.4
+
+### Removed
+
+- old.goals files/folder
+
+---
+
+## [v2.7.3] - 2026-02-27
 
 **Commit:** `592edd4`  
 **Tag:** `v2.7.3`  
@@ -843,7 +885,3 @@ See [LICENSE](../docs/LICENSE) for details.
 **Repository**: [GitHub](https://github.com/faiz-n-shk/LifeBoat)
 **Documentation**: [docs/](../docs/)
 **Issues**: [GitHub Issues](https://github.com/faiz-n-shk/LifeBoat/issues)
-
-```
-
-```
