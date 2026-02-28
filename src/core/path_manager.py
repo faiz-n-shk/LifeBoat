@@ -369,11 +369,21 @@ class PathManager:
         Creates a fresh database with default structure
         """
         try:
+            from src.core.database import db
+            
             current_db = self.get_database_path()
             template_path = current_db.parent / "default_settings.db"
             
             print(f"[PathManager.restore_default_database] Current DB: {current_db}")
             print(f"[PathManager.restore_default_database] Template path: {template_path}")
+            
+            # CRITICAL: Close database connection before deleting
+            try:
+                if not db.is_closed():
+                    db.close()
+                    print("[PathManager.restore_default_database] Database connection closed")
+            except Exception as e:
+                print(f"[PathManager.restore_default_database] Warning closing DB: {e}")
             
             # Backup current database
             if current_db.exists():
@@ -391,6 +401,8 @@ class PathManager:
             return True, "Database reset. Please restart the app to complete."
         except Exception as e:
             print(f"[PathManager.restore_default_database] ERROR: {e}")
+            import traceback
+            traceback.print_exc()
             return False, f"Error restoring database: {e}"
     
     def get_current_paths_info(self):
