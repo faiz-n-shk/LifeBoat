@@ -4,9 +4,11 @@ Handles notes business logic
 """
 from datetime import datetime
 from typing import List, Optional
+from peewee import DoesNotExist
 
 from src.models.note import Note
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class NotesController:
@@ -30,17 +32,17 @@ class NotesController:
             
             return list(query)
         except Exception as e:
-            print(f"Error getting notes: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve notes: {str(e)}")
     
     @staticmethod
     def get_note_by_id(note_id: int) -> Optional[Note]:
         """Get a specific note by ID"""
         try:
             return Note.get_by_id(note_id)
+        except DoesNotExist:
+            raise RecordNotFoundError("Note not found or has been deleted")
         except Exception as e:
-            print(f"Error getting note: {e}")
-            return None
+            raise DatabaseError(f"Failed to get note: {str(e)}")
     
     @staticmethod
     def create_note(title: str, content: str, tags: str = "", pinned: bool = False) -> Optional[Note]:
@@ -57,8 +59,7 @@ class NotesController:
             activity_logger.log("Notes", "created", f"'{title}'")
             return note
         except Exception as e:
-            print(f"Error creating note: {e}")
-            return None
+            raise DatabaseError(f"Failed to create note: {str(e)}")
     
     @staticmethod
     def update_note(note_id: int, title: str, content: str, tags: str = "", pinned: bool = False) -> bool:
@@ -73,9 +74,10 @@ class NotesController:
             note.save()
             activity_logger.log("Notes", "updated", f"'{title}'")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Note not found or has been deleted")
         except Exception as e:
-            print(f"Error updating note: {e}")
-            return False
+            raise DatabaseError(f"Failed to update note: {str(e)}")
     
     @staticmethod
     def delete_note(note_id: int) -> bool:
@@ -86,9 +88,10 @@ class NotesController:
             note.delete_instance()
             activity_logger.log("Notes", "deleted", f"'{title}'")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Note not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting note: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete note: {str(e)}")
     
     @staticmethod
     def toggle_pin(note_id: int) -> bool:
@@ -101,9 +104,10 @@ class NotesController:
             action = "pinned" if note.pinned else "unpinned"
             activity_logger.log("Notes", action, f"'{note.title}'")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Note not found or has been deleted")
         except Exception as e:
-            print(f"Error toggling pin: {e}")
-            return False
+            raise DatabaseError(f"Failed to toggle pin: {str(e)}")
     
     @staticmethod
     def get_all_tags() -> List[str]:
@@ -114,11 +118,9 @@ class NotesController:
             
             for note in notes:
                 if note.tags:
-                    # Split tags by comma and strip whitespace
                     note_tags = [tag.strip() for tag in note.tags.split(',') if tag.strip()]
                     tags_set.update(note_tags)
             
             return sorted(list(tags_set))
         except Exception as e:
-            print(f"Error getting tags: {e}")
-            return []
+            raise DatabaseError(f"Failed to get tags: {str(e)}")

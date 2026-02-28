@@ -128,8 +128,9 @@ class MainWindow(QWidget):
                     # User cancelled navigation
                     return
         
-        self.navigation.set_active(feature_name)
+        # Navigation confirmed, update UI
         self.content.show_feature(feature_name)
+        self.navigation.set_active(feature_name)
     
     def on_reload(self):
         """Handle reload request - reload app and go to dashboard"""

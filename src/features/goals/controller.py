@@ -3,9 +3,12 @@ Goals Controller
 Business logic for goals management
 """
 from datetime import datetime
+from peewee import DoesNotExist
+
 from src.models.goal import Goal
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class GoalsController:
@@ -24,8 +27,7 @@ class GoalsController:
             db.close()
             return goals
         except Exception as e:
-            print(f"Error getting goals: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve goals: {str(e)}")
     
     def create_goal(self, title, description=None, target_date=None, category=None):
         """Create a new goal"""
@@ -43,8 +45,7 @@ class GoalsController:
             activity_logger.log('Goals', 'Created', title)
             return goal
         except Exception as e:
-            print(f"Error creating goal: {e}")
-            return None
+            raise DatabaseError(f"Failed to create goal: {str(e)}")
     
     def update_goal(self, goal_id, **kwargs):
         """Update a goal"""
@@ -62,9 +63,10 @@ class GoalsController:
             db.close()
             activity_logger.log('Goals', 'Updated', title)
             return goal
+        except DoesNotExist:
+            raise RecordNotFoundError("Goal not found or has been deleted")
         except Exception as e:
-            print(f"Error updating goal: {e}")
-            return None
+            raise DatabaseError(f"Failed to update goal: {str(e)}")
     
     def delete_goal(self, goal_id):
         """Delete a goal"""
@@ -76,9 +78,10 @@ class GoalsController:
             db.close()
             activity_logger.log('Goals', 'Deleted', title)
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Goal not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting goal: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete goal: {str(e)}")
     
     def update_progress(self, goal_id, progress):
         """Update goal progress (0-100)"""
@@ -87,7 +90,6 @@ class GoalsController:
             goal = Goal.get_by_id(goal_id)
             goal.progress = max(0, min(100, progress))
             
-            # Update completed status based on progress
             if goal.progress >= 100:
                 goal.completed = True
             else:
@@ -97,9 +99,10 @@ class GoalsController:
             goal.save()
             db.close()
             return goal
+        except DoesNotExist:
+            raise RecordNotFoundError("Goal not found or has been deleted")
         except Exception as e:
-            print(f"Error updating progress: {e}")
-            return None
+            raise DatabaseError(f"Failed to update progress: {str(e)}")
     
     def toggle_complete(self, goal_id):
         """Toggle goal completion status"""
@@ -115,6 +118,7 @@ class GoalsController:
             goal.save()
             db.close()
             return goal
+        except DoesNotExist:
+            raise RecordNotFoundError("Goal not found or has been deleted")
         except Exception as e:
-            print(f"Error toggling completion: {e}")
-            return None
+            raise DatabaseError(f"Failed to toggle completion: {str(e)}")

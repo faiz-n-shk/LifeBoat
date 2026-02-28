@@ -88,9 +88,22 @@ def create_message_box(parent, title, text, icon=QMessageBox.Icon.Question,
     title_bar_layout.addWidget(title_label)
     
     title_bar_layout.addStretch()
+    
+    # Add close button
+    from src.core.path_manager import get_resource_path
+    close_btn = QPushButton()
+    close_btn.setObjectName("message-box-close-btn")
+    close_btn.setIcon(QIcon(get_resource_path("assets/icons/cross_mark.svg")))
+    close_btn.setFixedSize(28, 28)
+    close_btn.setIconSize(QSize(16, 16))
+    close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+    close_btn.clicked.connect(dialog.reject)
+    title_bar_layout.addWidget(close_btn)
+    
     container_layout.addWidget(title_bar)
     
     content_widget = QWidget()
+    content_widget.setObjectName("message-box-content")
     content_layout = QVBoxLayout(content_widget)
     content_layout.setContentsMargins(20, 20, 20, 20)
     
@@ -189,9 +202,37 @@ def create_message_box(parent, title, text, icon=QMessageBox.Icon.Question,
             }}
         """)
         
+        content_widget.setStyleSheet(f"""
+            QWidget#message-box-content {{
+                background-color: {theme_obj.bg_primary};
+                border-bottom-left-radius: 10px;
+                border-bottom-right-radius: 10px;
+            }}
+        """)
+        
         message_label.setStyleSheet(f"""
             QLabel#message-box-text {{
                 color: {theme_obj.fg_primary};
+            }}
+        """)
+        
+        close_btn.setStyleSheet(f"""
+            QPushButton#message-box-close-btn {{
+                background-color: transparent;
+                border: none;
+                border-radius: 4px;
+                padding: 0px;
+                min-width: 28px;
+                max-width: 28px;
+                min-height: 28px;
+                max-height: 28px;
+            }}
+            QPushButton#message-box-close-btn:hover {{
+                background-color: {theme_obj.danger};
+            }}
+            QPushButton#message-box-close-btn:pressed {{
+                background-color: {theme_obj.danger};
+                opacity: 0.8;
             }}
         """)
         
@@ -362,6 +403,14 @@ class BaseDialog(QDialog):
         title_bar_layout.addWidget(self.close_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         container_layout.addWidget(self.title_bar)
         
+        # Content wrapper with rounded bottom corners
+        self.content_wrapper = QFrame()
+        self.content_wrapper.setObjectName("dialog-content-wrapper")
+        self.content_wrapper.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        content_wrapper_layout = QVBoxLayout(self.content_wrapper)
+        content_wrapper_layout.setContentsMargins(0, 0, 0, 0)
+        content_wrapper_layout.setSpacing(0)
+        
         self.main_layout = QVBoxLayout()
         self.main_layout.setContentsMargins(0, 0, 0, 0)
         self.main_layout.setSpacing(0)
@@ -373,13 +422,15 @@ class BaseDialog(QDialog):
         self.scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         
         self.content = QWidget()
+        self.content.setObjectName("dialog-content")
         self.layout = QVBoxLayout(self.content)
         self.layout.setSpacing(8)
         self.layout.setContentsMargins(15, 15, 15, 15)
         
         self.scroll.setWidget(self.content)
         self.main_layout.addWidget(self.scroll)
-        container_layout.addLayout(self.main_layout)
+        content_wrapper_layout.addLayout(self.main_layout)
+        container_layout.addWidget(self.content_wrapper)
         self.setLayout(self.outer_layout)
         
         self._apply_theme_styling()
@@ -433,6 +484,18 @@ class BaseDialog(QDialog):
                 }}
             """)
             
+            self.content_wrapper.setStyleSheet(f"""
+                QFrame#dialog-content-wrapper {{
+                    background-color: {theme_obj.bg_primary};
+                }}
+            """)
+            
+            self.content.setStyleSheet(f"""
+                QWidget#dialog-content {{
+                    background-color: {theme_obj.bg_primary};
+                }}
+            """)
+            
             db.close()
         except:
             pass
@@ -453,6 +516,18 @@ class BaseDialog(QDialog):
     def mouseReleaseEvent(self, event):
         self._drag_pos = None
         super().mouseReleaseEvent(event)
+    
+    def resizeEvent(self, event):
+        super().resizeEvent(event)
+        # Update mask when dialog is resized
+        from PyQt6.QtGui import QPainterPath, QRegion
+        if hasattr(self, 'content_wrapper'):
+            path = QPainterPath()
+            rect = self.content_wrapper.rect()
+            radius = 10
+            path.addRoundedRect(rect.x(), rect.y(), rect.width(), rect.height(), radius, radius)
+            region = QRegion(path.toFillPolygon().toPolygon())
+            self.content_wrapper.setMask(region)
     
     def keyPressEvent(self, event):
         if event.key() == Qt.Key.Key_Escape:
@@ -477,6 +552,17 @@ class BaseDialog(QDialog):
     
     def showEvent(self, event):
         super().showEvent(event)
+        
+        # Apply rounded corner mask to content wrapper
+        from PyQt6.QtGui import QPainterPath, QRegion
+        if hasattr(self, 'content_wrapper'):
+            path = QPainterPath()
+            rect = self.content_wrapper.rect()
+            radius = 10
+            path.addRoundedRect(rect.x(), rect.y(), rect.width(), rect.height(), radius, radius)
+            region = QRegion(path.toFillPolygon().toPolygon())
+            self.content_wrapper.setMask(region)
+        
         if config.get('appearance.enable_animations', True) and not event.spontaneous():
             self.setWindowOpacity(0.0)
             self._fade_in_animation = QPropertyAnimation(self, b"windowOpacity")

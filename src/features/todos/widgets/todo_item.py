@@ -5,7 +5,7 @@ Individual todo display component
 from PyQt6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QLabel, QPushButton, QCheckBox
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QFont, QIcon
-from datetime import date
+from datetime import date, timedelta
 
 from src.core.config import config
 
@@ -158,10 +158,11 @@ class TodoItem(QFrame):
     def format_due_date(self, due_date):
         """Format due date for display"""
         today = date.today()
+        tomorrow = today + timedelta(days=1)
         
         if due_date == today:
             return "Today"
-        elif due_date == today.replace(day=today.day + 1):
+        elif due_date == tomorrow:
             return "Tomorrow"
         elif due_date < today:
             days_ago = (today - due_date).days

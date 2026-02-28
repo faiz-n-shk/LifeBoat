@@ -389,18 +389,22 @@ class CalendarView(QWidget):
     
     def prev_month(self):
         """Go to previous month"""
-        if self.current_date.month == 1:
-            self.current_date = self.current_date.replace(year=self.current_date.year - 1, month=12)
+        # Normalize to day 1 to avoid day-out-of-range errors
+        first_of_month = self.current_date.replace(day=1)
+        if first_of_month.month == 1:
+            self.current_date = first_of_month.replace(year=first_of_month.year - 1, month=12)
         else:
-            self.current_date = self.current_date.replace(month=self.current_date.month - 1)
+            self.current_date = first_of_month.replace(month=first_of_month.month - 1)
         self.load_calendar()
     
     def next_month(self):
         """Go to next month"""
-        if self.current_date.month == 12:
-            self.current_date = self.current_date.replace(year=self.current_date.year + 1, month=1)
+        # Normalize to day 1 to avoid day-out-of-range errors
+        first_of_month = self.current_date.replace(day=1)
+        if first_of_month.month == 12:
+            self.current_date = first_of_month.replace(year=first_of_month.year + 1, month=1)
         else:
-            self.current_date = self.current_date.replace(month=self.current_date.month + 1)
+            self.current_date = first_of_month.replace(month=first_of_month.month + 1)
         self.load_calendar()
     
     def go_to_today(self):

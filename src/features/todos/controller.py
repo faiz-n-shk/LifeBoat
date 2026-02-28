@@ -4,9 +4,12 @@ Business logic for todo management
 """
 from datetime import datetime, date
 from typing import List, Dict, Any
+from peewee import DoesNotExist
+
 from src.models.todo import Todo
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class TodosController:
@@ -41,8 +44,7 @@ class TodosController:
             db.close()
             return todos
         except Exception as e:
-            print(f"Error getting todos: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve todos: {str(e)}")
     
     def create_todo(self, data: Dict[str, Any]) -> Todo:
         """Create a new todo"""
@@ -65,8 +67,7 @@ class TodosController:
             
             return todo
         except Exception as e:
-            print(f"Error creating todo: {e}")
-            return None
+            raise DatabaseError(f"Failed to create todo: {str(e)}")
     
     def update_todo(self, todo_id: int, data: Dict[str, Any]) -> bool:
         """Update a todo"""
@@ -88,9 +89,10 @@ class TodosController:
             activity_logger.log('Todos', 'Updated', title)
             
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Todo not found or has been deleted")
         except Exception as e:
-            print(f"Error updating todo: {e}")
-            return False
+            raise DatabaseError(f"Failed to update todo: {str(e)}")
     
     def delete_todo(self, todo_id: int) -> bool:
         """Delete a todo"""
@@ -106,9 +108,10 @@ class TodosController:
             activity_logger.log('Todos', 'Deleted', title)
             
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Todo not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting todo: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete todo: {str(e)}")
     
     def toggle_complete(self, todo_id: int) -> bool:
         """Toggle todo completion"""
@@ -123,9 +126,10 @@ class TodosController:
             
             db.close()
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Todo not found or has been deleted")
         except Exception as e:
-            print(f"Error toggling todo: {e}")
-            return False
+            raise DatabaseError(f"Failed to toggle todo: {str(e)}")
     
     def get_categories(self) -> List[str]:
         """Get all unique categories"""
@@ -141,8 +145,7 @@ class TodosController:
             db.close()
             return sorted(list(categories))
         except Exception as e:
-            print(f"Error getting categories: {e}")
-            return []
+            raise DatabaseError(f"Failed to get categories: {str(e)}")
     
     def get_stats(self) -> Dict[str, int]:
         """Get todo statistics"""
@@ -171,14 +174,7 @@ class TodosController:
                 'overdue': overdue
             }
         except Exception as e:
-            print(f"Error getting stats: {e}")
-            return {
-                'total': 0,
-                'active': 0,
-                'completed': 0,
-                'today': 0,
-                'overdue': 0
-            }
+            raise DatabaseError(f"Failed to get stats: {str(e)}")
     
     def reorder_todos(self, todo_ids: List[int]) -> bool:
         """Reorder todos"""
@@ -192,6 +188,7 @@ class TodosController:
             
             db.close()
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("One or more todos not found")
         except Exception as e:
-            print(f"Error reordering todos: {e}")
-            return False
+            raise DatabaseError(f"Failed to reorder todos: {str(e)}")

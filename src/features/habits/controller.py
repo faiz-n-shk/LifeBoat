@@ -3,9 +3,12 @@ Habits Controller
 Business logic for habit tracking
 """
 from datetime import datetime, date, timedelta
+from peewee import DoesNotExist
+
 from src.models.habit import Habit, HabitLog
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class HabitsController:
@@ -19,8 +22,7 @@ class HabitsController:
             db.close()
             return habits
         except Exception as e:
-            print(f"Error getting habits: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve habits: {str(e)}")
     
     def create_habit(self, name, description=None, habit_type="Good", target_days=7, color="#0078d4"):
         """Create a new habit"""
@@ -40,10 +42,7 @@ class HabitsController:
             activity_logger.log('Habits', 'Created', name)
             return habit
         except Exception as e:
-            print(f"Error creating habit: {e}")
-            import traceback
-            traceback.print_exc()
-            return None
+            raise DatabaseError(f"Failed to create habit: {str(e)}")
     
     def update_habit(self, habit_id, **kwargs):
         """Update a habit"""
@@ -60,9 +59,10 @@ class HabitsController:
             db.close()
             activity_logger.log('Habits', 'Updated', name)
             return habit
+        except DoesNotExist:
+            raise RecordNotFoundError("Habit not found or has been deleted")
         except Exception as e:
-            print(f"Error updating habit: {e}")
-            return None
+            raise DatabaseError(f"Failed to update habit: {str(e)}")
     
     def delete_habit(self, habit_id):
         """Delete a habit and all its logs"""
@@ -71,17 +71,16 @@ class HabitsController:
             habit = Habit.get_by_id(habit_id)
             name = habit.name
             
-            # Delete all logs first
             HabitLog.delete().where(HabitLog.habit == habit).execute()
             
-            # Delete habit
             habit.delete_instance()
             db.close()
             activity_logger.log('Habits', 'Deleted', name)
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Habit not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting habit: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete habit: {str(e)}")
     
     def log_habit(self, habit_id, log_date=None, notes=None):
         """Log habit completion for a date"""
@@ -92,13 +91,11 @@ class HabitsController:
             db.connect(reuse_if_open=True)
             habit = Habit.get_by_id(habit_id)
             
-            # Check if already logged for this date
             existing = HabitLog.select().where(
                 (HabitLog.habit == habit) & (HabitLog.date == log_date)
             ).first()
             
             if existing:
-                # Toggle completion
                 existing.completed = not existing.completed
                 if notes:
                     existing.notes = notes
@@ -106,7 +103,6 @@ class HabitsController:
                 log = existing
                 status = "Logged" if existing.completed else "Unlogged"
             else:
-                # Create new log
                 log = HabitLog.create(
                     habit=habit,
                     date=log_date,
@@ -118,9 +114,10 @@ class HabitsController:
             db.close()
             activity_logger.log('Habits', status, habit.name)
             return log
+        except DoesNotExist:
+            raise RecordNotFoundError("Habit not found or has been deleted")
         except Exception as e:
-            print(f"Error logging habit: {e}")
-            return None
+            raise DatabaseError(f"Failed to log habit: {str(e)}")
     
     def get_habit_logs(self, habit_id, days=30):
         """Get habit logs for the last N days"""

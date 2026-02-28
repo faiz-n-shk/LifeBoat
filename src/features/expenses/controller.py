@@ -4,10 +4,12 @@ Business logic for expenses and income
 """
 from typing import List, Dict, Any
 from datetime import datetime, date
+from peewee import DoesNotExist
 
 from src.models.expense import Expense, Income
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class ExpensesController:
@@ -27,8 +29,7 @@ class ExpensesController:
             
             return list(query)
         except Exception as e:
-            print(f"Error getting expenses: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve expenses: {str(e)}")
         finally:
             db.close()
     
@@ -46,8 +47,7 @@ class ExpensesController:
             
             return list(query)
         except Exception as e:
-            print(f"Error getting income: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve income: {str(e)}")
         finally:
             db.close()
     
@@ -82,8 +82,7 @@ class ExpensesController:
                 'balance': float(total_income - total_expenses)
             }
         except Exception as e:
-            print(f"Error getting summary: {e}")
-            return {'expenses': 0.0, 'income': 0.0, 'balance': 0.0}
+            raise DatabaseError(f"Failed to get monthly summary: {str(e)}")
         finally:
             db.close()
     
@@ -95,8 +94,7 @@ class ExpensesController:
             activity_logger.log("Expenses", "created", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
             return expense
         except Exception as e:
-            print(f"Error creating expense: {e}")
-            return None
+            raise DatabaseError(f"Failed to create expense: {str(e)}")
         finally:
             db.close()
     
@@ -108,8 +106,7 @@ class ExpensesController:
             activity_logger.log("Expenses", "created income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
             return income
         except Exception as e:
-            print(f"Error creating income: {e}")
-            return None
+            raise DatabaseError(f"Failed to create income: {str(e)}")
         finally:
             db.close()
     
@@ -123,9 +120,10 @@ class ExpensesController:
             expense.save()
             activity_logger.log("Expenses", "updated", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Expense not found or has been deleted")
         except Exception as e:
-            print(f"Error updating expense: {e}")
-            return False
+            raise DatabaseError(f"Failed to update expense: {str(e)}")
         finally:
             db.close()
     
@@ -139,9 +137,10 @@ class ExpensesController:
             income.save()
             activity_logger.log("Expenses", "updated income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Income not found or has been deleted")
         except Exception as e:
-            print(f"Error updating income: {e}")
-            return False
+            raise DatabaseError(f"Failed to update income: {str(e)}")
         finally:
             db.close()
     
@@ -155,9 +154,10 @@ class ExpensesController:
             expense.delete_instance()
             activity_logger.log("Expenses", "deleted", f"{category} - {amount}")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Expense not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting expense: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete expense: {str(e)}")
         finally:
             db.close()
     
@@ -171,8 +171,9 @@ class ExpensesController:
             income.delete_instance()
             activity_logger.log("Expenses", "deleted income", f"{source} - {amount}")
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Income not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting income: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete income: {str(e)}")
         finally:
             db.close()

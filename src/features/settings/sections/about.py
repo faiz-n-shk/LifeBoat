@@ -99,131 +99,256 @@ class AboutSection(QWidget):
     
     def on_check_updates(self):
         """Handle check for updates"""
-        from PyQt6.QtWidgets import QMessageBox, QApplication
-        from PyQt6.QtCore import QUrl, Qt
-        from PyQt6.QtGui import QDesktopServices
-        import requests
+        from PyQt6.QtCore import QUrl, QThread, pyqtSignal, Qt, QSize
+        from PyQt6.QtGui import QDesktopServices, QIcon, QCursor, QFont, QColor
+        from PyQt6.QtWidgets import QMessageBox, QDialog, QVBoxLayout, QLabel, QFrame, QHBoxLayout, QPushButton, QGraphicsDropShadowEffect
+        from src.core.updater import Updater
+        from src.shared.dialogs import create_message_box, show_information, show_warning, show_critical
+        from src.core.path_manager import get_resource_path
+        from src.core.theme_manager import theme_manager
+        from src.models.theme import Theme
+        from src.core.database import db
         
-        msg = None
+        # Create worker thread
+        class UpdateCheckWorker(QThread):
+            finished = pyqtSignal(object)
+            
+            def run(self):
+                try:
+                    updater = Updater()
+                    result = updater.check_for_updates()
+                    self.finished.emit(result)
+                except Exception as e:
+                    self.finished.emit({'error': str(e)})
+        
+        # Create a styled non-blocking progress dialog
+        checking_dialog = QDialog(self)
+        checking_dialog.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.FramelessWindowHint)
+        checking_dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
+        checking_dialog.setFixedWidth(450)
+        
+        outer_layout = QVBoxLayout(checking_dialog)
+        outer_layout.setContentsMargins(10, 10, 10, 10)
+        
+        container = QFrame()
+        container.setObjectName("checking-dialog-container")
+        outer_layout.addWidget(container)
+        
+        shadow = QGraphicsDropShadowEffect()
+        shadow.setBlurRadius(20)
+        shadow.setXOffset(0)
+        shadow.setYOffset(0)
+        shadow.setColor(QColor(0, 0, 0, 100))
+        container.setGraphicsEffect(shadow)
+        
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        container_layout.setSpacing(0)
+        
+        # Title bar
+        title_bar = QFrame()
+        title_bar.setObjectName("checking-dialog-title-bar")
+        title_bar.setFixedHeight(50)
+        title_bar_layout = QHBoxLayout(title_bar)
+        title_bar_layout.setContentsMargins(20, 0, 10, 0)
+        
+        title_label = QLabel("Checking for Updates")
+        title_label.setObjectName("checking-dialog-title")
+        font = QFont()
+        font.setPointSize(14)
+        font.setBold(True)
+        title_label.setFont(font)
+        title_bar_layout.addWidget(title_label)
+        
+        title_bar_layout.addStretch()
+        
+        # Close button
+        close_btn = QPushButton()
+        close_btn.setIcon(QIcon(get_resource_path("assets/icons/cross_mark.svg")))
+        close_btn.setFixedSize(28, 28)
+        close_btn.setIconSize(QSize(16, 16))
+        close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        close_btn.setObjectName("checking-dialog-close-btn")
+        close_btn.clicked.connect(checking_dialog.reject)
+        title_bar_layout.addWidget(close_btn)
+        
+        container_layout.addWidget(title_bar)
+        
+        # Content
+        content_widget = QWidget()
+        content_widget.setObjectName("checking-dialog-content")
+        content_layout = QVBoxLayout(content_widget)
+        content_layout.setContentsMargins(20, 30, 20, 30)
+        
+        message_label = QLabel("Checking for updates...\n\nPlease wait.")
+        message_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        message_label.setObjectName("checking-dialog-text")
+        font = QFont()
+        font.setPointSize(11)
+        message_label.setFont(font)
+        content_layout.addWidget(message_label)
+        
+        container_layout.addWidget(content_widget)
+        
+        # Apply theme styling
         try:
-            # Show checking message
-            msg = QMessageBox(self)
-            msg.setWindowTitle("Checking for Updates")
-            msg.setText("Checking for updates...")
-            msg.setStandardButtons(QMessageBox.StandardButton.NoButton)
-            msg.setWindowModality(Qt.WindowModality.ApplicationModal)
-            msg.show()
-            QApplication.processEvents()
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_manager.current_theme)
             
-            # Fetch latest version from GitHub API
-            api_url = "https://api.github.com/repos/faiz-n-shk/LifeBoat/releases/latest"
-            response = requests.get(api_url, timeout=5)
+            container.setStyleSheet(f"""
+                QFrame#checking-dialog-container {{
+                    background-color: {theme_obj.bg_primary};
+                    border: 2px solid {theme_obj.border};
+                    border-radius: 12px;
+                }}
+            """)
             
-            # Close and delete the checking message
-            msg.close()
-            msg.deleteLater()
-            msg = None
-            QApplication.processEvents()
+            title_bar.setStyleSheet(f"""
+                QFrame#checking-dialog-title-bar {{
+                    background-color: {theme_obj.bg_secondary};
+                    border-top-left-radius: 10px;
+                    border-top-right-radius: 10px;
+                    border-bottom: 1px solid {theme_obj.border};
+                }}
+                QLabel#checking-dialog-title {{
+                    color: {theme_obj.fg_primary};
+                }}
+            """)
             
-            if response.status_code == 200:
-                data = response.json()
-                latest_version = data.get('tag_name', '').lstrip('v')
-                release_url = data.get('html_url', '')
-                
-                # Compare versions
-                if latest_version > APP_VERSION:
-                    # New version available
-                    from src.shared.dialogs import create_message_box
-                    
-                    msg = create_message_box(
-                        self,
-                        "Update Available",
-                        f"A new version is available!\n\n"
-                        f"Current Version: {APP_VERSION}\n"
-                        f"Latest Version: {latest_version}\n\n"
-                        f"Would you like to download it?",
-                        QMessageBox.Icon.Information,
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                    )
-                    
-                    if msg.exec() == QMessageBox.StandardButton.Yes:
-                        QDesktopServices.openUrl(QUrl(release_url))
-                else:
-                    # Already up to date
-                    from src.shared.dialogs import show_information
-                    show_information(
-                        self,
-                        "Up to Date",
-                        f"You are running the latest version ({APP_VERSION})."
-                    )
-            else:
-                # API error
-                from src.shared.dialogs import show_warning
+            close_btn.setStyleSheet(f"""
+                QPushButton#checking-dialog-close-btn {{
+                    background-color: transparent;
+                    border: none;
+                    border-radius: 4px;
+                    padding: 0px;
+                    min-width: 28px;
+                    max-width: 28px;
+                    min-height: 28px;
+                    max-height: 28px;
+                }}
+                QPushButton#checking-dialog-close-btn:hover {{
+                    background-color: {theme_obj.danger};
+                }}
+                QPushButton#checking-dialog-close-btn:pressed {{
+                    background-color: {theme_obj.danger};
+                    opacity: 0.8;
+                }}
+            """)
+            
+            content_widget.setStyleSheet(f"""
+                QWidget#checking-dialog-content {{
+                    background-color: {theme_obj.bg_primary};
+                    border-bottom-left-radius: 10px;
+                    border-bottom-right-radius: 10px;
+                }}
+            """)
+            
+            message_label.setStyleSheet(f"""
+                QLabel#checking-dialog-text {{
+                    color: {theme_obj.fg_primary};
+                }}
+            """)
+            
+            db.close()
+        except:
+            pass
+        
+        # Store as instance variables
+        self._update_worker = UpdateCheckWorker()
+        self._checking_dialog = checking_dialog
+        
+        def on_finished(result):
+            # Close checking dialog
+            if self._checking_dialog:
+                self._checking_dialog.close()
+                self._checking_dialog.deleteLater()
+                self._checking_dialog = None
+            
+            # Handle error
+            if result and isinstance(result, dict) and 'error' in result:
+                show_critical(self, "Error", f"An error occurred:\n{result['error']}")
+                return
+            
+            # Handle no result
+            if result is None:
                 show_warning(
                     self,
                     "Update Check Failed",
-                    f"Could not check for updates.\n\n"
-                    f"Status Code: {response.status_code}\n\n"
-                    f"Please check manually at:\n"
-                    f"https://github.com/faiz-n-shk/LifeBoat/releases"
+                    "Could not check for updates.\n\n"
+                    "Please check your internet connection or visit:\n"
+                    "https://github.com/faiz-n-shk/LifeBoat/releases"
+                )
+                return
+            
+            # Handle update available
+            if result.get('available'):
+                button_result = create_message_box(
+                    self,
+                    "Update Available",
+                    f"A new version is available!\n\n"
+                    f"Current: {result['current_version']}\n"
+                    f"Latest: {result['latest_version']}\n\n"
+                    f"Download now?",
+                    QMessageBox.Icon.Information,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                
+                if button_result == QMessageBox.StandardButton.Yes:
+                    QDesktopServices.openUrl(QUrl(result['download_url']))
+            else:
+                show_information(
+                    self,
+                    "Up to Date",
+                    f"You are running the latest version ({result['current_version']})."
                 )
         
-        except requests.exceptions.RequestException as e:
-            # Close checking message if still open
-            if msg:
-                msg.close()
-                msg.deleteLater()
-                msg = None
-                QApplication.processEvents()
-            
-            # Network error
-            from src.shared.dialogs import show_warning
-            show_warning(
-                self,
-                "Connection Error",
-                f"Could not connect to update server.\n\n"
-                f"Error: {str(e)}\n\n"
-                f"Please check your internet connection or visit:\n"
-                f"https://github.com/faiz-n-shk/LifeBoat/releases"
-            )
-        except Exception as e:
-            # Close checking message if still open
-            if msg:
-                msg.close()
-                msg.deleteLater()
-                msg = None
-                QApplication.processEvents()
-            
-            # Other errors
-            from src.shared.dialogs import show_critical
-            show_critical(
-                self,
-                "Error",
-                f"An error occurred while checking for updates:\n{str(e)}"
-            )
+        # Connect and start
+        self._update_worker.finished.connect(on_finished)
+        self._update_worker.start()
+        
+        # Center dialog on parent window
+        from src.core.config import config
+        from PyQt6.QtCore import QPropertyAnimation, QEasingCurve
+        
+        parent_geo = self.window().geometry()
+        checking_dialog.adjustSize()
+        dialog_geo = checking_dialog.geometry()
+        x = parent_geo.x() + (parent_geo.width() - dialog_geo.width()) // 2
+        y = parent_geo.y() + (parent_geo.height() - dialog_geo.height()) // 2
+        checking_dialog.move(x, y)
+        
+        # Add fade-in animation
+        if config.get('appearance.enable_animations', True):
+            checking_dialog.setWindowOpacity(0.0)
+            checking_dialog._fade_in_anim = QPropertyAnimation(checking_dialog, b"windowOpacity")
+            checking_dialog._fade_in_anim.setDuration(150)
+            checking_dialog._fade_in_anim.setStartValue(0.0)
+            checking_dialog._fade_in_anim.setEndValue(1.0)
+            checking_dialog._fade_in_anim.setEasingCurve(QEasingCurve.Type.InOutQuad)
+            checking_dialog._fade_in_anim.start()
+        else:
+            checking_dialog.setWindowOpacity(1.0)
+        
+        # Show checking dialog non-blocking
+        checking_dialog.show()
     
     def on_view_changelog(self):
         """Handle view changelog"""
-        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QPushButton, QHBoxLayout, QMessageBox
-        from PyQt6.QtCore import Qt
+        from PyQt6.QtWidgets import QDialog, QVBoxLayout, QTextBrowser, QPushButton, QHBoxLayout
         import requests
         
-        # Create changelog dialog
         dialog = QDialog(self)
         dialog.setWindowTitle("Changelog")
         dialog.resize(700, 500)
         
         layout = QVBoxLayout(dialog)
         
-        # Text area for changelog
         text_browser = QTextBrowser()
         text_browser.setReadOnly(True)
-        text_browser.setOpenExternalLinks(True)  # Enable clickable links
-        text_browser.setPlainText("Loading changelog from GitHub...")
-        
+        text_browser.setOpenExternalLinks(True)
+        text_browser.setPlainText("Loading changelog...")
         layout.addWidget(text_browser)
         
-        # Close button
         button_layout = QHBoxLayout()
         button_layout.addStretch()
         
@@ -233,53 +358,38 @@ class AboutSection(QWidget):
         
         layout.addLayout(button_layout)
         
-        # Show dialog
         dialog.show()
         dialog.repaint()
         
-        # Fetch changelog from GitHub
         try:
-            # Fetch CHANGELOG.md from GitHub repository
-            changelog_url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/changelogs/CHANGELOG.md"
-            response = requests.get(changelog_url, timeout=5)
+            url = "https://raw.githubusercontent.com/faiz-n-shk/LifeBoat/main/changelogs/CHANGELOG.md"
+            response = requests.get(url, timeout=5)
             
             if response.status_code == 200:
-                # Successfully fetched changelog
-                changelog_content = response.text
-                text_browser.setMarkdown(changelog_content)
+                text_browser.setMarkdown(response.text)
             else:
-                # File not found or other error
                 text_browser.setMarkdown(f"""
 # Changelog
 
 ## Version {APP_VERSION}
 
-**Note:** Could not fetch changelog from GitHub (Status: {response.status_code}).
+Could not fetch changelog (Status: {response.status_code}).
 
-The changelog file should be at:
-`changelogs/CHANGELOG.md` in the main branch of the Lifeboat repository.
-
-Visit the repository for full changelog:
-[https://github.com/faiz-n-shk/LifeBoat](https://github.com/faiz-n-shk/LifeBoat)
+Visit: [https://github.com/faiz-n-shk/LifeBoat](https://github.com/faiz-n-shk/LifeBoat)
 """)
-        
         except requests.exceptions.RequestException as e:
-            # Network error
             text_browser.setMarkdown(f"""
 # Changelog
 
 ## Version {APP_VERSION}
 
-**Note:** Could not connect to GitHub to fetch changelog.
+Could not connect to GitHub.
 
 Error: {str(e)}
 
-Please check your internet connection or visit:
-[https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md](https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md)
+Visit: [https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md](https://github.com/faiz-n-shk/LifeBoat/blob/main/changelogs/CHANGELOG.md)
 """)
-        
         except Exception as e:
-            # Other errors
-            text_browser.setPlainText(f"Error loading changelog: {str(e)}")
+            text_browser.setPlainText(f"Error: {str(e)}")
         
         dialog.exec()

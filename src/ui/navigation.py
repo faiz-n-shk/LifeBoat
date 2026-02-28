@@ -213,7 +213,7 @@ class NavigationSidebar(QWidget):
     
     def on_nav_click(self, name: str):
         """Handle navigation button click"""
-        self.set_active(name)
+        # Emit navigation request first, let MainWindow decide if navigation is allowed
         self.navigate_requested.emit(name)
     
     def set_active(self, name: str):

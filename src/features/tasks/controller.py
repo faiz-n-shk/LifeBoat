@@ -4,10 +4,12 @@ Business logic for tasks
 """
 from typing import List, Dict, Any
 from datetime import datetime
+from peewee import DoesNotExist
 
 from src.models.task import Task
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class TasksController:
@@ -35,8 +37,7 @@ class TasksController:
             
             return list(tasks)
         except Exception as e:
-            print(f"Error getting tasks: {e}")
-            return []
+            raise DatabaseError(f"Failed to retrieve tasks: {str(e)}")
         finally:
             db.close()
     
@@ -48,8 +49,7 @@ class TasksController:
             activity_logger.log('Tasks', 'Created', task.title)
             return task
         except Exception as e:
-            print(f"Error creating task: {e}")
-            return None
+            raise DatabaseError(f"Failed to create task: {str(e)}")
         finally:
             db.close()
     
@@ -67,9 +67,10 @@ class TasksController:
             task.save()
             activity_logger.log('Tasks', 'Updated', title)
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Task not found or has been deleted")
         except Exception as e:
-            print(f"Error updating task: {e}")
-            return False
+            raise DatabaseError(f"Failed to update task: {str(e)}")
         finally:
             db.close()
     
@@ -82,9 +83,10 @@ class TasksController:
             task.delete_instance()
             activity_logger.log('Tasks', 'Deleted', title)
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Task not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting task: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete task: {str(e)}")
         finally:
             db.close()
     
@@ -100,8 +102,9 @@ class TasksController:
             status = "Completed" if task.completed else "Uncompleted"
             activity_logger.log('Tasks', status, task.title)
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Task not found or has been deleted")
         except Exception as e:
-            print(f"Error toggling task: {e}")
-            return False
+            raise DatabaseError(f"Failed to toggle task: {str(e)}")
         finally:
             db.close()

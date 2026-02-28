@@ -4,10 +4,12 @@ Handles calendar business logic
 """
 from datetime import datetime, timedelta
 from typing import List, Optional
+from peewee import DoesNotExist
 
 from src.models.event import Event
 from src.core.database import db
 from src.core.activity_logger import activity_logger
+from src.core.exceptions import RecordNotFoundError, DatabaseError
 
 
 class CalendarController:
@@ -18,10 +20,8 @@ class CalendarController:
         try:
             db.connect(reuse_if_open=True)
             
-            # First day of month
             month_start = datetime(year, month, 1)
             
-            # First day of next month
             if month == 12:
                 month_end = datetime(year + 1, 1, 1)
             else:
@@ -35,8 +35,7 @@ class CalendarController:
             db.close()
             return events
         except Exception as e:
-            print(f"Error getting events for month: {e}")
-            return []
+            raise DatabaseError(f"Failed to get events for month: {str(e)}")
     
     def get_upcoming_events(self, limit: int = 20) -> List[Event]:
         """Get upcoming events"""
@@ -51,8 +50,7 @@ class CalendarController:
             db.close()
             return events
         except Exception as e:
-            print(f"Error getting upcoming events: {e}")
-            return []
+            raise DatabaseError(f"Failed to get upcoming events: {str(e)}")
     
     def get_recent_events(self, limit: int = 20) -> List[Event]:
         """Get recent past events"""
@@ -67,8 +65,7 @@ class CalendarController:
             db.close()
             return events
         except Exception as e:
-            print(f"Error getting recent events: {e}")
-            return []
+            raise DatabaseError(f"Failed to get recent events: {str(e)}")
     
     def create_event(self, event_data: dict) -> Optional[Event]:
         """Create a new event"""
@@ -91,8 +88,7 @@ class CalendarController:
             db.close()
             return event
         except Exception as e:
-            print(f"Error creating event: {e}")
-            return None
+            raise DatabaseError(f"Failed to create event: {str(e)}")
     
     def update_event(self, event_id: int, event_data: dict) -> bool:
         """Update an existing event"""
@@ -115,9 +111,10 @@ class CalendarController:
             
             db.close()
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Event not found or has been deleted")
         except Exception as e:
-            print(f"Error updating event: {e}")
-            return False
+            raise DatabaseError(f"Failed to update event: {str(e)}")
     
     def delete_event(self, event_id: int) -> bool:
         """Delete an event"""
@@ -132,6 +129,7 @@ class CalendarController:
             
             db.close()
             return True
+        except DoesNotExist:
+            raise RecordNotFoundError("Event not found or has been deleted")
         except Exception as e:
-            print(f"Error deleting event: {e}")
-            return False
+            raise DatabaseError(f"Failed to delete event: {str(e)}")
