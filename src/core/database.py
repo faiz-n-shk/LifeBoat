@@ -30,7 +30,6 @@ class BaseModel(Model):
 def initialize_database():
     """Initialize database and create tables"""
     import os
-    import shutil
     from src.models import (
         Event, Task, Expense, Income, Goal, 
         Habit, HabitLog, Note, Theme, Settings, Todo
@@ -72,19 +71,6 @@ def initialize_database():
             Settings.create(key='week_start', value='Monday')
         
         print("Database created with default data")
-        
-        # Close connection before copying
-        db.close()
-        
-        # Create template for restore
-        try:
-            template_path = DATABASE_PATH.parent / "default_settings.db"
-            shutil.copy2(DATABASE_PATH, template_path)
-            print(f"[Database] Created database template at: {template_path}")
-        except Exception as e:
-            print(f"[Database] Warning: Could not create database template: {e}")
-        
-        db.connect()
     else:
         # Ensure tables exist (safe mode)
         db.create_tables([

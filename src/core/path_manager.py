@@ -61,7 +61,6 @@ class PathManager:
             self.default_config = self.user_data_dir / "config.yaml"
             self.default_themes = self.user_data_dir / "themes.yaml"
             self.default_db = self.user_data_dir / "lifeboat.db"
-            self.default_db_template = self.user_data_dir / "default_settings.db"
             self.default_logs = self.user_data_dir / "logs"
             
         else:
@@ -71,7 +70,6 @@ class PathManager:
             self.default_config = self.base_dir / "config" / "config.yaml"
             self.default_themes = self.base_dir / "config" / "themes.yaml"
             self.default_db = self.base_dir / "data" / "lifeboat.db"
-            self.default_db_template = self.base_dir / "data" / "default_settings.db"
             self.default_logs = self.base_dir / "logs"
             
             print(f"[PathManager] Development mode, using: {self.base_dir}")
@@ -168,11 +166,21 @@ class PathManager:
             
             custom_config = directory / "config.yaml"
             
-            # Only copy config if it doesn't exist in custom location
+            # Only create/copy config if it doesn't exist in custom location
             # This prevents overwriting existing custom configs
             if not custom_config.exists():
-                shutil.copy2(self.default_config, custom_config)
-                print(f"[PathManager] Copied default config to: {custom_config}")
+                # Check if default config exists to copy from
+                if self.default_config.exists():
+                    shutil.copy2(self.default_config, custom_config)
+                    print(f"[PathManager] Copied default config to: {custom_config}")
+                else:
+                    # Create config.yaml with minimal default content
+                    # Import config_template to get default structure
+                    from src.core.config_template import DEFAULT_CONFIG
+                    import yaml
+                    with open(custom_config, 'w', encoding='utf-8') as f:
+                        yaml.dump(DEFAULT_CONFIG, f, default_flow_style=False, sort_keys=False)
+                    print(f"[PathManager] Created default config at: {custom_config}")
             else:
                 print(f"[PathManager] Using existing config at: {custom_config}")
             
@@ -200,10 +208,18 @@ class PathManager:
             
             custom_db = directory / "lifeboat.db"
             
-            # Only copy database if it doesn't exist in custom location
-            if not custom_db.exists() and self.default_db.exists():
-                shutil.copy2(self.default_db, custom_db)
-                print(f"[PathManager] Copied default database to: {custom_db}")
+            # Only create/copy database if it doesn't exist in custom location
+            if not custom_db.exists():
+                # Check if default database exists to copy from
+                if self.default_db.exists():
+                    shutil.copy2(self.default_db, custom_db)
+                    print(f"[PathManager] Copied default database to: {custom_db}")
+                else:
+                    # Create new database using database module
+                    from src.core.database import Database
+                    db = Database(str(custom_db))
+                    db.initialize_database()
+                    print(f"[PathManager] Created new database at: {custom_db}")
             else:
                 print(f"[PathManager] Using existing database at: {custom_db}")
             
@@ -226,10 +242,18 @@ class PathManager:
             
             custom_themes = directory / "themes.yaml"
             
-            # Only copy themes if it doesn't exist in custom location
+            # Only create/copy themes if it doesn't exist in custom location
             if not custom_themes.exists():
-                shutil.copy2(self.default_themes, custom_themes)
-                print(f"[PathManager] Copied default themes to: {custom_themes}")
+                # Check if default themes exists to copy from
+                if self.default_themes.exists():
+                    shutil.copy2(self.default_themes, custom_themes)
+                    print(f"[PathManager] Copied default themes to: {custom_themes}")
+                else:
+                    # Create themes.yaml with default content
+                    default_content = "custom_themes: []\n"
+                    with open(custom_themes, 'w', encoding='utf-8') as f:
+                        f.write(default_content)
+                    print(f"[PathManager] Created default themes at: {custom_themes}")
             else:
                 print(f"[PathManager] Using existing themes at: {custom_themes}")
             
@@ -369,13 +393,11 @@ class PathManager:
         Creates a fresh database with default structure
         """
         try:
-            from src.core.database import db
+            from src.core.database import db, initialize_database
             
             current_db = self.get_database_path()
-            template_path = current_db.parent / "default_settings.db"
             
             print(f"[PathManager.restore_default_database] Current DB: {current_db}")
-            print(f"[PathManager.restore_default_database] Template path: {template_path}")
             
             # CRITICAL: Close database connection before deleting
             try:
@@ -392,13 +414,12 @@ class PathManager:
                 current_db.unlink()
                 print(f"[PathManager.restore_default_database] Backup saved to: {backup}")
             
-            # Delete old template if exists (might have outdated schema)
-            if template_path.exists():
-                template_path.unlink()
-                print("[PathManager.restore_default_database] Removed old template")
+            # Recreate fresh database with default settings
+            print("[PathManager.restore_default_database] Creating fresh database...")
+            initialize_database()
+            print("[PathManager.restore_default_database] Fresh database created with defaults")
             
-            # Database will be recreated with current schema on next app start
-            return True, "Database reset. Please restart the app to complete."
+            return True, "Database restored to default settings. Please restart the app to complete."
         except Exception as e:
             print(f"[PathManager.restore_default_database] ERROR: {e}")
             import traceback
