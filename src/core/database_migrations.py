@@ -2,11 +2,14 @@
 Database Migration System
 Handles database schema updates and migrations
 """
+import logging
 from peewee import *
 from src.core.database import db, get_database_path
 from src.core.config import config
 from src.core.constants import APP_VERSION
 import traceback
+
+logger = logging.getLogger(__name__)
 
 
 def get_database_version():
@@ -21,7 +24,7 @@ def get_database_version():
             return version_setting.value
         return "0.0.0"  # No version means very old database
     except Exception as e:
-        print(f"Error getting database version: {e}")
+        logger.error(f"Error getting database version: {e}")
         return "0.0.0"
 
 
@@ -39,10 +42,10 @@ def set_database_version(version: str):
             Settings.create(key='database_version', value=version)
         
         db.close()
-        print(f"Database version set to: {version}")
+        logger.info(f"Database version set to: {version}")
         return True
     except Exception as e:
-        print(f"Error setting database version: {e}")
+        logger.error(f"Error setting database version: {e}")
         return False
 
 
@@ -69,11 +72,14 @@ def run_migrations(force: bool = False):
         db_version = get_database_version()
         app_version = APP_VERSION
         
-        print(f"Database version: {db_version}")
-        print(f"App version: {app_version}")
+        logger.info(f"Database version: {db_version}")
+        logger.info(f"App version: {app_version}")
         
         if not force and db_version == app_version:
+            logger.info("Database is already up to date")
             return (True, "Database is already up to date!")
+        
+        logger.info("Starting database migration...")
         
         # Import all models
         from src.models import (
@@ -89,12 +95,15 @@ def run_migrations(force: bool = False):
         migration_log = []
         
         # Step 1: Create any missing tables
+        logger.info("Checking for missing tables...")
         for table in all_tables:
             if not table.table_exists():
                 db.create_tables([table])
                 migration_log.append(f"Created table: {table._meta.table_name}")
+                logger.info(f"Created table: {table._meta.table_name}")
         
         # Step 2: Add missing columns to existing tables
+        logger.info("Checking for missing columns...")
         for table in all_tables:
             if table.table_exists():
                 # Get existing columns
@@ -134,11 +143,13 @@ def run_migrations(force: bool = False):
                             sql = f"ALTER TABLE {table._meta.table_name} ADD COLUMN {col_name} {field_type} {null_clause} {default_clause}"
                             db.execute_sql(sql)
                             migration_log.append(f"Added column: {table._meta.table_name}.{col_name}")
+                            logger.info(f"Added column: {table._meta.table_name}.{col_name}")
                         except Exception as e:
                             # Column might already exist or other error
-                            print(f"Could not add column {col_name}: {e}")
+                            logger.warning(f"Could not add column {col_name}: {e}")
         
         # Step 3: Ensure default themes exist and update built-in themes
+        logger.info("Checking default themes...")
         from src.core.database import get_default_themes
         default_themes = get_default_themes()
         
@@ -152,6 +163,7 @@ def run_migrations(force: bool = False):
                     **theme_colors
                 )
                 migration_log.append(f"Created default theme: {theme_name}")
+                logger.info(f"Created default theme: {theme_name}")
             else:
                 # Update built-in themes (not custom) with latest colors
                 if not existing.is_custom:
@@ -165,6 +177,7 @@ def run_migrations(force: bool = False):
                     if colors_changed:
                         existing.save()
                         migration_log.append(f"Updated built-in theme colors: {theme_name}")
+                        logger.info(f"Updated built-in theme colors: {theme_name}")
         
         # Step 4: Update database version
         set_database_version(app_version)
@@ -172,6 +185,7 @@ def run_migrations(force: bool = False):
         
         db.close()
         
+        logger.info("Migration completed successfully")
         if migration_log:
             message = "Migration completed successfully!\n\nChanges:\n" + "\n".join(f"• {log}" for log in migration_log)
         else:
@@ -181,7 +195,7 @@ def run_migrations(force: bool = False):
         
     except Exception as e:
         error_msg = f"Migration failed: {str(e)}\n\n{traceback.format_exc()}"
-        print(error_msg)
+        logger.error(error_msg)
         return (False, error_msg)
 
 

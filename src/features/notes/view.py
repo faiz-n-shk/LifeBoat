@@ -6,9 +6,12 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QLineEdit, QScrollArea, QFrame, QMessageBox, QComboBox
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFont, QIcon
 from src.shared.dialogs import NoScrollComboBox
+from src.core.path_manager import get_resource_path
+from src.shared.icon_utils import load_accent_icon, load_themed_icon
+from src.shared.search_bar import SearchBar
 
 from src.features.notes.controller import NotesController
 from src.features.notes.widgets.note_dialog import NoteDialog
@@ -44,12 +47,8 @@ class NotesView(QWidget):
         # Header
         header_layout = QHBoxLayout()
         
-        from src.core.path_manager import get_resource_path
-        from PyQt6.QtGui import QPixmap
-        
         self.header_icon_label = QLabel()
-        from src.shared.icon_utils import load_accent_icon
-        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_notes.svg"), size=(24, 24))
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/icon_notes.svg"), size=(24, 24))
         self.header_icon_label.setPixmap(self.header_icon_pixmap)
         header_layout.addWidget(self.header_icon_label)
         
@@ -73,8 +72,10 @@ class NotesView(QWidget):
         self.view_mode_combo.currentTextChanged.connect(self.on_view_mode_changed)
         header_layout.addWidget(self.view_mode_combo)
         
-        # New note button
-        new_btn = QPushButton("+ New Note")
+        # New note button with icon
+        new_btn = QPushButton(" New Note")
+        new_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        new_btn.setIconSize(QSize(16, 16))
         new_btn.setMinimumWidth(120)
         new_btn.setMinimumHeight(36)
         new_btn.clicked.connect(self.on_new_note)
@@ -101,10 +102,6 @@ class NotesView(QWidget):
         controls_layout.addWidget(self.tag_filter, 1)
         
         # Pinned toggle
-        from src.core.path_manager import get_resource_path
-        from PyQt6.QtGui import QIcon
-        from PyQt6.QtCore import QSize
-        
         self.pinned_btn = QPushButton()
         self.pinned_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_pin.svg")))
         self.pinned_btn.setIconSize(QSize(16, 16))
@@ -140,13 +137,10 @@ class NotesView(QWidget):
         empty_layout = QVBoxLayout(self.empty_overlay)
         empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
         
-        #.svg instead of emoji
-        from src.core.path_manager import get_resource_path
-        from PyQt6.QtGui import QPixmap
-        
+        # SVG icon with proper rendering
         empty_icon = QLabel()
-        icon_pixmap = QPixmap(get_resource_path("assets/icons/feature_notes.svg"))
-        empty_icon.setPixmap(icon_pixmap.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_notes.svg"), size=(80, 80))
+        empty_icon.setPixmap(icon_pixmap)
         empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
         empty_layout.addWidget(empty_icon)
         
@@ -342,8 +336,6 @@ class NotesView(QWidget):
     def refresh(self):
         """Refresh view"""
         # Reload header icon with current theme
-        from src.core.path_manager import get_resource_path
-        from src.shared.icon_utils import load_accent_icon
         self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_notes.svg"), size=(24, 24))
         self.header_icon_label.setPixmap(self.header_icon_pixmap)
         

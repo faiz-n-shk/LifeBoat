@@ -93,7 +93,7 @@ class ActivityLogger:
         Get recent activities from logs
         
         Args:
-            mode: "today", "standard" (last 7 days), or "all"
+            mode: "session", "today", "3days", "standard" (7 days), "30days", "all", or "none"
             limit: Maximum number of activities to return
             exclude_features: List of features to exclude (e.g., ['Settings', 'System'])
         
@@ -108,12 +108,21 @@ class ActivityLogger:
             
             # Determine time filter
             now = datetime.now()
-            if mode == "today":
+            if mode == "session":
+                # Only show activities from current session (latest.log)
+                cutoff_time = self.session_start
+            elif mode == "today":
                 cutoff_time = now.replace(hour=0, minute=0, second=0, microsecond=0)
+            elif mode == "3days":
+                cutoff_time = now - timedelta(days=3)
             elif mode == "standard":
                 cutoff_time = now - timedelta(days=7)
-            else:  # "all"
+            elif mode == "30days":
+                cutoff_time = now - timedelta(days=30)
+            elif mode == "all":
                 cutoff_time = None
+            else:  # "none" or unknown
+                return []
             
             activities = []
             
@@ -123,6 +132,10 @@ class ActivityLogger:
                 key=lambda x: x.stat().st_mtime,
                 reverse=True
             )
+            
+            # For session mode, only read latest.log
+            if mode == "session":
+                log_files = [f for f in log_files if f.name == "latest.log"]
             
             # Read logs from newest to oldest
             for log_file in log_files:

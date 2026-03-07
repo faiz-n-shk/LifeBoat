@@ -103,12 +103,28 @@ class AdvancedSection(QWidget):
         activity_layout.addWidget(activity_desc)
         
         self.activity_combo = NoScrollComboBox()
-        self.activity_combo.addItems(["Today Only", "Last 7 Days (Standard)", "Disabled"])
+        self.activity_combo.addItems([
+            "Current Session",
+            "Today (24 hours)",
+            "Last 3 Days",
+            "Last 7 Days (Standard)",
+            "Last 30 Days",
+            "All Time",
+            "Disabled"
+        ])
         
         # Map config values to combo box indices
-        activity_mode = config.get('advanced.recent_activity_mode', 'standard')
-        mode_map = {'today': 0, 'standard': 1, 'none': 2}
-        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 1))
+        activity_mode = config.get('advanced.recent_activity_mode', 'all')
+        mode_map = {
+            'session': 0,
+            'today': 1,
+            '3days': 2,
+            'standard': 3,
+            '30days': 4,
+            'all': 5,
+            'none': 6
+        }
+        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 5))
         self.activity_combo.currentIndexChanged.connect(self.on_value_changed)
         activity_layout.addWidget(self.activity_combo)
         activity_layout.addStretch()
@@ -116,7 +132,7 @@ class AdvancedSection(QWidget):
         layout.addLayout(activity_layout)
         
         # Activity info label
-        activity_info = QLabel("Controls what recent activities are shown on the Dashboard.")
+        activity_info = QLabel("Controls what recent activities are shown on the Dashboard. 'Current Session' shows activities since the app was started.")
         activity_info.setProperty("class", "secondary-text")
         activity_info.setWordWrap(True)
         layout.addWidget(activity_info)
@@ -267,11 +283,19 @@ class AdvancedSection(QWidget):
         config.set('advanced.show_debug_buttons', new_debug)
         
         # Save recent activity mode
-        mode_map = {0: 'today', 1: 'standard', 2: 'none'}
-        old_activity = config.get('advanced.recent_activity_mode', 'standard')
+        mode_map = {0: 'session', 1: 'today', 2: '3days', 3: 'standard', 4: '30days', 5: 'all', 6: 'none'}
+        old_activity = config.get('advanced.recent_activity_mode', 'all')
         new_activity = mode_map[self.activity_combo.currentIndex()]
         if old_activity != new_activity:
-            mode_names = {'today': 'Today Only', 'standard': 'Last 7 Days', 'none': 'Disabled'}
+            mode_names = {
+                'session': 'Current Session',
+                'today': 'Today (24 hours)',
+                '3days': 'Last 3 Days',
+                'standard': 'Last 7 Days',
+                '30days': 'Last 30 Days',
+                'all': 'All Time',
+                'none': 'Disabled'
+            }
             changes.append(f"Recent activity: {mode_names[new_activity]}")
         config.set('advanced.recent_activity_mode', new_activity)
         
@@ -316,9 +340,17 @@ class AdvancedSection(QWidget):
         self.debug_check.setChecked(config.get('advanced.show_debug_buttons', False))
         
         # Reload activity mode
-        activity_mode = config.get('advanced.recent_activity_mode', 'standard')
-        mode_map = {'today': 0, 'standard': 1, 'none': 2}
-        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 1))
+        activity_mode = config.get('advanced.recent_activity_mode', 'all')
+        mode_map = {
+            'session': 0,
+            'today': 1,
+            '3days': 2,
+            'standard': 3,
+            '30days': 4,
+            'all': 5,
+            'none': 6
+        }
+        self.activity_combo.setCurrentIndex(mode_map.get(activity_mode, 5))
         
         # Disable buttons
         self.apply_btn.setEnabled(False)

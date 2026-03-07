@@ -107,7 +107,8 @@ notes:
 # Advanced Settings
 advanced:
   show_debug_buttons: false  # Show reload/restart buttons in navigation
-  recent_activity_mode: "standard"  # Options: "today", "standard" (7 days), "none"
+  auto_update_database: true  # Auto-update database on app updates
+  recent_activity_mode: "all"  # Options: "session", "today", "3days", "standard" (7 days), "30days", "all", "none"
 
 # Behavior Settings
 behavior:

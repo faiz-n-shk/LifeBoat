@@ -6,8 +6,8 @@ from PyQt6.QtWidgets import (
     QPushButton, QFrame, QDialog,
     QFormLayout, QColorDialog, QLineEdit, QScrollArea
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QColor, QFont, QIcon
 
 from src.core.theme_manager import theme_manager
 from src.core.config import config
@@ -40,8 +40,12 @@ class ThemesSection(QWidget):
         
         layout.addWidget(self.themes_container)
         
-        # Create custom theme button
-        create_btn = QPushButton("+ Create Custom Theme")
+        # Create custom theme button with icon
+        from src.core.path_manager import get_resource_path
+        
+        create_btn = QPushButton(" Create Custom Theme")
+        create_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        create_btn.setIconSize(QSize(16, 16))
         create_btn.clicked.connect(self.on_create_theme)
         layout.addWidget(create_btn)
         

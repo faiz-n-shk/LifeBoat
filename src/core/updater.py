@@ -2,12 +2,15 @@
 Simple Custom Updater for Lifeboat
 Checks GitHub releases for updates
 """
+import logging
 import requests
 import json
 from typing import Optional, Dict
 from pathlib import Path
 
 from src.core.constants import APP_VERSION
+
+logger = logging.getLogger(__name__)
 
 
 class Updater:
@@ -42,6 +45,8 @@ class Updater:
             }
         """
         try:
+            logger.info(f"Checking for updates (current version: {self.current_version})")
+            
             # Make request to GitHub API
             response = requests.get(
                 self.RELEASES_API,
@@ -50,6 +55,7 @@ class Updater:
             )
             
             if response.status_code != 200:
+                logger.warning(f"GitHub API returned status code: {response.status_code}")
                 return None
             
             data = response.json()
@@ -57,6 +63,7 @@ class Updater:
             # Extract version from tag (e.g., "v2.8.0" -> "2.8.0")
             tag_name = data.get('tag_name', '')
             latest_version = tag_name.lstrip('v')
+            logger.info(f"Latest version on GitHub: {latest_version}")
             
             # Get download URL for installer
             download_url = None
@@ -64,14 +71,17 @@ class Updater:
                 # Look for installer executable
                 if asset['name'].endswith('.exe'):
                     download_url = asset['browser_download_url']
+                    logger.info(f"Found installer: {asset['name']}")
                     break
             
             # If no .exe found, use the release page
             if not download_url:
                 download_url = data.get('html_url')
+                logger.info("No installer found, using release page URL")
             
             # Check if update is available
             is_newer = self._compare_versions(latest_version, self.current_version)
+            logger.info(f"Update available: {is_newer}")
             
             return {
                 'available': is_newer,
@@ -83,10 +93,13 @@ class Updater:
             }
             
         except requests.exceptions.Timeout:
+            logger.error("Update check timed out")
             return None
-        except requests.exceptions.RequestException:
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error during update check: {e}")
             return None
-        except Exception:
+        except Exception as e:
+            logger.error(f"Unexpected error during update check: {e}", exc_info=True)
             return None
     
     def _compare_versions(self, version1: str, version2: str) -> bool:
@@ -115,9 +128,14 @@ class Updater:
     def open_download_page(self):
         """Open the download page in browser"""
         import webbrowser
-        if self.download_url:
-            webbrowser.open(self.download_url)
-        else:
-            # Fallback to releases page
-            url = f"https://github.com/{self.GITHUB_USER}/{self.GITHUB_REPO}/releases/latest"
-            webbrowser.open(url)
+        try:
+            if self.download_url:
+                logger.info(f"Opening download URL: {self.download_url}")
+                webbrowser.open(self.download_url)
+            else:
+                # Fallback to releases page
+                url = f"https://github.com/{self.GITHUB_USER}/{self.GITHUB_REPO}/releases/latest"
+                logger.info(f"Opening releases page: {url}")
+                webbrowser.open(url)
+        except Exception as e:
+            logger.error(f"Error opening download page: {e}", exc_info=True)

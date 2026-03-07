@@ -82,8 +82,12 @@ class CalendarView(QWidget):
         header.addLayout(nav_layout)
         header.addStretch()
         
-        # Add event button
-        add_btn = QPushButton("+ Add Event")
+        # Add event button with icon
+        from src.core.path_manager import get_resource_path
+        
+        add_btn = QPushButton(" Add Event")
+        add_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        add_btn.setIconSize(QSize(16, 16))
         add_btn.setMinimumWidth(120)
         add_btn.setFixedHeight(40)
         add_btn.setCursor(Qt.CursorShape.PointingHandCursor)

@@ -1,6 +1,7 @@
 """
 Main Application Class
 """
+import logging
 from PyQt6.QtWidgets import QMainWindow
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QIcon
@@ -15,6 +16,8 @@ from src.core.theme_manager import theme_manager
 from src.core.system_tray import SystemTrayManager
 from src.ui.main_window import MainWindow
 
+logger = logging.getLogger(__name__)
+
 
 class LifeboatApp(QMainWindow):
     """Main application window"""
@@ -22,10 +25,13 @@ class LifeboatApp(QMainWindow):
     def __init__(self):
         super().__init__()
         
+        logger.info("Initializing LifeboatApp")
+        
         # Set application icon
         from src.core.path_manager import get_resource_path
         icon_path = get_resource_path("assets/lifeboat.ico")
         self.setWindowIcon(QIcon(icon_path))
+        logger.info(f"Set application icon: {icon_path}")
         
         # Load theme before creating UI
         theme_manager.load_theme()
@@ -35,6 +41,7 @@ class LifeboatApp(QMainWindow):
         self.setup_window()
         
         # Create main window UI
+        logger.info("Creating main window UI")
         self.main_window = MainWindow(self)
         self.setCentralWidget(self.main_window)
         
@@ -43,9 +50,12 @@ class LifeboatApp(QMainWindow):
         self.resize_timer = None
         
         # Initialize system tray
+        logger.info("Initializing system tray")
         self.tray_manager = SystemTrayManager(self)
         self.tray_manager.show_window_requested.connect(self.show_from_tray)
         self.tray_manager.quit_requested.connect(self.quit_application)
+        
+        logger.info("LifeboatApp initialization complete")
     
     def setup_window(self):
         """Setup window size and position"""
@@ -142,7 +152,7 @@ class LifeboatApp(QMainWindow):
                 if hasattr(appearance_section, 'update_resolution_display'):
                     appearance_section.update_resolution_display()
         except Exception as e:
-            print(f"Error updating settings display: {e}")
+            logger.error(f"Error updating settings display: {e}", exc_info=True)
     
     def changeEvent(self, event):
         """Handle window state changes"""
@@ -164,16 +174,21 @@ class LifeboatApp(QMainWindow):
     
     def quit_application(self):
         """Quit the application properly"""
+        logger.info("Quitting application")
+        
         # Save window size if enabled
         if config.get('window.remember_size', True):
             config.set('window.width', self.width())
             config.set('window.height', self.height())
             config.save()
+            logger.info("Saved window size")
         
         # Hide tray icon
         if hasattr(self, 'tray_manager'):
             self.tray_manager.hide()
+            logger.info("Hidden tray icon")
         
         # Quit application
         from PyQt6.QtWidgets import QApplication
+        logger.info("Application quit")
         QApplication.quit()

@@ -1,19 +1,73 @@
 """
-Lifeboat 2.0 - Personal Life Management Application
+Lifeboat v2 - Personal Life Management Application
 Main entry point
 """
 import sys
+import os
+import logging
+from pathlib import Path
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import Qt, QSharedMemory
 from PyQt6.QtGui import QIcon
+
+# Import debug configuration FIRST to set up logging
+from src.core.debug import DEBUG_ENABLED
 
 from src.core.app import LifeboatApp
 from src.core.database import initialize_database
 from src.core.config import ensure_config_exists, config
 
 
+# Setup error logs directory
+ERROR_LOGS_DIR = Path(__file__).parent / "errorLogs"
+ERROR_LOGS_DIR.mkdir(exist_ok=True)
+
+# Configure logging with both file and console handlers
+log_handlers = [
+    # Always log errors to file (even in production)
+    logging.FileHandler(ERROR_LOGS_DIR / "error.log", encoding='utf-8')
+]
+
+# Add console handler only if DEBUG_ENABLED
+if DEBUG_ENABLED:
+    log_handlers.append(logging.StreamHandler(sys.stdout))
+
+logging.basicConfig(
+    level=logging.INFO if DEBUG_ENABLED else logging.ERROR,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=log_handlers,
+    force=True
+)
+
+logger = logging.getLogger(__name__)
+
+
+def handle_exception(exc_type, exc_value, exc_traceback):
+    """Global exception handler to log unhandled exceptions"""
+    if issubclass(exc_type, KeyboardInterrupt):
+        # Allow keyboard interrupt to work normally
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    
+    # Always log critical errors to file regardless of DEBUG_ENABLED
+    logger.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
+    
+    # Show error dialog to user (always show for critical errors)
+    try:
+        error_msg = f"An unexpected error occurred:\n\n{exc_type.__name__}: {exc_value}\n\nError details have been saved to errorLogs/error.log"
+        QMessageBox.critical(None, "Critical Error", error_msg)
+    except:
+        pass  # If we can't show dialog, just log it
+
+
+# Set global exception handler
+sys.excepthook = handle_exception
+
+
 def main():
     """Main entry point"""
+    logger.info("Starting Lifeboat application...")
+    
     # Windows taskbar icon fix
     import sys
     import os
@@ -23,8 +77,9 @@ def main():
             import ctypes
             myappid = 'fayz212.lifeboat.app.2'  # arbitrary string
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
-        except:
-            pass
+            logger.debug("Set Windows AppUserModelID")
+        except Exception as e:
+            logger.warning(f"Could not set AppUserModelID: {e}")
     
     # Enable high DPI scaling
     QApplication.setHighDpiScaleFactorRoundingPolicy(
@@ -39,6 +94,7 @@ def main():
     
     if not shared_memory.create(1):
         # Another instance is already running
+        logger.info("Another instance detected")
         reply = QMessageBox.question(
             None,
             "Lifeboat Already Running",
@@ -48,15 +104,13 @@ def main():
         )
         
         if reply == QMessageBox.StandardButton.Open:
-            # User wants to open the existing instance
-            # Note: We can't actually bring the other window to front from here
-            # The user will need to find it in their taskbar
+            logger.info("User chose to open existing instance")
             sys.exit(0)
         elif reply == QMessageBox.StandardButton.Ignore:
-            # User wants to run anyway - detach the shared memory and continue
+            logger.warning("User chose to run multiple instances")
             shared_memory.detach()
         else:
-            # User cancelled
+            logger.info("User cancelled")
             sys.exit(0)
     app.setApplicationName("Lifeboat")
     app.setOrganizationName("Fayz212")
@@ -84,25 +138,29 @@ def main():
                 QFontDatabase.addApplicationFont(font_path)
     
     # Initialize configuration and database
+    logger.info("Initializing configuration and database...")
     ensure_config_exists()
     initialize_database()
     
     # Auto-migrate database if enabled
+    logger.info("Checking for database migrations...")
     from src.core.database_migrations import auto_migrate_on_startup
     auto_migrate_on_startup()
     
     # Create and show main window
+    logger.info("Creating main window...")
     window = LifeboatApp()
     
     # Check if should start minimized
     if config.get('behavior.start_minimized', False):
-        # Start hidden in system tray
+        logger.info("Starting minimized to system tray")
         window.hide()
     else:
-        # Show window normally
+        logger.info("Showing main window")
         window.show()
     
     # Run application
+    logger.info("Application started successfully")
     sys.exit(app.exec())
 
 

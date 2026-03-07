@@ -19,6 +19,7 @@ docs/
 data/
 
 # log files
+errorLogs/
 logs/
 *.log
 

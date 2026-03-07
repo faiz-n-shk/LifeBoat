@@ -5,8 +5,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QLineEdit, QFrame
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QFont, QIntValidator
+from PyQt6.QtCore import Qt, pyqtSignal, QSize
+from PyQt6.QtGui import QFont, QIntValidator, QIcon
 
 from src.core.config import config
 
@@ -101,8 +101,11 @@ class TimePicker(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         
-        # Up button
-        up_btn = QPushButton("▲")
+        # Up button with SVG icon
+        from src.core.path_manager import get_resource_path
+        
+        up_btn = QPushButton()
+        up_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_arrow-up.svg")))
         up_btn.setFixedSize(50, 25)
         up_btn.clicked.connect(up_callback)
         layout.addWidget(up_btn, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -116,8 +119,9 @@ class TimePicker(QWidget):
         entry.editingFinished.connect(validate_callback)
         layout.addWidget(entry, alignment=Qt.AlignmentFlag.AlignCenter)
         
-        # Down button
-        down_btn = QPushButton("▼")
+        # Down button with SVG icon
+        down_btn = QPushButton()
+        down_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_arrow-down.svg")))
         down_btn.setFixedSize(50, 25)
         down_btn.clicked.connect(down_callback)
         layout.addWidget(down_btn, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -139,8 +143,11 @@ class TimePicker(QWidget):
         label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(label)
         
-        # Up button (cycles AM/PM)
-        up_btn = QPushButton("▲")
+        # Up button (cycles AM/PM) with SVG icon
+        from src.core.path_manager import get_resource_path
+        
+        up_btn = QPushButton()
+        up_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_arrow-up.svg")))
         up_btn.setFixedSize(50, 25)
         up_btn.clicked.connect(self.toggle_ampm)
         layout.addWidget(up_btn, alignment=Qt.AlignmentFlag.AlignCenter)
@@ -151,8 +158,9 @@ class TimePicker(QWidget):
         self.ampm_btn.clicked.connect(self.toggle_ampm)
         layout.addWidget(self.ampm_btn, alignment=Qt.AlignmentFlag.AlignCenter)
         
-        # Down button (cycles AM/PM)
-        down_btn = QPushButton("▼")
+        # Down button (cycles AM/PM) with SVG icon
+        down_btn = QPushButton()
+        down_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_arrow-down.svg")))
         down_btn.setFixedSize(50, 25)
         down_btn.clicked.connect(self.toggle_ampm)
         layout.addWidget(down_btn, alignment=Qt.AlignmentFlag.AlignCenter)

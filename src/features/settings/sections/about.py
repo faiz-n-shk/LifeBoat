@@ -1,6 +1,7 @@
 """
 About Settings Section
 """
+import logging
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton
@@ -8,6 +9,8 @@ from PyQt6.QtWidgets import (
 from PyQt6.QtCore import Qt
 
 from src.core.constants import APP_NAME, APP_VERSION, APP_AUTHOR, APP_DESCRIPTION, BUILD_TYPE
+
+logger = logging.getLogger(__name__)
 
 
 class AboutSection(QWidget):
@@ -109,16 +112,21 @@ class AboutSection(QWidget):
         from src.models.theme import Theme
         from src.core.database import db
         
+        logger.info("User initiated update check")
+        
         # Create worker thread
         class UpdateCheckWorker(QThread):
             finished = pyqtSignal(object)
             
             def run(self):
                 try:
+                    logger.info("Update check worker started")
                     updater = Updater()
                     result = updater.check_for_updates()
+                    logger.info(f"Update check completed: {result}")
                     self.finished.emit(result)
                 except Exception as e:
+                    logger.error(f"Update check worker error: {e}", exc_info=True)
                     self.finished.emit({'error': str(e)})
         
         # Create a styled non-blocking progress dialog
@@ -257,53 +265,102 @@ class AboutSection(QWidget):
         self._update_worker = UpdateCheckWorker()
         self._checking_dialog = checking_dialog
         
-        def on_finished(result):
-            # Close checking dialog
-            if self._checking_dialog:
-                self._checking_dialog.close()
-                self._checking_dialog.deleteLater()
+        # Add cleanup handler if dialog is closed manually
+        def on_dialog_rejected():
+            """Handle dialog being closed manually"""
+            logger.info("Checking dialog closed manually")
+            if hasattr(self, '_update_worker') and self._update_worker:
+                if self._update_worker.isRunning():
+                    logger.info("Stopping update check worker")
+                    self._update_worker.quit()
+                    self._update_worker.wait(1000)  # Wait up to 1 second
+                self._update_worker.deleteLater()
+                self._update_worker = None
+            if hasattr(self, '_checking_dialog') and self._checking_dialog:
                 self._checking_dialog = None
-            
-            # Handle error
-            if result and isinstance(result, dict) and 'error' in result:
-                show_critical(self, "Error", f"An error occurred:\n{result['error']}")
-                return
-            
-            # Handle no result
-            if result is None:
-                show_warning(
-                    self,
-                    "Update Check Failed",
-                    "Could not check for updates.\n\n"
-                    "Please check your internet connection or visit:\n"
-                    "https://github.com/faiz-n-shk/LifeBoat/releases"
-                )
-                return
-            
-            # Handle update available
-            if result.get('available'):
-                button_result = create_message_box(
-                    self,
-                    "Update Available",
-                    f"A new version is available!\n\n"
-                    f"Current: {result['current_version']}\n"
-                    f"Latest: {result['latest_version']}\n\n"
-                    f"Download now?",
-                    QMessageBox.Icon.Information,
-                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                )
+        
+        checking_dialog.rejected.connect(on_dialog_rejected)
+        
+        def on_finished(result):
+            """Handle update check completion"""
+            try:
+                logger.info("Update check finished callback triggered")
                 
-                if button_result == QMessageBox.StandardButton.Yes:
-                    QDesktopServices.openUrl(QUrl(result['download_url']))
-            else:
-                show_information(
-                    self,
-                    "Up to Date",
-                    f"You are running the latest version ({result['current_version']})."
-                )
+                # Close checking dialog
+                if hasattr(self, '_checking_dialog') and self._checking_dialog:
+                    logger.info("Closing checking dialog")
+                    self._checking_dialog.close()
+                    self._checking_dialog.deleteLater()
+                    self._checking_dialog = None
+                
+                # Clean up worker thread
+                if hasattr(self, '_update_worker') and self._update_worker:
+                    logger.info("Cleaning up worker thread")
+                    self._update_worker.quit()
+                    self._update_worker.wait()
+                    self._update_worker.deleteLater()
+                    self._update_worker = None
+                
+                # Handle error
+                if result and isinstance(result, dict) and 'error' in result:
+                    logger.error(f"Update check returned error: {result['error']}")
+                    show_critical(self, "Error", f"An error occurred:\n{result['error']}")
+                    return
+                
+                # Handle no result
+                if result is None:
+                    logger.warning("Update check returned no result")
+                    show_warning(
+                        self,
+                        "Update Check Failed",
+                        "Could not check for updates.\n\n"
+                        "Please check your internet connection or visit:\n"
+                        "https://github.com/faiz-n-shk/LifeBoat/releases"
+                    )
+                    return
+                
+                # Handle update available
+                if result.get('available'):
+                    logger.info(f"Update available: {result['latest_version']}")
+                    button_result = create_message_box(
+                        self,
+                        "Update Available",
+                        f"A new version is available!\n\n"
+                        f"Current: {result['current_version']}\n"
+                        f"Latest: {result['latest_version']}\n\n"
+                        f"Download now?",
+                        QMessageBox.Icon.Information,
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    
+                    if button_result == QMessageBox.StandardButton.Yes:
+                        logger.info("User chose to download update")
+                        try:
+                            QDesktopServices.openUrl(QUrl(result['download_url']))
+                        except Exception as e:
+                            logger.error(f"Error opening download URL: {e}", exc_info=True)
+                            show_critical(self, "Error", f"Could not open download page:\n{e}")
+                else:
+                    logger.info("No update available")
+                    show_information(
+                        self,
+                        "Up to Date",
+                        f"You are running the latest version ({result['current_version']})."
+                    )
+            except Exception as e:
+                logger.error(f"Error in update check callback: {e}", exc_info=True)
+                try:
+                    show_critical(self, "Error", f"An unexpected error occurred:\n{e}")
+                except:
+                    pass  # If we can't show dialog, just log it
         
         # Connect and start
         self._update_worker.finished.connect(on_finished)
+        
+        # Ensure worker is cleaned up when finished
+        self._update_worker.finished.connect(self._update_worker.deleteLater)
+        
+        logger.info("Starting update check worker")
         self._update_worker.start()
         
         # Center dialog on parent window

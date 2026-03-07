@@ -2,10 +2,13 @@
 Database Management
 SQLite database with Peewee ORM
 """
+import logging
 from peewee import * #type: ignore
 from datetime import datetime
 from pathlib import Path
 from src.core.debug import debug_log
+
+logger = logging.getLogger(__name__)
 
 # Get database path from path_manager
 def get_database_path():
@@ -37,50 +40,61 @@ def initialize_database():
     )
     
     db_exists = os.path.exists(DATABASE_PATH)
+    logger.info(f"Initializing database at: {DATABASE_PATH} (exists: {db_exists})")
     
-    db.connect()
-    
-    # Enable SQLite optimizations
-    db.execute_sql('PRAGMA journal_mode=WAL')
-    db.execute_sql('PRAGMA synchronous=NORMAL')
-    db.execute_sql('PRAGMA cache_size=10000')
-    db.execute_sql('PRAGMA temp_store=MEMORY')
-    
-    if not db_exists:
-        print("Creating fresh database...")
+    try:
+        db.connect()
+        logger.info("Database connection established")
         
-        # Create all tables
-        db.create_tables([
-            Event, Expense, Income,
-            Habit, HabitLog, Note, Theme, Settings
-        ])
+        # Enable SQLite optimizations
+        db.execute_sql('PRAGMA journal_mode=WAL')
+        db.execute_sql('PRAGMA synchronous=NORMAL')
+        db.execute_sql('PRAGMA cache_size=10000')
+        db.execute_sql('PRAGMA temp_store=MEMORY')
+        logger.info("SQLite optimizations applied")
         
-        # Create default themes
-        default_themes = get_default_themes()
-        with db.atomic():
-            for theme_name, theme_colors in default_themes.items():
-                Theme.create(
-                    name=theme_name,
-                    is_active=theme_name == "Dark",
-                    is_custom=False,
-                    **theme_colors
-                )
+        if not db_exists:
+            logger.info("Creating fresh database...")
             
-            # Create default settings
-            Settings.create(key='first_run', value='true')
-            Settings.create(key='currency_symbol', value='₹')
-            Settings.create(key='week_start', value='Monday')
+            # Create all tables
+            db.create_tables([
+                Event, Expense, Income,
+                Habit, HabitLog, Note, Theme, Settings
+            ])
+            logger.info("Database tables created")
+            
+            # Create default themes
+            default_themes = get_default_themes()
+            with db.atomic():
+                for theme_name, theme_colors in default_themes.items():
+                    Theme.create(
+                        name=theme_name,
+                        is_active=theme_name == "Dark",
+                        is_custom=False,
+                        **theme_colors
+                    )
+                logger.info(f"Created {len(default_themes)} default themes")
+                
+                # Create default settings
+                Settings.create(key='first_run', value='true')
+                Settings.create(key='currency_symbol', value='₹')
+                Settings.create(key='week_start', value='Monday')
+                logger.info("Created default settings")
+            
+            logger.info("Database created with default data")
+        else:
+            # Ensure tables exist (safe mode)
+            db.create_tables([
+                Event, Expense, Income,
+                Habit, HabitLog, Note, Theme, Settings
+            ], safe=True)
+            logger.info("Verified database tables exist")
         
-        print("Database created with default data")
-    else:
-        # Ensure tables exist (safe mode)
-        db.create_tables([
-            Event, Expense, Income,
-            Habit, HabitLog, Note, Theme, Settings
-        ], safe=True)
-    
-    db.close()
-    print("Database initialized")
+        db.close()
+        logger.info("Database initialized successfully")
+    except Exception as e:
+        logger.error(f"Error initializing database: {e}", exc_info=True)
+        raise
 
 def get_default_themes():
     """Get default theme definitions"""

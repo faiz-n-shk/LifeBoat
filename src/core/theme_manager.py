@@ -4,6 +4,7 @@ Handles theme loading, switching, and OS theme detection
 """
 import sys
 import yaml
+import logging
 from pathlib import Path
 from PyQt6.QtCore import QObject, pyqtSignal, QTimer
 from PyQt6.QtWidgets import QApplication
@@ -13,6 +14,8 @@ from src.core.path_manager import path_manager
 from src.models.theme import Theme
 from src.core.database import db
 from src.core.debug import debug_log
+
+logger = logging.getLogger(__name__)
 
 
 class ThemeManager(QObject):
@@ -37,13 +40,16 @@ class ThemeManager(QObject):
         try:
             themes_path = path_manager.get_themes_path()
             if not themes_path.exists():
+                logger.info("themes.yaml does not exist, returning empty list")
                 return []
             
             with open(themes_path, 'r', encoding='utf-8') as f:
                 data = yaml.safe_load(f)
-                return data.get('custom_themes', []) if data else []
+                themes = data.get('custom_themes', []) if data else []
+                logger.info(f"Loaded {len(themes)} custom themes from themes.yaml")
+                return themes
         except Exception as e:
-            print(f"Error loading themes.yaml: {e}")
+            logger.error(f"Error loading themes.yaml: {e}", exc_info=True)
             return []
     
     def _save_themes_yaml(self, themes_list):
@@ -52,9 +58,10 @@ class ThemeManager(QObject):
             themes_path = path_manager.get_themes_path()
             with open(themes_path, 'w', encoding='utf-8') as f:
                 yaml.dump({'custom_themes': themes_list}, f, default_flow_style=False, sort_keys=False)
+            logger.info(f"Saved {len(themes_list)} custom themes to themes.yaml")
             return True
         except Exception as e:
-            print(f"Error saving themes.yaml: {e}")
+            logger.error(f"Error saving themes.yaml: {e}", exc_info=True)
             return False
     
     def load_theme(self, theme_name: str = None) -> bool:
@@ -70,19 +77,24 @@ class ThemeManager(QObject):
         if theme_name is None:
             theme_name = config.get('appearance.theme', 'Dark')
         
+        logger.info(f"Loading theme: {theme_name}")
+        
         # Check for OS theme mode
         if theme_name == "System":
             self.os_theme_mode = True
             theme_name = self.detect_os_theme()
             self.last_detected_os_theme = theme_name
+            logger.info(f"System theme detected: {theme_name}")
             # Start monitoring OS theme changes
             if not self.os_theme_timer.isActive():
                 self.os_theme_timer.start()
+                logger.info("Started OS theme monitoring")
         else:
             self.os_theme_mode = False
             # Stop monitoring if not in system mode
             if self.os_theme_timer.isActive():
                 self.os_theme_timer.stop()
+                logger.info("Stopped OS theme monitoring")
         
         # Generate stylesheet from database theme
         stylesheet = self.generate_stylesheet(theme_name)
@@ -92,10 +104,10 @@ class ThemeManager(QObject):
                 app.setStyleSheet(stylesheet)
                 self.current_theme = theme_name
                 self.theme_changed.emit(theme_name)
-                print(f"Applied theme: {theme_name}")
+                logger.info(f"Applied theme: {theme_name}")
                 return True
         
-        print(f"Failed to apply theme: {theme_name}")
+        logger.error(f"Failed to apply theme: {theme_name}")
         return False
     
     def generate_stylesheet(self, theme_name: str) -> str:
@@ -133,6 +145,7 @@ class ThemeManager(QObject):
             # Helper to get absolute paths for CSS url()
             from src.core.path_manager import get_resource_path
             import os
+            
             def css_url(relative_path):
                 """Convert relative asset path to absolute path for CSS"""
                 abs_path = str(get_resource_path(relative_path)).replace('\\', '/')
@@ -203,7 +216,8 @@ QMainWindow, QWidget {{
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
         stop:0 {theme.accent},
         stop:0.05 rgba(255, 255, 255, 0.08),
-        stop:1 transparent);
+        stop:0.95 rgba(255, 255, 255, 0.08),
+        stop:1 {theme.accent});
     border-left: 3px solid {theme.accent};
     border-right: 3px solid {theme.accent};
     color: {theme.accent};
@@ -317,14 +331,14 @@ QComboBox:focus {{
 
 QComboBox::drop-down {{
     border: none;
-    width: 30px;
+    width: 40px;
     background-color: transparent;
 }}
 
 QComboBox::down-arrow {{
     image: {arrow_down_url};
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
 }}
 
 QComboBox QAbstractItemView {{
@@ -380,7 +394,7 @@ QSpinBox::up-button, QDoubleSpinBox::up-button {{
     border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
     border-top-right-radius: 6px;
-    width: 16px;
+    width: 24px;
 }}
 
 QSpinBox::up-button:hover, QDoubleSpinBox::up-button:hover {{
@@ -393,7 +407,7 @@ QSpinBox::down-button, QDoubleSpinBox::down-button {{
     background-color: {theme.bg_tertiary};
     border-left: 2px solid {theme.border};
     border-bottom-right-radius: 6px;
-    width: 16px;
+    width: 24px;
 }}
 
 QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
@@ -402,14 +416,14 @@ QSpinBox::down-button:hover, QDoubleSpinBox::down-button:hover {{
 
 QSpinBox::up-arrow, QDoubleSpinBox::up-arrow {{
     image: {arrow_up_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 QSpinBox::down-arrow, QDoubleSpinBox::down-arrow {{
     image: {arrow_down_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 /* CheckBox */
@@ -563,7 +577,7 @@ QDateEdit::drop-down {{
     border-left: 2px solid {theme.border};
     border-top-right-radius: 6px;
     border-bottom-right-radius: 6px;
-    width: 20px;
+    width: 30px;
 }}
 
 QDateEdit::drop-down:hover {{
@@ -572,8 +586,8 @@ QDateEdit::drop-down:hover {{
 
 QDateEdit::down-arrow {{
     image: {calendar_url};
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
 }}
 
 /* DateTimeEdit dropdown button */
@@ -584,7 +598,7 @@ QDateTimeEdit::drop-down {{
     border-left: 2px solid {theme.border};
     border-top-right-radius: 6px;
     border-bottom-right-radius: 6px;
-    width: 20px;
+    width: 30px;
 }}
 
 QDateTimeEdit::drop-down:hover {{
@@ -593,8 +607,8 @@ QDateTimeEdit::drop-down:hover {{
 
 QDateTimeEdit::down-arrow {{
     image: {calendar_url};
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
 }}
 
 /* TimeEdit - up/down buttons instead of dropdown (MUST come after QDateEdit/QDateTimeEdit) */
@@ -605,7 +619,7 @@ QTimeEdit::up-button {{
     border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
     border-top-right-radius: 6px;
-    width: 16px;
+    width: 24px;
 }}
 
 QTimeEdit::up-button:hover {{
@@ -618,7 +632,7 @@ QTimeEdit::down-button {{
     background-color: {theme.bg_tertiary};
     border-left: 2px solid {theme.border};
     border-bottom-right-radius: 6px;
-    width: 16px;
+    width: 24px;
 }}
 
 QTimeEdit::down-button:hover {{
@@ -627,14 +641,14 @@ QTimeEdit::down-button:hover {{
 
 QTimeEdit::up-arrow {{
     image: {arrow_up_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 QTimeEdit::down-arrow {{
     image: {arrow_down_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 /* Calendar Widget */
@@ -685,7 +699,7 @@ QCalendarWidget QSpinBox::up-button {{
     border-left: 2px solid {theme.border};
     border-bottom: 1px solid {theme.border};
     border-top-right-radius: 4px;
-    width: 16px;
+    width: 24px;
 }}
 
 QCalendarWidget QSpinBox::up-button:hover {{
@@ -698,7 +712,7 @@ QCalendarWidget QSpinBox::down-button {{
     background-color: {theme.bg_tertiary};
     border-left: 2px solid {theme.border};
     border-bottom-right-radius: 4px;
-    width: 16px;
+    width: 24px;
 }}
 
 QCalendarWidget QSpinBox::down-button:hover {{
@@ -707,14 +721,14 @@ QCalendarWidget QSpinBox::down-button:hover {{
 
 QCalendarWidget QSpinBox::up-arrow {{
     image: {arrow_up_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 QCalendarWidget QSpinBox::down-arrow {{
     image: {arrow_down_url};
-    width: 10px;
-    height: 10px;
+    width: 14px;
+    height: 14px;
 }}
 
 QCalendarWidget QToolButton::menu-indicator {{
@@ -1096,9 +1110,7 @@ QPushButton#habit-action-btn-danger:hover {{
             return stylesheet
             
         except Exception as e:
-            print(f"Error generating stylesheet: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error generating stylesheet: {e}", exc_info=True)
             return ""
     
     def detect_os_theme(self) -> str:
@@ -1133,7 +1145,7 @@ QPushButton#habit-action-btn-danger:hover {{
         if self.os_theme_mode:
             current_os_theme = self.detect_os_theme()
             if current_os_theme != self.last_detected_os_theme:
-                print(f"OS theme changed from {self.last_detected_os_theme} to {current_os_theme}")
+                logger.info(f"OS theme changed from {self.last_detected_os_theme} to {current_os_theme}")
                 self.last_detected_os_theme = current_os_theme
                 self.load_theme("System")
     
@@ -1164,7 +1176,7 @@ QPushButton#habit-action-btn-danger:hover {{
             # Add System option
             return ["System"] + themes
         except Exception as e:
-            print(f"Error getting themes: {e}")
+            logger.error(f"Error getting themes: {e}", exc_info=True)
             return ["System", "Dark", "Light"]
     
     def get_all_themes(self) -> list:
@@ -1190,7 +1202,7 @@ QPushButton#habit-action-btn-danger:hover {{
             
             return db_themes + yaml_themes
         except Exception as e:
-            print(f"Error getting themes: {e}")
+            logger.error(f"Error getting all themes: {e}", exc_info=True)
             return []
     
     def get_theme_by_name(self, name: str):
@@ -1214,7 +1226,7 @@ QPushButton#habit-action-btn-danger:hover {{
             db.close()
             return theme
         except Exception as e:
-            print(f"Error getting theme: {e}")
+            logger.error(f"Error getting theme by name: {e}", exc_info=True)
             return None
     
     def create_custom_theme(self, colors: dict, base_name: str = None) -> bool:
@@ -1267,13 +1279,11 @@ QPushButton#habit-action-btn-danger:hover {{
             themes_list.append(new_theme)
             
             if self._save_themes_yaml(themes_list):
-                print(f"Created custom theme: {custom_name}")
+                logger.info(f"Created custom theme: {custom_name}")
                 return True
             return False
         except Exception as e:
-            print(f"Error creating custom theme: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error creating custom theme: {e}", exc_info=True)
             return False
     
     def update_theme(self, theme_name: str, colors: dict) -> bool:
@@ -1294,7 +1304,7 @@ QPushButton#habit-action-btn-danger:hover {{
             theme_index = next((i for i, t in enumerate(themes_list) if t.get('name') == theme_name), None)
             
             if theme_index is None:
-                print(f"Theme '{theme_name}' not found in themes.yaml")
+                logger.warning(f"Theme '{theme_name}' not found in themes.yaml")
                 return False
             
             # Check if renaming
@@ -1303,7 +1313,7 @@ QPushButton#habit-action-btn-danger:hover {{
                 # Check if new name already exists
                 existing_names = [t.get('name') for i, t in enumerate(themes_list) if i != theme_index]
                 if new_name in existing_names:
-                    print(f"Theme name '{new_name}' already exists")
+                    logger.warning(f"Theme name '{new_name}' already exists")
                     return False
                 
                 # Update active theme in config if this theme is active
@@ -1328,13 +1338,11 @@ QPushButton#habit-action-btn-danger:hover {{
             theme['border'] = colors.get('border', theme.get('border'))
             
             if self._save_themes_yaml(themes_list):
-                print(f"Updated theme: {theme['name']}")
+                logger.info(f"Updated theme: {theme['name']}")
                 return True
             return False
         except Exception as e:
-            print(f"Error updating theme: {e}")
-            import traceback
-            traceback.print_exc()
+            logger.error(f"Error updating theme: {e}", exc_info=True)
             return False
     
     def delete_theme(self, theme_name: str) -> bool:
@@ -1355,7 +1363,7 @@ QPushButton#habit-action-btn-danger:hover {{
             themes_list = [t for t in themes_list if t.get('name') != theme_name]
             
             if len(themes_list) == original_length:
-                print(f"Theme '{theme_name}' not found in themes.yaml")
+                logger.warning(f"Theme '{theme_name}' not found in themes.yaml")
                 return False
             
             # If deleting active theme, switch to Dark
@@ -1364,11 +1372,11 @@ QPushButton#habit-action-btn-danger:hover {{
                 config.save()
             
             if self._save_themes_yaml(themes_list):
-                print(f"Deleted theme: {theme_name}")
+                logger.info(f"Deleted theme: {theme_name}")
                 return True
             return False
         except Exception as e:
-            print(f"Error deleting theme: {e}")
+            logger.error(f"Error deleting theme: {e}", exc_info=True)
             return False
     
     def get_active_theme(self) -> str:

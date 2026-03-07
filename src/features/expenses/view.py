@@ -6,7 +6,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QPushButton,
     QLabel, QScrollArea, QFrame, QTabWidget
 )
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QIcon
 from datetime import datetime, timedelta
 
 from src.features.expenses.controller import ExpensesController
@@ -53,12 +54,18 @@ class ExpensesView(QWidget):
         
         header_layout.addStretch()
         
-        # Add buttons
-        add_income_btn = QPushButton("+ Add Income")
+        # Add buttons with icons
+        from src.core.path_manager import get_resource_path
+        
+        add_income_btn = QPushButton(" Add Income")
+        add_income_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        add_income_btn.setIconSize(QSize(16, 16))
         add_income_btn.clicked.connect(self.on_add_income)
         header_layout.addWidget(add_income_btn)
         
-        add_expense_btn = QPushButton("+ Add Expense")
+        add_expense_btn = QPushButton(" Add Expense")
+        add_expense_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        add_expense_btn.setIconSize(QSize(16, 16))
         add_expense_btn.clicked.connect(self.on_add_expense)
         header_layout.addWidget(add_expense_btn)
         

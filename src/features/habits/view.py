@@ -6,8 +6,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QScrollArea, QFrame, QMessageBox, QLineEdit, QComboBox
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFont, QIcon
 from src.shared.dialogs import NoScrollComboBox
 
 from src.features.habits.controller import HabitsController
@@ -84,8 +84,12 @@ class HabitsView(QWidget):
         
         header_row.addWidget(score_box)
         
-        # Add habit button
-        add_btn = QPushButton("+ New Habit")
+        # Add habit button with icon
+        from src.core.path_manager import get_resource_path
+        
+        add_btn = QPushButton(" New Habit")
+        add_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
+        add_btn.setIconSize(QSize(16, 16))
         add_btn.clicked.connect(self.add_habit)
         header_row.addWidget(add_btn)
         

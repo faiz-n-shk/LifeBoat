@@ -4,7 +4,7 @@ Main overview page with charts and statistics
 """
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel, 
-    QFrame, QScrollArea, QGridLayout
+    QFrame, QScrollArea, QGridLayout, QPushButton
 )
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont, QPixmap
@@ -81,7 +81,7 @@ class DashboardView(QWidget):
         # Create animated stat cards
         self.events_card = StatCard("Upcoming Events", "icon_calendar.svg")
         self.habits_card = StatCard("Active Habits", "icon_heart-check.svg")
-        self.notes_card = StatCard("Total Notes", "feature_notes.svg")
+        self.notes_card = StatCard("Total Notes", "icon_notes.svg")
         self.expenses_card = StatCard("Expenses This Month", "feature_expenses.svg")
         
         cards_layout.addWidget(self.events_card)
@@ -248,7 +248,7 @@ class DashboardView(QWidget):
         from src.core.config import config
         currency_symbol = config.get('currency.symbol', '$')
         
-        self.notes_stat = self.create_stat_item("Notes", "0", "feature_notes.svg")
+        self.notes_stat = self.create_stat_item("Notes", "0", "icon_notes.svg")
         self.expenses_stat = self.create_stat_item("Expenses This Month", f"{currency_symbol}0", "feature_expenses.svg")
         self.events_week_stat = self.create_stat_item("Events This Week", "0", "icon_calendar.svg")
         self.habits_stat = self.create_stat_item("Active Habits", "0", "feature_habits.svg")
@@ -283,7 +283,7 @@ class DashboardView(QWidget):
         
         activity_icon = QLabel()
         from src.shared.icon_utils import load_themed_icon
-        activity_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_clock.svg"), size=(20, 20))
+        activity_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_clock-history.svg"), size=(20, 20))
         activity_icon.setPixmap(activity_icon_pixmap)
         activity_header.addWidget(activity_icon)
         
@@ -590,9 +590,12 @@ class DashboardView(QWidget):
         try:
             from src.core.activity_logger import activity_logger
             from src.core.config import config
+            import logging
+            logger = logging.getLogger(__name__)
             
             # Get activity mode from settings
-            activity_mode = config.get('advanced.recent_activity_mode', 'standard')
+            activity_mode = config.get('advanced.recent_activity_mode', 'all')
+            logger.info(f"Loading recent activities with mode: {activity_mode}")
             
             # If disabled, show message with link to settings
             if activity_mode == 'none':
@@ -620,8 +623,12 @@ class DashboardView(QWidget):
                 exclude_features=['Settings', 'System']
             )
             
+            logger.info(f"Found {len(activities)} activities")
+            
             if activities:
                 for activity in activities:
+                    logger.info(f"Activity: {activity}")
+                    
                     # Map feature to icon file
                     icon_map = {
                         'Calendar': 'icon_calendar.svg',
@@ -631,9 +638,13 @@ class DashboardView(QWidget):
                     }
                     
                     icon_file = icon_map.get(activity['feature'], 'feature_dashboard.svg')
-                    text = f"{activity['action']}"
+                    
+                    # Format text with feature name prefix
+                    text = f"{activity['feature']}: {activity['action']}"
                     if activity['details']:
                         text += f": {activity['details']}"
+                    
+                    logger.info(f"Creating activity item: {text}")
                     
                     item = self.create_activity_item(
                         icon_file,
@@ -642,13 +653,16 @@ class DashboardView(QWidget):
                     )
                     self.recent_container.addWidget(item)
             else:
+                logger.warning("No activities found")
                 no_activity = QLabel("No recent activity")
                 no_activity.setProperty("class", "secondary-text")
                 no_activity.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self.recent_container.addWidget(no_activity)
         
         except Exception as e:
-            print(f"Error loading recent activity: {e}")
+            import logging
+            logger = logging.getLogger(__name__)
+            logger.error(f"Error loading recent activity: {e}", exc_info=True)
     
     def open_activity_settings(self):
         """Open settings and navigate to advanced section"""
@@ -656,9 +670,7 @@ class DashboardView(QWidget):
             # Emit signal to switch to settings
             from src.core.signals import signals
             signals.navigate_requested.emit('Settings')
-            
-            # TODO: Navigate to advanced section within settings
-            # This would require the settings view to support direct section navigation
+
         except Exception as e:
             print(f"Error opening settings: {e}")
     
@@ -684,14 +696,15 @@ class DashboardView(QWidget):
         layout = QHBoxLayout(item_widget)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(10)
+        layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         
         # Icon
         icon_label = QLabel()
         icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon_file}"), size=(18, 18))
         icon_label.setPixmap(icon_pixmap)
-        icon_label.setFixedWidth(24)
+        icon_label.setFixedSize(24, 24)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        layout.addWidget(icon_label)
+        layout.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
         # Text
         text_label = QLabel(text)
@@ -699,7 +712,8 @@ class DashboardView(QWidget):
         font.setPointSize(10)
         text_label.setFont(font)
         text_label.setWordWrap(True)
-        layout.addWidget(text_label, 1)
+        text_label.setAlignment(Qt.AlignmentFlag.AlignVCenter)  # Align text vertically
+        layout.addWidget(text_label, 1, Qt.AlignmentFlag.AlignVCenter)
         
         # Time
         from src.shared.formatters import format_datetime
@@ -709,7 +723,7 @@ class DashboardView(QWidget):
         font.setPointSize(9)
         time_label.setFont(font)
         time_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        layout.addWidget(time_label)
+        layout.addWidget(time_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
         return item_widget
     
