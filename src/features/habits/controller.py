@@ -364,7 +364,7 @@ class HabitsController:
             return 0
     
     def calculate_daily_score(self):
-        """Calculate today's habit score (0-100)"""
+        """Calculate today's habit score (0-100) based on frequency goals weighted by frequency count"""
         try:
             db.connect(reuse_if_open=True)
             habits = list(Habit.select())
@@ -379,33 +379,39 @@ class HabitsController:
             good_score = 0
             bad_score = 0
             
-            today = date.today()
-            
             if good_habits:
-                completed_good = 0
+                # Calculate weighted score for good habits
+                total_good_weight = sum(getattr(h, 'frequency_count', 1) for h in good_habits)
+                achieved_good_weight = 0
+                
                 for habit in good_habits:
-                    log = HabitLog.select().where(
-                        (HabitLog.habit == habit) & 
-                        (HabitLog.date == today) &
-                        (HabitLog.completed == True)
-                    ).first()
-                    if log:
-                        completed_good += 1
-                good_score = (completed_good / len(good_habits)) * 50
+                    freq_count = getattr(habit, 'frequency_count', 1)
+                    current_count = self.get_today_count(habit.id)
+                    
+                    # Calculate completion ratio (capped at 100%)
+                    completion_ratio = min(current_count / freq_count, 1.0)
+                    achieved_good_weight += completion_ratio * freq_count
+                
+                good_score = (achieved_good_weight / total_good_weight) * 50
             else:
                 good_score = 50
             
             if bad_habits:
-                completed_bad = 0
+                # Calculate weighted score for bad habits (inverse - lower count is better)
+                total_bad_weight = sum(getattr(h, 'frequency_count', 1) for h in bad_habits)
+                achieved_bad_weight = 0
+                
                 for habit in bad_habits:
-                    log = HabitLog.select().where(
-                        (HabitLog.habit == habit) & 
-                        (HabitLog.date == today) &
-                        (HabitLog.completed == True)
-                    ).first()
-                    if log:
-                        completed_bad += 1
-                bad_score = ((len(bad_habits) - completed_bad) / len(bad_habits)) * 50
+                    freq_count = getattr(habit, 'frequency_count', 1)
+                    current_count = self.get_today_count(habit.id)
+                    
+                    # For bad habits, staying below the threshold is good
+                    # If count < freq_count, full points; if count >= freq_count, no points
+                    if current_count < freq_count:
+                        achieved_bad_weight += freq_count
+                    # Partial credit if they're at or above threshold (0 points)
+                
+                bad_score = (achieved_bad_weight / total_bad_weight) * 50
             else:
                 bad_score = 50
             
@@ -418,16 +424,42 @@ class HabitsController:
             return 0.0
     
     def get_score_breakdown(self):
-        """Get detailed score breakdown"""
+        """Get detailed score breakdown based on frequency goals"""
         try:
             db.connect(reuse_if_open=True)
             habits = list(Habit.select())
             
-            today = date.today()
-            
             good_completed = 0
             good_total = 0
             bad_completed = 0
+            bad_total = 0
+            
+            for habit in habits:
+                if habit.habit_type == "Good":
+                    good_total += 1
+                    if self.is_completed_today(habit.id):
+                        good_completed += 1
+                else:
+                    bad_total += 1
+                    if self.is_completed_today(habit.id):
+                        bad_completed += 1
+            
+            db.close()
+            
+            return {
+                'good_completed': good_completed,
+                'good_total': good_total,
+                'bad_completed': bad_completed,
+                'bad_total': bad_total
+            }
+        except Exception as e:
+            print(f"Error getting score breakdown: {e}")
+            return {
+                'good_completed': 0,
+                'good_total': 0,
+                'bad_completed': 0,
+                'bad_total': 0
+            }
             bad_total = 0
             
             for habit in habits:

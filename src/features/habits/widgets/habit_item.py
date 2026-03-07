@@ -283,7 +283,7 @@ class HabitItem(QFrame):
                 day_indicator.setStyleSheet(f"""
                     QLabel {{
                         background-color: transparent;
-                        border: 3px solid {self.habit.color};
+                        border: 2px solid {self.habit.color};
                         border-radius: 16px;
                         color: {self.habit.color};
                         font-size: 10pt;
@@ -296,31 +296,206 @@ class HabitItem(QFrame):
         bottom_row.addLayout(week_container)
         bottom_row.addStretch()
         
-        # Streak
-        streak = self.controller.get_current_streak(self.habit.id)
-        if streak > 0:
-            streak_container = QVBoxLayout()
-            streak_container.setSpacing(0)
-            streak_container.setAlignment(Qt.AlignmentFlag.AlignRight)
-            
-            streak_label = QLabel("STREAK")
-            streak_label.setProperty("class", "secondary-text")
-            streak_label.setAlignment(Qt.AlignmentFlag.AlignRight)
-            streak_font = QFont()
-            streak_font.setPointSize(7)
-            streak_font.setBold(True)
-            streak_label.setFont(streak_font)
-            streak_container.addWidget(streak_label)
-            
-            streak_value = QLabel(f"{streak} Days")
-            streak_value.setAlignment(Qt.AlignmentFlag.AlignRight)
-            streak_value_font = QFont()
-            streak_value_font.setPointSize(11)
-            streak_value_font.setBold(True)
-            streak_value.setFont(streak_value_font)
-            streak_container.addWidget(streak_value)
-            
-            bottom_row.addLayout(streak_container)
+        # Streak - show current streak or yesterday's streak if today not done
+        current_streak = self.controller.get_current_streak(self.habit.id)
+        is_today_complete = self.controller.is_completed_today(self.habit.id)
+        is_bad_habit = self.habit.habit_type == "Bad"
+        
+        # For daily habits, check yesterday if today not complete
+        if freq_period == 'day':
+            # If today is not complete and streak is 0, check from yesterday
+            if not is_today_complete and current_streak == 0:
+                # Calculate streak from yesterday
+                yesterday = date.today() - timedelta(days=1)
+                
+                # Check if yesterday was complete
+                yesterday_log = None
+                for log in self.controller.get_habit_logs(self.habit.id, days=2):
+                    if log.date == yesterday:
+                        yesterday_log = log
+                        break
+                
+                if yesterday_log:
+                    freq_count = getattr(self.habit, 'frequency_count', 1)
+                    count = getattr(yesterday_log, 'count', 1) if yesterday_log.completed else 0
+                    
+                    if is_bad_habit:
+                        yesterday_complete = count < freq_count
+                    else:
+                        yesterday_complete = count >= freq_count
+                    
+                    if yesterday_complete:
+                        # Count streak from yesterday backwards
+                        temp_streak = 0
+                        check_date = yesterday
+                        for i in range(365):
+                            log = None
+                            for l in self.controller.get_habit_logs(self.habit.id, days=i+2):
+                                if l.date == check_date:
+                                    log = l
+                                    break
+                            
+                            if log:
+                                count = getattr(log, 'count', 1) if log.completed else 0
+                                if is_bad_habit:
+                                    goal_met = count < freq_count
+                                else:
+                                    goal_met = count >= freq_count
+                                
+                                if goal_met:
+                                    temp_streak += 1
+                                    check_date -= timedelta(days=1)
+                                else:
+                                    break
+                            else:
+                                if is_bad_habit:
+                                    temp_streak += 1
+                                    check_date -= timedelta(days=1)
+                                else:
+                                    break
+                        
+                        current_streak = temp_streak
+        
+        # Show streak display
+        streak_container = QVBoxLayout()
+        streak_container.setSpacing(0)
+        streak_container.setAlignment(Qt.AlignmentFlag.AlignRight)
+        
+        # Streak header with icon
+        streak_header = QHBoxLayout()
+        streak_header.setSpacing(4)
+        streak_header.setAlignment(Qt.AlignmentFlag.AlignRight)
+        
+        # Icon selection
+        streak_icon = QLabel()
+        from PyQt6.QtGui import QPixmap
+        
+        # Get current count to check if threshold was exceeded
+        current_count = self.controller.get_today_count(self.habit.id)
+        
+        # For non-daily periods, show different behavior
+        if freq_period != 'day':
+            if is_bad_habit:
+                # Bad habit: fire when stayed below threshold, timer when went over
+                if current_count >= freq_count:
+                    # Went over threshold - broken
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+                elif is_today_complete or current_streak > 0:
+                    # Stayed below threshold - success
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_fire.svg"))
+                else:
+                    # Not tracked yet
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+            else:
+                # Good habit: fire when goal met, timer when not met
+                if is_today_complete:
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_fire.svg"))
+                else:
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+        else:
+            # Daily habits
+            if is_bad_habit:
+                # Bad habit: fire when stayed below threshold, timer when went over
+                if current_count >= freq_count:
+                    # Went over threshold - broken
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+                elif is_today_complete or current_streak > 0:
+                    # Stayed below threshold - success
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_fire.svg"))
+                else:
+                    # Not tracked yet
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+            else:
+                # Good habit: fire when complete, timer when not complete
+                if is_today_complete:
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_fire.svg"))
+                else:
+                    pixmap = QPixmap(get_resource_path("assets/icons/icon_habit-timer.svg"))
+        
+        streak_icon.setPixmap(pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, 
+                                            Qt.TransformationMode.SmoothTransformation))
+        streak_icon.setFixedSize(16, 16)
+        streak_header.addWidget(streak_icon)
+        
+        streak_label = QLabel("STREAK")
+        streak_label.setProperty("class", "secondary-text")
+        streak_label.setAlignment(Qt.AlignmentFlag.AlignRight)
+        streak_font = QFont()
+        streak_font.setPointSize(7)
+        streak_font.setBold(True)
+        streak_label.setFont(streak_font)
+        streak_header.addWidget(streak_label)
+        
+        streak_container.addLayout(streak_header)
+        
+        # Streak value text
+        if freq_period != 'day':
+            # Non-daily periods
+            if is_bad_habit:
+                # Bad habit: stayed below threshold = success
+                current_count = self.controller.get_today_count(self.habit.id)
+                if is_today_complete and current_streak > 0:
+                    # Stayed below threshold, has streak
+                    period_unit = {'week': 'Week', 'month': 'Month', 'year': 'Year'}.get(freq_period, 'Period')
+                    plural_unit = period_unit + 's' if current_streak > 1 else period_unit
+                    streak_text = f"{current_streak} {plural_unit}"
+                elif current_count >= freq_count:
+                    # Went over the threshold - streak broken
+                    streak_text = "Streak broken"
+                elif is_today_complete:
+                    # Stayed below but no streak yet
+                    streak_text = "0 Periods"
+                else:
+                    # Not tracked yet, show current streak or on hold
+                    if current_streak > 0:
+                        period_unit = {'week': 'Week', 'month': 'Month', 'year': 'Year'}.get(freq_period, 'Period')
+                        plural_unit = period_unit + 's' if current_streak > 1 else period_unit
+                        streak_text = f"{current_streak} {plural_unit}"
+                    else:
+                        streak_text = "On hold till complete"
+            else:
+                # Good habit: if goal met, show streak; if not met, on hold
+                if is_today_complete and current_streak > 0:
+                    period_unit = {'week': 'Week', 'month': 'Month', 'year': 'Year'}.get(freq_period, 'Period')
+                    plural_unit = period_unit + 's' if current_streak > 1 else period_unit
+                    streak_text = f"{current_streak} {plural_unit}"
+                else:
+                    streak_text = "On hold till complete"
+        else:
+            # Daily habits
+            if is_bad_habit:
+                # Bad habit: stayed below threshold = success
+                current_count = self.controller.get_today_count(self.habit.id)
+                if current_streak > 0:
+                    streak_text = f"{current_streak} {'Day' if current_streak == 1 else 'Days'}"
+                elif current_count >= freq_count:
+                    # Went over the threshold - streak broken
+                    streak_text = "Streak broken"
+                else:
+                    # Not done yet or stayed below with no previous streak
+                    if is_today_complete:
+                        streak_text = "0 Days"
+                    else:
+                        # Period not over yet, show on hold
+                        streak_text = "On hold till complete"
+            else:
+                # Good habit: if completed, show streak; if not, on hold
+                if current_streak > 0:
+                    streak_text = f"{current_streak} {'Day' if current_streak == 1 else 'Days'}"
+                elif not is_today_complete:
+                    streak_text = "On hold till complete"
+                else:
+                    streak_text = "0 Days"
+        
+        streak_value = QLabel(streak_text)
+        streak_value.setAlignment(Qt.AlignmentFlag.AlignRight)
+        streak_value_font = QFont()
+        streak_value_font.setPointSize(11)
+        streak_value_font.setBold(True)
+        streak_value.setFont(streak_value_font)
+        streak_container.addWidget(streak_value)
+        
+        bottom_row.addLayout(streak_container)
         
         layout.addLayout(bottom_row)
     

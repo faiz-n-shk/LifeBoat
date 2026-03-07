@@ -6,16 +6,17 @@ from PyQt6.QtWidgets import (
     QHBoxLayout, QVBoxLayout, QFrame, QTextEdit,
     QRadioButton, QButtonGroup, QWidget
 )
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, QSize
+from PyQt6.QtGui import QFont, QIcon
 from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox, BaseDialog
+from src.core.path_manager import get_resource_path
 
 
 class HabitDialog(BaseDialog):
     """Dialog for creating/editing habits"""
     
     def __init__(self, parent=None, habit=None):
-        super().__init__(parent, title="Edit Habit" if habit else "Create New Habit", width=900)
+        super().__init__(parent, title="Edit Habit" if habit else "Create New Habit", width=950)
         self.habit = habit
         self.selected_color = "#30e86e"
         self.custom_days = 7
@@ -74,27 +75,32 @@ class HabitDialog(BaseDialog):
         
         type_frame = QFrame()
         type_frame.setObjectName("habit-type-container")
-        type_frame.setMinimumHeight(45)
         type_layout = QHBoxLayout(type_frame)
-        type_layout.setContentsMargins(5, 5, 5, 5)
-        type_layout.setSpacing(5)
+        type_layout.setContentsMargins(8, 8, 8, 8)
+        type_layout.setSpacing(8)
         
         self.type_button_group = QButtonGroup()
         
-        self.good_radio = QRadioButton("✓ Good")
+        self.good_radio = QRadioButton("  Good")
+        self.good_radio.setIcon(QIcon(get_resource_path("assets/icons/icon_check.svg")))
+        self.good_radio.setIconSize(QSize(16, 16))
         self.good_radio.setObjectName("habit-type-radio")
         self.good_radio.setChecked(True)
         self.good_radio.setCursor(Qt.CursorShape.PointingHandCursor)
         self.good_radio.toggled.connect(self.update_ui_for_type)
+        self.good_radio.setMinimumHeight(44)
         radio_font = QFont()
         radio_font.setPointSize(11)
         self.good_radio.setFont(radio_font)
         self.type_button_group.addButton(self.good_radio, 0)
         type_layout.addWidget(self.good_radio)
         
-        self.bad_radio = QRadioButton("✗ Bad")
+        self.bad_radio = QRadioButton("  Bad")
+        self.bad_radio.setIcon(QIcon(get_resource_path("assets/icons/icon_cross.svg")))
+        self.bad_radio.setIconSize(QSize(16, 16))
         self.bad_radio.setObjectName("habit-type-radio")
         self.bad_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.bad_radio.setMinimumHeight(44)
         self.bad_radio.setFont(radio_font)
         self.type_button_group.addButton(self.bad_radio, 1)
         type_layout.addWidget(self.bad_radio)
@@ -108,8 +114,12 @@ class HabitDialog(BaseDialog):
         
         self.description_input = QTextEdit()
         self.description_input.setPlaceholderText("Why do you want to build this habit?")
-        self.description_input.setMinimumHeight(140)
+        self.description_input.setFixedHeight(140)
         self.description_input.setFont(input_font)
+        
+        # Apply custom styling
+        self._apply_description_styling()
+        
         left_layout.addWidget(self.description_input)
         
         left_layout.addStretch()
@@ -127,14 +137,14 @@ class HabitDialog(BaseDialog):
         
         freq_frame = QFrame()
         freq_frame.setObjectName("frequency-box")
-        freq_frame.setMinimumHeight(55)
+        freq_frame.setMaximumWidth(380)
         freq_layout = QHBoxLayout(freq_frame)
-        freq_layout.setContentsMargins(15, 12, 15, 12)
-        freq_layout.setSpacing(10)
+        freq_layout.setContentsMargins(12, 10, 12, 10)
+        freq_layout.setSpacing(8)
         
         at_least = QLabel("At least")
         at_least.setFont(input_font)
-        freq_layout.addWidget(at_least)
+        freq_layout.addWidget(at_least, 0)
         
         self.frequency_count_input = NoScrollSpinBox()
         self.frequency_count_input.setMinimum(1)
@@ -144,18 +154,21 @@ class HabitDialog(BaseDialog):
         self.frequency_count_input.setMinimumHeight(38)
         self.frequency_count_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.frequency_count_input.setFont(input_font)
-        freq_layout.addWidget(self.frequency_count_input)
+        freq_layout.addWidget(self.frequency_count_input, 0)
         
         times = QLabel("times per")
         times.setFont(input_font)
-        freq_layout.addWidget(times)
+        freq_layout.addWidget(times, 0)
         
         self.frequency_period_input = NoScrollComboBox()
         self.frequency_period_input.addItems(["Day", "Week", "Month", "Year"])
         self.frequency_period_input.setCurrentText("Day")
         self.frequency_period_input.setMinimumHeight(38)
+        self.frequency_period_input.setFixedWidth(95)
         self.frequency_period_input.setFont(input_font)
-        freq_layout.addWidget(self.frequency_period_input, 1)
+        freq_layout.addWidget(self.frequency_period_input, 0)
+        
+        freq_layout.addStretch(1)
         
         right_layout.addWidget(freq_frame)
         
@@ -174,6 +187,7 @@ class HabitDialog(BaseDialog):
             "Custom"
         ])
         self.target_input.setMinimumHeight(40)
+        self.target_input.setMaximumWidth(380)
         self.target_input.setFont(input_font)
         self.target_input.currentTextChanged.connect(self.on_target_changed)
         right_layout.addWidget(self.target_input)
@@ -185,6 +199,7 @@ class HabitDialog(BaseDialog):
         self.custom_days_input.setValue(7)
         self.custom_days_input.setSuffix(" days")
         self.custom_days_input.setMinimumHeight(40)
+        self.custom_days_input.setMaximumWidth(380)
         self.custom_days_input.setFont(input_font)
         self.custom_days_input.setVisible(False)
         self.custom_days_input.valueChanged.connect(self.on_custom_days_changed)
@@ -196,24 +211,33 @@ class HabitDialog(BaseDialog):
         right_layout.addWidget(color_lbl)
         
         colors_widget = QWidget()
+        colors_widget.setMaximumWidth(380)
         colors_layout = QHBoxLayout(colors_widget)
         colors_layout.setContentsMargins(0, 0, 0, 0)
-        colors_layout.setSpacing(12)
+        colors_layout.setSpacing(5)
         
         colors = ["#30e86e", "#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#eab308"]
         
         for color in colors:
             btn = QPushButton()
-            btn.setFixedSize(36, 36)
+            btn.setFixedSize(22, 22)
             btn.setCursor(Qt.CursorShape.PointingHandCursor)
             btn.setProperty("color_value", color)
             btn.setObjectName("color-swatch")
             btn.clicked.connect(lambda checked, c=color: self.select_color(c))
             self.color_buttons.append(btn)
-            colors_layout.addWidget(btn)
+            colors_layout.addWidget(btn, 0)
         
         colors_layout.addStretch()
         right_layout.addWidget(colors_widget)
+        
+        # Custom color picker button (outside container)
+        self.custom_color_btn = QPushButton("Pick Custom Color")
+        self.custom_color_btn.setMaximumWidth(380)
+        self.custom_color_btn.setMinimumHeight(32)
+        self.custom_color_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.custom_color_btn.clicked.connect(self.pick_custom_color)
+        right_layout.addWidget(self.custom_color_btn)
         
         right_layout.addStretch()
         
@@ -236,6 +260,49 @@ class HabitDialog(BaseDialog):
         self.selected_color = color
         self.update_color_swatches()
     
+    def pick_custom_color(self):
+        """Open color picker dialog"""
+        from PyQt6.QtWidgets import QColorDialog
+        from PyQt6.QtGui import QColor
+        
+        color = QColorDialog.getColor(QColor(self.selected_color), self, "Pick Habit Color")
+        if color.isValid():
+            self.selected_color = color.name()
+            self.update_color_swatches()
+    
+    def _apply_description_styling(self):
+        """Apply custom styling to description text editor"""
+        try:
+            from src.core.config import config
+            from src.core.database import db
+            from src.models.theme import Theme
+            
+            theme_name = config.get('appearance.theme', 'Dark')
+            if theme_name == "System":
+                from src.core.theme_manager import theme_manager
+                theme_name = theme_manager.detect_os_theme()
+            
+            db.connect(reuse_if_open=True)
+            theme_obj = Theme.get(Theme.name == theme_name)
+            db.close()
+            
+            self.description_input.setStyleSheet(f"""
+                QTextEdit {{
+                    background-color: {theme_obj.bg_secondary};
+                    color: {theme_obj.fg_primary};
+                    border: 2px solid {theme_obj.border};
+                    border-radius: 8px;
+                    padding: 8px 12px;
+                    font-size: 10pt;
+                }}
+                QTextEdit::corner {{
+                    background-color: {theme_obj.bg_tertiary};
+                    border: 1px solid {theme_obj.border};
+                }}
+            """)
+        except:
+            pass
+    
     def update_color_swatches(self):
         """Update color swatch styling"""
         for btn in self.color_buttons:
@@ -246,23 +313,21 @@ class HabitDialog(BaseDialog):
                 btn.setStyleSheet(f"""
                     QPushButton#color-swatch {{
                         background-color: {color};
-                        border: 4px solid {color};
-                        border-radius: 18px;
-                        outline: 3px solid {color}70;
-                        outline-offset: 2px;
+                        border: 2px solid {color};
+                        border-radius: 11px;
+                        outline: 2px solid {color}70;
+                        outline-offset: 1px;
                     }}
                 """)
             else:
                 btn.setStyleSheet(f"""
                     QPushButton#color-swatch {{
                         background-color: {color};
-                        border: 2px solid transparent;
-                        border-radius: 18px;
+                        border: 1px solid transparent;
+                        border-radius: 11px;
                     }}
                     QPushButton#color-swatch:hover {{
-                        border: 3px solid {color};
-                        outline: 2px solid {color}50;
-                        outline-offset: 1px;
+                        border: 2px solid {color};
                     }}
                 """)
     

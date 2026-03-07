@@ -1030,7 +1030,7 @@ QFrame#habit-type-container {{
     background-color: {theme.bg_tertiary};
     border: 2px solid {theme.border};
     border-radius: 10px;
-    padding: 4px;
+    padding: 8px;
 }}
 
 QRadioButton#habit-type-radio {{
@@ -1038,8 +1038,9 @@ QRadioButton#habit-type-radio {{
     color: {theme.fg_secondary};
     border: none;
     border-radius: 8px;
-    padding: 10px 20px;
+    padding: 8px 16px;
     font-weight: bold;
+    spacing: 0px;
 }}
 
 QRadioButton#habit-type-radio:checked {{
@@ -1054,6 +1055,8 @@ QRadioButton#habit-type-radio:hover {{
 QRadioButton#habit-type-radio::indicator {{
     width: 0px;
     height: 0px;
+    border: none;
+    background: none;
 }}
 
 QFrame#frequency-box {{
@@ -1063,7 +1066,8 @@ QFrame#frequency-box {{
 }}
 
 QPushButton#color-swatch {{
-    border-radius: 24px;
+    border: none;
+    border-radius: 11px;
 }}
 
 /* Habit Card Styles */

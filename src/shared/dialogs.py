@@ -391,7 +391,7 @@ class BaseDialog(QDialog):
         
         from src.core.path_manager import get_resource_path
         try:
-            close_icon = QIcon(get_resource_path("assets/icons/icon_cross.svg"))
+            close_icon = QIcon(get_resource_path("assets/icons/icon_x.svg"))
             self.close_btn.setIcon(close_icon)
             self.close_btn.setIconSize(QSize(16, 16))
         except:

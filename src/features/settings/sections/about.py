@@ -287,14 +287,14 @@ class AboutSection(QWidget):
                 logger.info("Update check finished callback triggered")
                 
                 # Close checking dialog
-                if hasattr(self, '_checking_dialog') and self._checking_dialog:
+                if hasattr(self, '_checking_dialog') and self._checking_dialog is not None:
                     logger.info("Closing checking dialog")
                     self._checking_dialog.close()
                     self._checking_dialog.deleteLater()
                     self._checking_dialog = None
                 
                 # Clean up worker thread
-                if hasattr(self, '_update_worker') and self._update_worker:
+                if hasattr(self, '_update_worker') and self._update_worker is not None:
                     logger.info("Cleaning up worker thread")
                     self._update_worker.quit()
                     self._update_worker.wait()

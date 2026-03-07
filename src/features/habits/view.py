@@ -7,8 +7,9 @@ from PyQt6.QtWidgets import (
     QPushButton, QScrollArea, QFrame, QMessageBox, QLineEdit, QComboBox
 )
 from PyQt6.QtCore import Qt, QSize
-from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtGui import QFont, QIcon, QPixmap
 from src.shared.dialogs import NoScrollComboBox
+from src.core.path_manager import get_resource_path
 
 from src.features.habits.controller import HabitsController
 from src.features.habits.widgets.habit_dialog import HabitDialog
@@ -57,29 +58,57 @@ class HabitsView(QWidget):
         score_box.setObjectName("summary-card")
         
         score_box_layout = QHBoxLayout(score_box)
-        score_box_layout.setContentsMargins(12, 8, 12, 8)
-        score_box_layout.setSpacing(8)
+        score_box_layout.setContentsMargins(0, 0, 0, 0)
+        score_box_layout.setSpacing(12)
         
         score_label_text = QLabel("Score:")
         score_label_text.setProperty("class", "meta-text")
+        score_label_font = QFont()
+        score_label_font.setPointSize(14)
+        score_label_text.setFont(score_label_font)
         score_box_layout.addWidget(score_label_text)
         
         self.score_label = QLabel("0")
         score_font = QFont()
-        score_font.setPointSize(16)
+        score_font.setPointSize(24)
         score_font.setBold(True)
         self.score_label.setFont(score_font)
         self.score_label.setProperty("class", "accent-label")
         score_box_layout.addWidget(self.score_label)
         
-        score_box_layout.addWidget(QLabel("|"))
+        separator = QLabel("|")
+        separator_font = QFont()
+        separator_font.setPointSize(18)
+        separator.setFont(separator_font)
+        score_box_layout.addWidget(separator)
         
-        self.good_label = QLabel("✓0")
+        # Good habits icon + count
+        good_icon_label = QLabel()
+        from src.shared.icon_utils import load_accent_icon
+        good_pixmap = load_accent_icon(get_resource_path("assets/icons/icon_check-brackets.svg"), size=(24, 24))
+        good_icon_label.setPixmap(good_pixmap)
+        good_icon_label.setFixedSize(24, 24)
+        score_box_layout.addWidget(good_icon_label)
+        
+        self.good_label = QLabel("0")
         self.good_label.setProperty("class", "meta-text")
+        good_label_font = QFont()
+        good_label_font.setPointSize(14)
+        self.good_label.setFont(good_label_font)
         score_box_layout.addWidget(self.good_label)
         
-        self.bad_label = QLabel("✗0")
+        # Bad habits icon + count
+        bad_icon_label = QLabel()
+        bad_pixmap = load_accent_icon(get_resource_path("assets/icons/icon_cross-brackets.svg"), size=(24, 24))
+        bad_icon_label.setPixmap(bad_pixmap)
+        bad_icon_label.setFixedSize(24, 24)
+        score_box_layout.addWidget(bad_icon_label)
+        
+        self.bad_label = QLabel("0")
         self.bad_label.setProperty("class", "meta-text")
+        bad_label_font = QFont()
+        bad_label_font.setPointSize(12)
+        self.bad_label.setFont(bad_label_font)
         score_box_layout.addWidget(self.bad_label)
         
         header_row.addWidget(score_box)
@@ -133,8 +162,8 @@ class HabitsView(QWidget):
         self.score_label.setText(str(int(score)))
         
         breakdown = self.controller.get_score_breakdown()
-        self.good_label.setText(f"✓{breakdown['good_completed']}/{breakdown['good_total']}")
-        self.bad_label.setText(f"✗{breakdown['bad_completed']}/{breakdown['bad_total']}")
+        self.good_label.setText(f"{breakdown['good_completed']}/{breakdown['good_total']}")
+        self.bad_label.setText(f"{breakdown['bad_completed']}/{breakdown['bad_total']}")
     
     def load_habits(self):
         """Load and display habits"""
@@ -199,9 +228,23 @@ class HabitsView(QWidget):
             good_layout.setContentsMargins(0, 0, 0, 0)
             good_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
             
-            good_header = QLabel("✓ Good Habits")
+            # Good habits header with icon
+            good_header_layout = QHBoxLayout()
+            good_header_layout.setSpacing(6)
+            
+            good_icon = QLabel()
+            from src.shared.icon_utils import load_accent_icon
+            good_pixmap = load_accent_icon(get_resource_path("assets/icons/icon_check.svg"), size=(20, 20))
+            good_icon.setPixmap(good_pixmap)
+            good_icon.setFixedSize(20, 20)
+            good_header_layout.addWidget(good_icon)
+            
+            good_header = QLabel("Good Habits")
             good_header.setProperty("class", "title-text")
-            good_layout.addWidget(good_header)
+            good_header_layout.addWidget(good_header)
+            good_header_layout.addStretch()
+            
+            good_layout.addLayout(good_header_layout)
             
             for habit in good_habits:
                 habit_item = HabitItem(habit, self.controller)
@@ -218,9 +261,23 @@ class HabitsView(QWidget):
             bad_layout.setContentsMargins(0, 0, 0, 0)
             bad_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
             
-            bad_header = QLabel("✗ Bad Habits")
+            # Bad habits header with icon
+            bad_header_layout = QHBoxLayout()
+            bad_header_layout.setSpacing(6)
+            
+            bad_icon = QLabel()
+            from src.shared.icon_utils import load_accent_icon
+            bad_pixmap = load_accent_icon(get_resource_path("assets/icons/icon_cross.svg"), size=(20, 20))
+            bad_icon.setPixmap(bad_pixmap)
+            bad_icon.setFixedSize(20, 20)
+            bad_header_layout.addWidget(bad_icon)
+            
+            bad_header = QLabel("Bad Habits")
             bad_header.setProperty("class", "title-text")
-            bad_layout.addWidget(bad_header)
+            bad_header_layout.addWidget(bad_header)
+            bad_header_layout.addStretch()
+            
+            bad_layout.addLayout(bad_header_layout)
             
             for habit in bad_habits:
                 habit_item = HabitItem(habit, self.controller)

@@ -40,7 +40,7 @@ class ContentArea(QWidget):
         """Register a feature widget"""
         self.features[name] = widget
         
-        # Only add opacity effect if NOT settings (settings handles its own internal animations)
+        # Only add opacity effect to all features, except settings, as it has its own opacity effects, so qtpainter errors occurs bruh
         if name != "Settings":
             opacity_effect = QGraphicsOpacityEffect()
             opacity_effect.setOpacity(1.0)
