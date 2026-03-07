@@ -139,10 +139,10 @@ class ThemeManager(QObject):
                 return f"url({abs_path})"
             
             # Pre-generate all icon URLs
-            arrow_down_url = css_url("assets/icons/arrow-down.svg")
-            arrow_up_url = css_url("assets/icons/arrow-up.svg")
-            calendar_url = css_url("assets/icons/calendar.svg")
-            check_url = css_url("assets/icons/check.svg")
+            arrow_down_url = css_url("assets/icons/icon_arrow-down.svg")
+            arrow_up_url = css_url("assets/icons/icon_arrow-up.svg")
+            calendar_url = css_url("assets/icons/icon_calendar.svg")
+            check_url = css_url("assets/icons/icon_check.svg")
             
             stylesheet = f"""
 /* {theme_name} Theme - Generated Stylesheet */
@@ -160,6 +160,7 @@ QMainWindow, QWidget {{
 /* Navigation Sidebar */
 #navigation {{
     background-color: {theme.bg_secondary};
+    border-right: 1px solid {theme.border};
 }}
 
 #app-title {{
@@ -173,32 +174,40 @@ QMainWindow, QWidget {{
 }}
 
 #nav-button {{
-    background-color: transparent;
+    background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(255, 255, 255, 0.02),
+        stop:1 transparent);
     color: {theme.fg_primary};
     border: none;
     border-left: 3px solid transparent;
-    border-right: 2px solid transparent;
+    border-right: 3px solid transparent;
+    border-radius: 8px;
     text-align: left;
     padding-left: 20px;
     font-size: 11pt;
-    margin: 2px 0px;
+    font-weight: 500;
+    margin: 4px 8px;
 }}
 
 #nav-button:hover {{
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
         stop:0 {theme.bg_tertiary},
+        stop:0.7 rgba(255, 255, 255, 0.03),
         stop:1 transparent);
-    border-right: 2px solid {theme.accent};
+    border-left: 3px solid {theme.accent};
+    border-right: 3px solid transparent;
+    color: {theme.accent};
 }}
 
 #nav-button[active="true"] {{
     background: qlineargradient(x1:0, y1:0, x2:1, y2:0,
-        stop:0 {theme.bg_tertiary},
+        stop:0 {theme.accent},
+        stop:0.05 rgba(255, 255, 255, 0.08),
         stop:1 transparent);
     border-left: 3px solid {theme.accent};
-    border-right: 2px solid {theme.accent};
+    border-right: 3px solid {theme.accent};
     color: {theme.accent};
-    font-weight: bold;
+    font-weight: 600;
 }}
 
 /* Buttons */
@@ -818,6 +827,50 @@ QLabel {{
 }}
 
 /* Custom Components */
+#settings-header {{
+    background-color: {theme.bg_primary};
+    border-bottom: 2px solid {theme.border};
+}}
+
+#settings-sidebar {{
+    background-color: {theme.bg_secondary};
+    border-right: 2px solid {theme.border};
+}}
+
+#settings-nav-btn {{
+    background-color: transparent;
+    color: {theme.fg_primary};
+    border: none;
+    border-radius: 8px;
+    padding: 12px 16px;
+    text-align: left;
+    font-size: 13px;
+    font-weight: 500;
+}}
+
+#settings-nav-btn:hover {{
+    background-color: {theme.bg_tertiary};
+}}
+
+#settings-nav-btn:checked {{
+    background-color: {theme.accent};
+    color: {theme.bg_primary};
+    font-weight: 600;
+}}
+
+#settings-nav-btn:pressed {{
+    background-color: {theme.accent};
+    opacity: 0.9;
+}}
+
+#settings-stack {{
+    background-color: {theme.bg_primary};
+}}
+
+#settings-scroll {{
+    background-color: {theme.bg_primary};
+}}
+
 #settings-section {{
     background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
         stop:0 {theme.bg_secondary},
@@ -897,6 +950,12 @@ QFrame[class="path-container"]:hover, QFrame[class="theme-item"]:hover {{
 /* Secondary Text */
 QLabel[class="secondary-text"] {{
     color: {theme.fg_secondary};
+}}
+
+QLabel[class="section-label"] {{
+    color: {theme.accent};
+    font-size: 12pt;
+    font-weight: 600;
 }}
 
 QLabel[class="small-text"] {{

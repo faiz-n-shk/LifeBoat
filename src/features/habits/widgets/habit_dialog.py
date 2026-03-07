@@ -15,7 +15,7 @@ class HabitDialog(BaseDialog):
     """Dialog for creating/editing habits"""
     
     def __init__(self, parent=None, habit=None):
-        super().__init__(parent, title="Edit Habit" if habit else "Create New Habit", width=900, height=600)
+        super().__init__(parent, title="Edit Habit" if habit else "Create New Habit", width=900)
         self.habit = habit
         self.selected_color = "#30e86e"
         self.custom_days = 7

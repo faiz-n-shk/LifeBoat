@@ -4,22 +4,24 @@ Animated summary card for dashboard
 """
 from PyQt6.QtWidgets import QFrame, QVBoxLayout, QLabel
 from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, pyqtProperty
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap
 
 
 class StatCard(QFrame):
     """Animated statistic card"""
     
-    def __init__(self, title: str, icon: str, parent=None):
+    def __init__(self, title: str, icon_file: str, parent=None):
         super().__init__(parent)
         self.title = title
-        self.icon = icon
+        self.icon_file = icon_file
         self._value = 0
         self._displayed_value = 0
         self.setup_ui()
     
     def setup_ui(self):
         """Setup card UI"""
+        from src.core.path_manager import get_resource_path
+        
         self.setObjectName("stat-card")
         self.setMinimumHeight(150)
         self.setStyleSheet("""
@@ -44,10 +46,10 @@ class StatCard(QFrame):
         layout.setContentsMargins(20, 20, 20, 20)
         
         # Icon
-        self.icon_label = QLabel(self.icon)
-        font = QFont()
-        font.setPointSize(28)
-        self.icon_label.setFont(font)
+        from src.shared.icon_utils import load_themed_icon
+        self.icon_label = QLabel()
+        icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{self.icon_file}"), size=(40, 40))
+        self.icon_label.setPixmap(icon_pixmap)
         self.icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self.icon_label)
         
@@ -71,15 +73,22 @@ class StatCard(QFrame):
         
         self.setLayout(layout)
     
-    def set_value(self, value: int, animate: bool = True):
+    def set_value(self, value, animate: bool = True):
         """Set card value with optional animation"""
-        self._value = value
-        
-        if animate:
-            self.animate_value()
-        else:
+        # Handle string values (like formatted currency)
+        if isinstance(value, str):
+            self._value = value
             self._displayed_value = value
-            self.value_label.setText(str(value))
+            self.value_label.setText(value)
+        else:
+            # Handle numeric values with animation
+            self._value = value
+            
+            if animate:
+                self.animate_value()
+            else:
+                self._displayed_value = value
+                self.value_label.setText(str(value))
     
     def animate_value(self):
         """Animate value change"""

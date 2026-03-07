@@ -44,10 +44,12 @@ class NoteViewer(BaseDialog):
         
         # Pin indicator
         if self.note.pinned:
-            pin_label = QLabel("📌")
-            font = QFont()
-            font.setPointSize(16)
-            pin_label.setFont(font)
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            
+            pin_label = QLabel()
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_label.setPixmap(icon_pixmap.scaled(18, 18, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             header_layout.addWidget(pin_label)
         
         self.layout.addLayout(header_layout)
@@ -158,9 +160,15 @@ class NoteViewer(BaseDialog):
         actions_layout = QHBoxLayout()
         actions_layout.setSpacing(10)
         
-        # Pin/Unpin button
-        pin_text = "📍 Unpin" if self.note.pinned else "📌 Pin"
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QIcon
+        from PyQt6.QtCore import QSize
+        
+        pin_text = "Unpin" if self.note.pinned else "Pin"
+        pin_icon_file = "icon_pinned.svg" if self.note.pinned else "icon_pin.svg"
         self.pin_btn = QPushButton(pin_text)
+        self.pin_btn.setIcon(QIcon(get_resource_path(f"assets/icons/{pin_icon_file}")))
+        self.pin_btn.setIconSize(QSize(16, 16))
         self.pin_btn.setMinimumWidth(100)
         self.pin_btn.setMinimumHeight(36)
         self.pin_btn.clicked.connect(self.on_pin_toggle)
@@ -168,8 +176,9 @@ class NoteViewer(BaseDialog):
         
         actions_layout.addStretch()
         
-        # Edit button
-        edit_btn = QPushButton("✏️ Edit")
+        edit_btn = QPushButton("Edit")
+        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_edit.svg")))
+        edit_btn.setIconSize(QSize(16, 16))
         edit_btn.setMinimumWidth(100)
         edit_btn.setMinimumHeight(36)
         edit_btn.clicked.connect(self.on_edit)
@@ -192,11 +201,15 @@ class NoteViewer(BaseDialog):
         self.layout.addLayout(actions_layout)
     
     def on_pin_toggle(self):
-        """Handle pin toggle"""
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QIcon
+        
         self.pin_toggled.emit(self.note.id)
         self.note.pinned = not self.note.pinned
-        pin_text = "📍 Unpin" if self.note.pinned else "📌 Pin"
+        pin_text = "Unpin" if self.note.pinned else "Pin"
+        pin_icon_file = "icon_pinned.svg" if self.note.pinned else "icon_pin.svg"
         self.pin_btn.setText(pin_text)
+        self.pin_btn.setIcon(QIcon(get_resource_path(f"assets/icons/{pin_icon_file}")))
     
     def on_edit(self):
         """Handle edit button"""
@@ -218,3 +231,5 @@ class NoteViewer(BaseDialog):
         if reply == QMessageBox.StandardButton.Yes:
             self.delete_requested.emit(self.note.id)
             self.accept()
+
+

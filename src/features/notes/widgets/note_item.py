@@ -40,7 +40,12 @@ class NoteItem(QFrame):
         
         # Pin indicator
         if self.note.pinned:
-            pin_icon = QLabel("📌")
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            
+            pin_icon = QLabel()
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_icon.setPixmap(icon_pixmap.scaled(14, 14, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             pin_icon.setFixedWidth(18)
             header_layout.addWidget(pin_icon)
         
@@ -96,24 +101,32 @@ class NoteItem(QFrame):
         actions_layout = QHBoxLayout()
         actions_layout.setSpacing(4)
         
-        # Pin button
-        pin_btn = QPushButton("📌" if not self.note.pinned else "📍")
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QIcon
+        from PyQt6.QtCore import QSize
+        
+        pin_btn = QPushButton()
+        pin_icon = "icon_pinned.svg" if self.note.pinned else "icon_pin.svg"
+        pin_btn.setIcon(QIcon(get_resource_path(f"assets/icons/{pin_icon}")))
+        pin_btn.setIconSize(QSize(16, 16))
         pin_btn.setFixedSize(28, 28)
-        pin_btn.setToolTip("Pin" if not self.note.pinned else "Unpin")
+        pin_btn.setToolTip("Unpin" if self.note.pinned else "Pin")
         pin_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         pin_btn.clicked.connect(lambda: self.pin_clicked.emit(self.note.id))
         actions_layout.addWidget(pin_btn)
         
-        # Edit button
-        edit_btn = QPushButton("✏️")
+        edit_btn = QPushButton()
+        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_edit.svg")))
+        edit_btn.setIconSize(QSize(16, 16))
         edit_btn.setFixedSize(28, 28)
         edit_btn.setToolTip("Edit")
         edit_btn.setCursor(Qt.CursorShape.PointingHandCursor)
         edit_btn.clicked.connect(lambda: self.edit_clicked.emit(self.note.id))
         actions_layout.addWidget(edit_btn)
         
-        # Delete button
-        delete_btn = QPushButton("🗑️")
+        delete_btn = QPushButton()
+        delete_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_delete.svg")))
+        delete_btn.setIconSize(QSize(16, 16))
         delete_btn.setFixedSize(28, 28)
         delete_btn.setToolTip("Delete")
         delete_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -125,4 +138,6 @@ class NoteItem(QFrame):
         layout.addLayout(footer_layout)
         
         self.setLayout(layout)
+
+
 

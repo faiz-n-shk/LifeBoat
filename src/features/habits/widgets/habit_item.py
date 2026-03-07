@@ -70,7 +70,7 @@ class HabitItem(QFrame):
             
             # Decrement button
             self.decrement_btn = QPushButton()
-            self.decrement_btn.setIcon(QIcon(get_resource_path("assets/icons/minus.svg")))
+            self.decrement_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_minus.svg")))
             self.decrement_btn.setIconSize(QSize(int(em * 1.2), int(em * 1.2)))
             self.decrement_btn.setFixedSize(button_size, container_height)
             self.decrement_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -89,7 +89,7 @@ class HabitItem(QFrame):
             
             # Increment button
             self.increment_btn = QPushButton()
-            self.increment_btn.setIcon(QIcon(get_resource_path("assets/icons/plus.svg")))
+            self.increment_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_plus.svg")))
             self.increment_btn.setIconSize(QSize(int(em * 1.2), int(em * 1.2)))
             self.increment_btn.setFixedSize(button_size, container_height)
             self.increment_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -116,7 +116,7 @@ class HabitItem(QFrame):
             icon_size = int(em * 1.4)
             
             self.check_btn = QPushButton()
-            self.check_btn.setIcon(QIcon(get_resource_path("assets/icons/check.svg")))
+            self.check_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_check.svg")))
             self.check_btn.setIconSize(QSize(icon_size, icon_size))
             self.check_btn.setFixedSize(check_width, check_height)
             self.check_btn.setCursor(Qt.CursorShape.PointingHandCursor)
@@ -189,7 +189,7 @@ class HabitItem(QFrame):
         
         # Actions
         edit_btn = QPushButton()
-        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/edit.svg")))
+        edit_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_edit.svg")))
         edit_btn.setIconSize(QSize(18, 18))
         edit_btn.setFixedSize(32, 32)
         edit_btn.setToolTip("Edit")
@@ -199,7 +199,7 @@ class HabitItem(QFrame):
         top_row.addWidget(edit_btn)
         
         delete_btn = QPushButton()
-        delete_btn.setIcon(QIcon(get_resource_path("assets/icons/delete.svg")))
+        delete_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_delete.svg")))
         delete_btn.setIconSize(QSize(18, 18))
         delete_btn.setFixedSize(32, 32)
         delete_btn.setToolTip("Delete")

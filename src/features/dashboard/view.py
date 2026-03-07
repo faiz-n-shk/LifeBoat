@@ -7,7 +7,7 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QGridLayout
 )
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QFont
+from PyQt6.QtGui import QFont, QPixmap
 from datetime import datetime, timedelta
 
 from src.features.dashboard.widgets import StatCard, ProgressRing, ExpensePieChart
@@ -34,7 +34,17 @@ class DashboardView(QWidget):
         
         # Header
         header_layout = QHBoxLayout()
-        header = QLabel("📊 Dashboard")
+        
+        # Dashboard icon (themed)
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        
+        self.header_icon_label = QLabel()
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_dashboard.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        header_layout.addWidget(self.header_icon_label)
+        
+        header = QLabel("Dashboard")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
@@ -69,15 +79,15 @@ class DashboardView(QWidget):
         cards_layout.setSpacing(15)
         
         # Create animated stat cards
-        self.tasks_card = StatCard("Active Tasks", "📝")
-        self.todos_card = StatCard("Active Todos", "✓")
-        self.events_card = StatCard("Upcoming Events", "📅")
-        self.goals_card = StatCard("Active Goals", "🎯")
+        self.events_card = StatCard("Upcoming Events", "icon_calendar.svg")
+        self.habits_card = StatCard("Active Habits", "icon_heart-check.svg")
+        self.notes_card = StatCard("Total Notes", "feature_notes.svg")
+        self.expenses_card = StatCard("Expenses This Month", "feature_expenses.svg")
         
-        cards_layout.addWidget(self.tasks_card)
-        cards_layout.addWidget(self.todos_card)
         cards_layout.addWidget(self.events_card)
-        cards_layout.addWidget(self.goals_card)
+        cards_layout.addWidget(self.habits_card)
+        cards_layout.addWidget(self.notes_card)
+        cards_layout.addWidget(self.expenses_card)
         
         content_layout.addLayout(cards_layout)
         
@@ -102,35 +112,43 @@ class DashboardView(QWidget):
         progress_layout.setSpacing(15)
         progress_layout.setContentsMargins(20, 20, 20, 20)
         
-        section_title = QLabel("📈 Progress Overview")
+        # Section title with icon
+        section_header = QHBoxLayout()
+        
+        progress_icon = QLabel()
+        from src.shared.icon_utils import load_themed_icon
+        progress_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_progress.svg"), size=(20, 20))
+        progress_icon.setPixmap(progress_icon_pixmap)
+        section_header.addWidget(progress_icon)
+        
+        section_title = QLabel("Progress Overview")
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
         section_title.setFont(font)
-        progress_layout.addWidget(section_title)
+        section_header.addWidget(section_title)
+        section_header.addStretch()
         
-        # Progress rings in 2x3 grid
+        progress_layout.addLayout(section_header)
+        
+        # Progress rings in 2x2 grid
         rings_grid = QGridLayout()
         rings_grid.setSpacing(15)
         rings_grid.setHorizontalSpacing(20)
         
-        # Top row: Tasks, Todo Total, Todo Today
-        self.tasks_ring = ProgressRing("Tasks Completed")
-        self.todo_total_ring = ProgressRing("Todo Progress")
-        self.todo_today_ring = ProgressRing("Todo Today")
-        
-        rings_grid.addWidget(self.tasks_ring, 0, 0)
-        rings_grid.addWidget(self.todo_total_ring, 0, 1)
-        rings_grid.addWidget(self.todo_today_ring, 0, 2)
-        
-        # Bottom row: Goals, Habits Total, Habits Today
-        self.goals_ring = ProgressRing("Goals Progress")
+        # Top row: Habits Total, Habits Today
         self.habits_total_ring = ProgressRing("Habits Streak")
         self.habits_today_ring = ProgressRing("Habits Today")
         
-        rings_grid.addWidget(self.goals_ring, 1, 0)
-        rings_grid.addWidget(self.habits_total_ring, 1, 1)
-        rings_grid.addWidget(self.habits_today_ring, 1, 2)
+        rings_grid.addWidget(self.habits_total_ring, 0, 0)
+        rings_grid.addWidget(self.habits_today_ring, 0, 1)
+        
+        # Bottom row: Events, Expenses
+        self.events_ring = ProgressRing("Events This Week")
+        self.expenses_ring = ProgressRing("Balance Usage")
+        
+        rings_grid.addWidget(self.events_ring, 1, 0)
+        rings_grid.addWidget(self.expenses_ring, 1, 1)
         
         progress_layout.addLayout(rings_grid)
         charts_row.addWidget(progress_section, 1)
@@ -152,12 +170,24 @@ class DashboardView(QWidget):
         expense_layout.setSpacing(15)
         expense_layout.setContentsMargins(20, 20, 20, 20)
         
-        expense_title = QLabel("💰 Expenses by Category")
+        # Section title with icon
+        expense_header = QHBoxLayout()
+        
+        expense_icon = QLabel()
+        from src.shared.icon_utils import load_themed_icon
+        expense_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_money-pieChart.svg"), size=(20, 20))
+        expense_icon.setPixmap(expense_icon_pixmap)
+        expense_header.addWidget(expense_icon)
+        
+        expense_title = QLabel("Expenses by Category")
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
         expense_title.setFont(font)
-        expense_layout.addWidget(expense_title)
+        expense_header.addWidget(expense_title)
+        expense_header.addStretch()
+        
+        expense_layout.addLayout(expense_header)
         
         self.expense_chart = ExpensePieChart()
         expense_layout.addWidget(self.expense_chart)
@@ -192,12 +222,24 @@ class DashboardView(QWidget):
         stats_layout.setSpacing(15)
         stats_layout.setContentsMargins(20, 20, 20, 20)
         
-        stats_title = QLabel("📊 Quick Stats")
+        # Section title with icon
+        stats_header = QHBoxLayout()
+        
+        stats_icon = QLabel()
+        from src.shared.icon_utils import load_themed_icon
+        stats_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_chart.svg"), size=(20, 20))
+        stats_icon.setPixmap(stats_icon_pixmap)
+        stats_header.addWidget(stats_icon)
+        
+        stats_title = QLabel("Quick Stats")
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
         stats_title.setFont(font)
-        stats_layout.addWidget(stats_title)
+        stats_header.addWidget(stats_title)
+        stats_header.addStretch()
+        
+        stats_layout.addLayout(stats_header)
         
         # Stats grid
         stats_grid = QGridLayout()
@@ -206,15 +248,15 @@ class DashboardView(QWidget):
         from src.core.config import config
         currency_symbol = config.get('currency.symbol', '$')
         
-        self.notes_stat = self.create_stat_item("📝 Notes", "0")
-        self.overdue_stat = self.create_stat_item("⚠️ Overdue Todos", "0")
-        self.expenses_stat = self.create_stat_item("💰 Expenses This Month", f"{currency_symbol}0")
-        self.events_week_stat = self.create_stat_item("📅 Events This Week", "0")
+        self.notes_stat = self.create_stat_item("Notes", "0", "feature_notes.svg")
+        self.expenses_stat = self.create_stat_item("Expenses This Month", f"{currency_symbol}0", "feature_expenses.svg")
+        self.events_week_stat = self.create_stat_item("Events This Week", "0", "icon_calendar.svg")
+        self.habits_stat = self.create_stat_item("Active Habits", "0", "feature_habits.svg")
         
         stats_grid.addWidget(self.notes_stat, 0, 0)
-        stats_grid.addWidget(self.overdue_stat, 0, 1)
-        stats_grid.addWidget(self.expenses_stat, 1, 0)
-        stats_grid.addWidget(self.events_week_stat, 1, 1)
+        stats_grid.addWidget(self.expenses_stat, 0, 1)
+        stats_grid.addWidget(self.events_week_stat, 1, 0)
+        stats_grid.addWidget(self.habits_stat, 1, 1)
         
         stats_layout.addLayout(stats_grid)
         content_layout.addWidget(stats_section)
@@ -236,12 +278,24 @@ class DashboardView(QWidget):
         activity_layout.setSpacing(15)
         activity_layout.setContentsMargins(20, 20, 20, 20)
         
-        activity_title = QLabel("🕐 Recent Activity")
+        # Section title with icon
+        activity_header = QHBoxLayout()
+        
+        activity_icon = QLabel()
+        from src.shared.icon_utils import load_themed_icon
+        activity_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_clock.svg"), size=(20, 20))
+        activity_icon.setPixmap(activity_icon_pixmap)
+        activity_header.addWidget(activity_icon)
+        
+        activity_title = QLabel("Recent Activity")
         font = QFont()
         font.setPointSize(14)
         font.setBold(True)
         activity_title.setFont(font)
-        activity_layout.addWidget(activity_title)
+        activity_header.addWidget(activity_title)
+        activity_header.addStretch()
+        
+        activity_layout.addLayout(activity_header)
         
         self.recent_container = QVBoxLayout()
         self.recent_container.setSpacing(8)
@@ -274,13 +328,24 @@ class DashboardView(QWidget):
         
         self.welcome_label.setText(f"{greeting} • {datetime.now().strftime('%B %d, %Y')}")
     
-    def create_stat_item(self, label: str, value: str) -> QFrame:
-        """Create a stat item widget"""
+    def create_stat_item(self, label: str, value: str, icon_path: str) -> QFrame:
+        """Create a stat item widget with icon"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        
         frame = QFrame()
         frame.setObjectName("stat-item")
         layout = QHBoxLayout(frame)
         layout.setContentsMargins(12, 10, 12, 10)
+        layout.setSpacing(8)
         
+        # Icon
+        icon_label = QLabel()
+        icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon_path}"), size=(16, 16))
+        icon_label.setPixmap(icon_pixmap)
+        layout.addWidget(icon_label)
+        
+        # Label
         label_widget = QLabel(label)
         font = QFont()
         font.setPointSize(10)
@@ -289,6 +354,7 @@ class DashboardView(QWidget):
         
         layout.addStretch()
         
+        # Value
         value_widget = QLabel(value)
         value_widget.setObjectName("stat-value")
         font = QFont()
@@ -302,8 +368,8 @@ class DashboardView(QWidget):
     def update_stat_item(self, frame: QFrame, value: str):
         """Update stat item value"""
         layout = frame.layout()
-        if layout and layout.count() >= 2:
-            value_widget = layout.itemAt(2).widget()
+        if layout and layout.count() >= 4:
+            value_widget = layout.itemAt(3).widget()
             if isinstance(value_widget, QLabel):
                 value_widget.setText(value)
     
@@ -313,26 +379,27 @@ class DashboardView(QWidget):
         
         # Reset all progress values to 0 BEFORE loading data
         if config.get('appearance.enable_animations', True) and self.initial_load:
-            self.tasks_ring._progress = 0
-            self.tasks_ring._target_progress = 0
-            self.goals_ring._progress = 0
-            self.goals_ring._target_progress = 0
+            # Reset stat cards
+            self.events_card._displayed_value = 0
+            self.habits_card._displayed_value = 0
+            self.notes_card._displayed_value = 0
+            self.expenses_card._displayed_value = 0
+            
+            # Reset progress rings
             self.habits_total_ring._progress = 0
             self.habits_total_ring._target_progress = 0
             self.habits_today_ring._progress = 0
             self.habits_today_ring._target_progress = 0
-            self.todo_total_ring._progress = 0
-            self.todo_total_ring._target_progress = 0
-            self.todo_today_ring._progress = 0
-            self.todo_today_ring._target_progress = 0
+            self.events_ring._progress = 0
+            self.events_ring._target_progress = 0
+            self.expenses_ring._progress = 0
+            self.expenses_ring._target_progress = 0
             self.expense_chart.canvas._animation_progress = 0
             
-            self.tasks_ring.update()
-            self.goals_ring.update()
             self.habits_total_ring.update()
             self.habits_today_ring.update()
-            self.todo_total_ring.update()
-            self.todo_today_ring.update()
+            self.events_ring.update()
+            self.expenses_ring.update()
             self.expense_chart.canvas.update()
         
         # Load data which will trigger animations
@@ -340,7 +407,7 @@ class DashboardView(QWidget):
     
     def load_data(self):
         """Load data from database and update UI"""
-        from src.models import Task, Event, Goal, Habit, Note, Expense
+        from src.models import Event, Habit, Note, Expense
         from src.core.database import db
         
         try:
@@ -354,15 +421,6 @@ class DashboardView(QWidget):
             should_animate = config.get('appearance.enable_animations', True) and self.initial_load
             self.initial_load = False
             
-            # Count active tasks
-            active_tasks = Task.select().where(Task.completed == False).count()
-            self.tasks_card.set_value(active_tasks, animate=should_animate)
-            
-            # Count active todos
-            from src.models.todo import Todo
-            active_todos = Todo.select().where(Todo.completed == False).count()
-            self.todos_card.set_value(active_todos, animate=should_animate)
-            
             # Count upcoming events (next 7 days)
             today = datetime.now().date()
             week_later = today + timedelta(days=7)
@@ -371,23 +429,23 @@ class DashboardView(QWidget):
             ).count()
             self.events_card.set_value(upcoming_events, animate=should_animate)
             
-            # Count active goals
-            active_goals = Goal.select().where(Goal.completed == False).count()
-            self.goals_card.set_value(active_goals, animate=should_animate)
+            # Count active habits
+            active_habits = Habit.select().count()
+            self.habits_card.set_value(active_habits, animate=should_animate)
             
-            # Calculate task completion rate
-            total_tasks = Task.select().count()
-            completed_tasks = Task.select().where(Task.completed == True).count()
-            task_completion = (completed_tasks / total_tasks * 100) if total_tasks > 0 else 0
-            self.tasks_ring.set_progress(task_completion, animate=should_animate)
+            # Count notes
+            note_count = Note.select().count()
+            self.notes_card.set_value(note_count, animate=should_animate)
             
-            # Calculate goal progress (average of all goals)
-            goals = Goal.select().where(Goal.completed == False)
-            if goals.count() > 0:
-                avg_progress = sum(g.progress for g in goals) / goals.count()
-                self.goals_ring.set_progress(avg_progress, animate=should_animate)
-            else:
-                self.goals_ring.set_progress(0, animate=should_animate)
+            # Calculate expenses this month
+            first_day = datetime.now().replace(day=1).date()
+            month_expenses = Expense.select().where(Expense.date >= first_day)
+            total_expenses = float(sum(e.amount for e in month_expenses))
+            
+            # Format with currency symbol
+            from src.shared.formatters import format_currency
+            formatted_expenses = format_currency(total_expenses)
+            self.expenses_card.set_value(formatted_expenses, animate=should_animate)
             
             # Calculate habit streak (average current streak / target days)
             from src.models.habit import HabitLog
@@ -463,35 +521,19 @@ class DashboardView(QWidget):
                 self.habits_total_ring.set_progress(0, animate=should_animate)
                 self.habits_today_ring.set_progress(0, animate=should_animate)
             
-            # Todo rings
-            from src.models.todo import Todo
-            total_todos = Todo.select().count()
-            active_todos = Todo.select().where(Todo.completed == False).count()
-            completed_todos = Todo.select().where(Todo.completed == True).count()
-            today_todos = Todo.select().where(
-                (Todo.completed == False) & 
-                (Todo.due_date == today)
+            # Events this week progress
+            events_week = Event.select().where(
+                (Event.start_date >= today) & (Event.start_date <= week_later)
             ).count()
+            # Show as percentage (up to 10 events = 100%)
+            events_percent = min((events_week / 10 * 100), 100) if events_week > 0 else 0
+            self.events_ring.set_progress(events_percent, animate=should_animate)
             
-            # Total progress (completed / total)
-            if total_todos > 0:
-                total_progress = (completed_todos / total_todos * 100)
-                self.todo_total_ring.set_progress(total_progress, animate=should_animate)
-            else:
-                self.todo_total_ring.set_progress(0, animate=should_animate)
-            
-            # Today progress (completed today / due today)
-            today_total = Todo.select().where(Todo.due_date == today).count()
-            today_completed = Todo.select().where(
-                (Todo.completed == True) & 
-                (Todo.due_date == today)
-            ).count()
-            
-            if today_total > 0:
-                today_progress = (today_completed / today_total * 100)
-                self.todo_today_ring.set_progress(today_progress, animate=should_animate)
-            else:
-                self.todo_today_ring.set_progress(0, animate=should_animate)
+            # Budget usage (expenses vs a reasonable monthly budget estimate)
+            # Using 50000 as default budget for percentage calculation
+            budget_limit = 50000
+            budget_percent = min((total_expenses / budget_limit * 100), 100) if total_expenses > 0 else 0
+            self.expenses_ring.set_progress(budget_percent, animate=should_animate)
             
             # Load expense data for pie chart
             first_day = datetime.now().replace(day=1).date()
@@ -511,12 +553,9 @@ class DashboardView(QWidget):
             note_count = Note.select().count()
             self.update_stat_item(self.notes_stat, str(note_count))
             
-            # Overdue todos
-            overdue_todos = Todo.select().where(
-                (Todo.completed == False) & 
-                (Todo.due_date < today)
-            ).count()
-            self.update_stat_item(self.overdue_stat, str(overdue_todos))
+            # Active habits
+            active_habits = Habit.select().count()
+            self.update_stat_item(self.habits_stat, str(active_habits))
             
             # Expenses this month
             from src.core.config import config
@@ -524,7 +563,7 @@ class DashboardView(QWidget):
             
             first_day = datetime.now().replace(day=1).date()
             month_expenses = Expense.select().where(Expense.date >= first_day)
-            total_expenses = sum(e.amount for e in month_expenses)
+            total_expenses = float(sum(e.amount for e in month_expenses))
             self.update_stat_item(self.expenses_stat, f"{currency_symbol}{total_expenses:.2f}")
             
             # Events this week
@@ -583,24 +622,21 @@ class DashboardView(QWidget):
             
             if activities:
                 for activity in activities:
-                    # Map feature to icon
+                    # Map feature to icon file
                     icon_map = {
-                        'Tasks': '✓',
-                        'Todos': '✓',
-                        'Calendar': '📅',
-                        'Expenses': '💰',
-                        'Goals': '🎯',
-                        'Habits': '🔄',
-                        'Notes': '📝'
+                        'Calendar': 'icon_calendar.svg',
+                        'Expenses': 'feature_expenses.svg',
+                        'Habits': 'feature_habits.svg',
+                        'Notes': 'feature_notes.svg'
                     }
                     
-                    icon = icon_map.get(activity['feature'], '•')
+                    icon_file = icon_map.get(activity['feature'], 'feature_dashboard.svg')
                     text = f"{activity['action']}"
                     if activity['details']:
                         text += f": {activity['details']}"
                     
                     item = self.create_activity_item(
-                        icon,
+                        icon_file,
                         text,
                         activity['timestamp']
                     )
@@ -626,8 +662,11 @@ class DashboardView(QWidget):
         except Exception as e:
             print(f"Error opening settings: {e}")
     
-    def create_activity_item(self, icon: str, text: str, time: datetime) -> QWidget:
-        """Create an activity item"""
+    def create_activity_item(self, icon_file: str, text: str, time: datetime) -> QWidget:
+        """Create an activity item with SVG icon"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        
         item_widget = QFrame()
         item_widget.setProperty("class", "activity-item")
         item_widget.setStyleSheet("""
@@ -647,10 +686,9 @@ class DashboardView(QWidget):
         layout.setSpacing(10)
         
         # Icon
-        icon_label = QLabel(icon)
-        font = QFont()
-        font.setPointSize(14)
-        icon_label.setFont(font)
+        icon_label = QLabel()
+        icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon_file}"), size=(18, 18))
+        icon_label.setPixmap(icon_pixmap)
         icon_label.setFixedWidth(24)
         icon_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(icon_label)
@@ -677,32 +715,39 @@ class DashboardView(QWidget):
     
     def refresh(self):
         """Refresh view to apply config changes"""
+        # Reload header icon with current theme
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_dashboard.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        
         # Mark as initial load to trigger animations
         self.initial_load = True
         
         # Reset widgets to 0 state before loading
         from src.core.config import config
         if config.get('appearance.enable_animations', True):
-            self.tasks_ring._progress = 0
-            self.tasks_ring._target_progress = 0
-            self.goals_ring._progress = 0
-            self.goals_ring._target_progress = 0
+            # Reset stat cards
+            self.events_card._displayed_value = 0
+            self.habits_card._displayed_value = 0
+            self.notes_card._displayed_value = 0
+            self.expenses_card._displayed_value = 0
+            
+            # Reset progress rings
             self.habits_total_ring._progress = 0
             self.habits_total_ring._target_progress = 0
             self.habits_today_ring._progress = 0
             self.habits_today_ring._target_progress = 0
-            self.todo_total_ring._progress = 0
-            self.todo_total_ring._target_progress = 0
-            self.todo_today_ring._progress = 0
-            self.todo_today_ring._target_progress = 0
+            self.events_ring._progress = 0
+            self.events_ring._target_progress = 0
+            self.expenses_ring._progress = 0
+            self.expenses_ring._target_progress = 0
             self.expense_chart.canvas._animation_progress = 0
             
-            self.tasks_ring.update()
-            self.goals_ring.update()
             self.habits_total_ring.update()
             self.habits_today_ring.update()
-            self.todo_total_ring.update()
-            self.todo_today_ring.update()
+            self.events_ring.update()
+            self.expenses_ring.update()
             self.expense_chart.canvas.update()
         
         self.load_data_with_animation()
@@ -711,31 +756,32 @@ class DashboardView(QWidget):
         """Handle show event to trigger animations"""
         super().showEvent(event)
         # Trigger animations when dashboard becomes visible
-        if hasattr(self, 'tasks_ring'):
+        if hasattr(self, 'habits_total_ring'):
             from src.core.config import config
             
             # Immediately reset to 0 if animations are enabled
             if config.get('appearance.enable_animations', True):
-                self.tasks_ring._progress = 0
-                self.tasks_ring._target_progress = 0
-                self.goals_ring._progress = 0
-                self.goals_ring._target_progress = 0
+                # Reset stat cards
+                self.events_card._displayed_value = 0
+                self.habits_card._displayed_value = 0
+                self.notes_card._displayed_value = 0
+                self.expenses_card._displayed_value = 0
+                
+                # Reset progress rings
                 self.habits_total_ring._progress = 0
                 self.habits_total_ring._target_progress = 0
                 self.habits_today_ring._progress = 0
                 self.habits_today_ring._target_progress = 0
-                self.todo_total_ring._progress = 0
-                self.todo_total_ring._target_progress = 0
-                self.todo_today_ring._progress = 0
-                self.todo_today_ring._target_progress = 0
+                self.events_ring._progress = 0
+                self.events_ring._target_progress = 0
+                self.expenses_ring._progress = 0
+                self.expenses_ring._target_progress = 0
                 self.expense_chart.canvas._animation_progress = 0
                 
-                self.tasks_ring.update()
-                self.goals_ring.update()
                 self.habits_total_ring.update()
                 self.habits_today_ring.update()
-                self.todo_total_ring.update()
-                self.todo_today_ring.update()
+                self.events_ring.update()
+                self.expenses_ring.update()
                 self.expense_chart.canvas.update()
             
             # Mark as initial load to trigger animations

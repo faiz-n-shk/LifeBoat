@@ -34,7 +34,16 @@ class HabitsView(QWidget):
         # Header row
         header_row = QHBoxLayout()
         
-        header = QLabel("🔄 Habits")
+        # Habits icon
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        
+        self.header_icon_label = QLabel()
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_habits.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        header_row.addWidget(self.header_icon_label)
+        
+        header = QLabel("Habits")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
@@ -86,12 +95,9 @@ class HabitsView(QWidget):
         search_row = QHBoxLayout()
         search_row.setSpacing(10)
         
-        search_icon = QLabel("🔍")
-        search_icon.setFixedWidth(25)
-        search_row.addWidget(search_icon)
+        from src.shared.search_bar import SearchBar
         
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search habits...")
+        self.search_input = SearchBar("Search habits...")
         self.search_input.textChanged.connect(self.filter_habits)
         search_row.addWidget(self.search_input, 1)
         
@@ -290,4 +296,10 @@ class HabitsView(QWidget):
     
     def refresh(self):
         """Refresh view"""
+        # Reload header icon with current theme
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_habits.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        
         self.load_habits()

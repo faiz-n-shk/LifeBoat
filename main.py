@@ -87,6 +87,10 @@ def main():
     ensure_config_exists()
     initialize_database()
     
+    # Auto-migrate database if enabled
+    from src.core.database_migrations import auto_migrate_on_startup
+    auto_migrate_on_startup()
+    
     # Create and show main window
     window = LifeboatApp()
     

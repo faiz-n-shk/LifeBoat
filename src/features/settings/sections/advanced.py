@@ -21,7 +21,56 @@ class AdvancedSection(QWidget):
     def setup_ui(self):
         """Setup advanced settings UI"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Database Management Group
+        db_group = QLabel("Database Management")
+        db_group.setProperty("class", "section-label")
+        layout.addWidget(db_group)
+        
+        # Auto-update database checkbox
+        auto_update_layout = QHBoxLayout()
+        self.auto_update_db_check = QCheckBox("Auto-update database on app updates")
+        self.auto_update_db_check.setChecked(config.get('advanced.auto_update_database', True))
+        self.auto_update_db_check.stateChanged.connect(self.on_value_changed)
+        auto_update_layout.addWidget(self.auto_update_db_check)
+        auto_update_layout.addStretch()
+        layout.addLayout(auto_update_layout)
+        
+        # Info label for auto-update
+        auto_info = QLabel("Automatically runs database migrations when the app is updated to ensure compatibility.")
+        auto_info.setProperty("class", "secondary-text")
+        auto_info.setWordWrap(True)
+        layout.addWidget(auto_info)
+        
+        # Manual update button
+        update_db_layout = QHBoxLayout()
+        self.update_db_btn = QPushButton("Update Database Now")
+        self.update_db_btn.setFixedWidth(200)
+        self.update_db_btn.clicked.connect(self.on_update_database)
+        update_db_layout.addWidget(self.update_db_btn)
+        
+        # Database version info
+        self.db_version_label = QLabel()
+        self.db_version_label.setProperty("class", "secondary-text")
+        self.update_db_version_display()
+        update_db_layout.addWidget(self.db_version_label)
+        update_db_layout.addStretch()
+        layout.addLayout(update_db_layout)
+        
+        # Info label for manual update
+        manual_info = QLabel("Manually run database migrations to fix schema issues or update to the latest structure.")
+        manual_info.setProperty("class", "secondary-text")
+        manual_info.setWordWrap(True)
+        layout.addWidget(manual_info)
+        
+        # Separator
+        layout.addSpacing(10)
+        
+        # Debug Settings Group
+        debug_group = QLabel("Debug Settings")
+        debug_group.setProperty("class", "section-label")
+        layout.addWidget(debug_group)
         
         # Debug buttons toggle
         debug_layout = QHBoxLayout()
@@ -42,14 +91,15 @@ class AdvancedSection(QWidget):
         # Separator
         layout.addSpacing(10)
         
-        # Recent Activity Mode
-        activity_label = QLabel("Recent Activity Display:")
+        # Recent Activity Group
+        activity_label = QLabel("Recent Activity Display")
         activity_label.setProperty("class", "section-label")
         layout.addWidget(activity_label)
         
         from PyQt6.QtWidgets import QComboBox
         activity_layout = QHBoxLayout()
         activity_desc = QLabel("Show activities from:")
+        activity_desc.setFixedWidth(150)
         activity_layout.addWidget(activity_desc)
         
         self.activity_combo = NoScrollComboBox()
@@ -70,6 +120,8 @@ class AdvancedSection(QWidget):
         activity_info.setProperty("class", "secondary-text")
         activity_info.setWordWrap(True)
         layout.addWidget(activity_info)
+        
+        layout.addStretch()
         
         # Apply and Cancel buttons
         apply_layout = QHBoxLayout()
@@ -94,6 +146,103 @@ class AdvancedSection(QWidget):
         self.apply_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
     
+    def update_db_version_display(self):
+        """Update the database version display label"""
+        from src.core.database_migrations import get_database_version
+        from src.core.constants import APP_VERSION
+        
+        db_version = get_database_version()
+        if db_version == APP_VERSION:
+            self.db_version_label.setText(f"✓ Database version: {db_version} (up to date)")
+        else:
+            self.db_version_label.setText(f"⚠ Database version: {db_version} (app version: {APP_VERSION})")
+    
+    def on_update_database(self):
+        """Handle database update button click"""
+        from src.shared.dialogs import create_message_box, show_critical
+        from PyQt6.QtWidgets import QMessageBox
+        
+        # Confirm action
+        result = create_message_box(
+            self,
+            "Update Database",
+            "This will run database migrations to update the schema.\n\n"
+            "A backup will be created automatically.\n\n"
+            "Do you want to continue?",
+            QMessageBox.Icon.Question,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+        )
+        
+        if result != QMessageBox.StandardButton.Yes:
+            return
+        
+        # Disable button during migration
+        self.update_db_btn.setEnabled(False)
+        self.update_db_btn.setText("Updating...")
+        
+        try:
+            # Close any open database connections first
+            from src.core.database import db
+            if not db.is_closed():
+                db.close()
+            
+            # Create backup first
+            from src.core.database_migrations import backup_database, run_migrations
+            
+            backup_success, backup_path = backup_database()
+            if not backup_success:
+                show_critical(
+                    self,
+                    "Backup Failed",
+                    f"Could not create database backup:\n{backup_path}\n\nMigration cancelled."
+                )
+                return
+            
+            # Run migrations
+            success, message = run_migrations(force=True)
+            
+            if success:
+                # Update version display
+                self.update_db_version_display()
+                
+                # Show success with restart options
+                restart_result = create_message_box(
+                    self,
+                    "Database Updated Successfully",
+                    f"{message}\n\nBackup saved to:\n{backup_path}\n\n"
+                    "A restart is recommended to apply all changes.\n\n"
+                    "Would you like to restart now?",
+                    QMessageBox.Icon.Information,
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                
+                if restart_result == QMessageBox.StandardButton.Yes:
+                    # Trigger restart
+                    from src.core.config import config
+                    config.signals.restart_requested.emit()
+            else:
+                show_critical(
+                    self,
+                    "Migration Failed",
+                    f"{message}\n\nYour database backup is at:\n{backup_path}"
+                )
+        
+        except Exception as e:
+            import traceback
+            error_details = traceback.format_exc()
+            print(f"Database update error: {error_details}")
+            show_critical(
+                self,
+                "Error",
+                f"An error occurred during database update:\n{str(e)}\n\n"
+                "The app will need to be restarted for changes to take effect."
+            )
+        
+        finally:
+            # Re-enable button
+            self.update_db_btn.setEnabled(True)
+            self.update_db_btn.setText("Update Database Now")
+    
     def on_apply(self):
         """Apply advanced changes"""
         # Store scroll position before applying changes
@@ -102,6 +251,13 @@ class AdvancedSection(QWidget):
         
         # Track changes for logging
         changes = []
+        
+        # Save auto-update database setting
+        old_auto_db = config.get('advanced.auto_update_database', True)
+        new_auto_db = self.auto_update_db_check.isChecked()
+        if old_auto_db != new_auto_db:
+            changes.append(f"Auto-update database: {'enabled' if new_auto_db else 'disabled'}")
+        config.set('advanced.auto_update_database', new_auto_db)
         
         # Save debug buttons setting
         old_debug = config.get('advanced.show_debug_buttons')
@@ -153,6 +309,9 @@ class AdvancedSection(QWidget):
     
     def on_cancel(self):
         """Cancel advanced changes and revert to saved values"""
+        # Reload auto-update database setting
+        self.auto_update_db_check.setChecked(config.get('advanced.auto_update_database', True))
+        
         # Reload values from config
         self.debug_check.setChecked(config.get('advanced.show_debug_buttons', False))
         

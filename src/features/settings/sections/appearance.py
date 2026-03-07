@@ -26,7 +26,12 @@ class AppearanceSection(QWidget):
     def setup_ui(self):
         """Setup appearance settings UI"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
+        
+        # Font Settings Group
+        font_group = QLabel("Font Settings")
+        font_group.setProperty("class", "section-label")
+        layout.addWidget(font_group)
         
         # Font family
         font_layout = QHBoxLayout()
@@ -56,13 +61,21 @@ class AppearanceSection(QWidget):
         size_layout.addWidget(size_label)
         
         self.size_spin = NoScrollSpinBox()
-        self.size_spin.setRange(5, 20)  # min max font size
+        self.size_spin.setRange(5, 20)
         self.size_spin.setValue(config.get('appearance.font_size', 13))
         self.size_spin.valueChanged.connect(self.on_size_changed)
         size_layout.addWidget(self.size_spin)
         size_layout.addStretch()
         
         layout.addLayout(size_layout)
+        
+        # Separator
+        layout.addSpacing(10)
+        
+        # Display Settings Group
+        display_group = QLabel("Display Settings")
+        display_group.setProperty("class", "section-label")
+        layout.addWidget(display_group)
         
         # Animations
         anim_layout = QHBoxLayout()
@@ -73,6 +86,14 @@ class AppearanceSection(QWidget):
         anim_layout.addStretch()
         
         layout.addLayout(anim_layout)
+        
+        # Separator
+        layout.addSpacing(10)
+        
+        # Window Settings Group
+        window_group = QLabel("Window Settings")
+        window_group.setProperty("class", "section-label")
+        layout.addWidget(window_group)
         
         # Detect monitors and resolutions
         self.detect_monitors()
@@ -113,6 +134,8 @@ class AppearanceSection(QWidget):
         res_layout.addWidget(self.resolution_combo, 1)
         
         layout.addLayout(res_layout)
+        
+        layout.addStretch()
         
         # Apply and Cancel buttons
         apply_layout = QHBoxLayout()

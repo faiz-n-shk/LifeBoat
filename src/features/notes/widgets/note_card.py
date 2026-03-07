@@ -93,10 +93,11 @@ class NoteCard(QFrame):
         title_layout.addWidget(title, 1)
         
         if self.note.pinned:
-            pin_icon = QLabel("📌")
-            font = QFont()
-            font.setPointSize(14)
-            pin_icon.setFont(font)
+            pin_icon = QLabel()
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_icon.setPixmap(icon_pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             pin_icon.setFixedSize(24, 24)
             pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
@@ -189,10 +190,11 @@ class NoteCard(QFrame):
         title_layout.addWidget(title, 1)
         
         if self.note.pinned:
-            pin_icon = QLabel("📌")
-            font = QFont()
-            font.setPointSize(14)
-            pin_icon.setFont(font)
+            pin_icon = QLabel()
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_icon.setPixmap(icon_pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             pin_icon.setFixedSize(24, 24)
             pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
@@ -288,10 +290,11 @@ class NoteCard(QFrame):
         title_layout.addWidget(title)
         
         if self.note.pinned:
-            pin_icon = QLabel("📌")
-            font = QFont()
-            font.setPointSize(14)
-            pin_icon.setFont(font)
+            pin_icon = QLabel()
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_icon.setPixmap(icon_pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             pin_icon.setFixedSize(24, 24)
             pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
@@ -389,10 +392,11 @@ class NoteCard(QFrame):
         title_layout.addWidget(title, 1)
         
         if self.note.pinned:
-            pin_icon = QLabel("📌")
-            font = QFont()
-            font.setPointSize(12)
-            pin_icon.setFont(font)
+            pin_icon = QLabel()
+            from src.core.path_manager import get_resource_path
+            from PyQt6.QtGui import QPixmap
+            icon_pixmap = QPixmap(get_resource_path("assets/icons/icon_pinned.svg"))
+            pin_icon.setPixmap(icon_pixmap.scaled(14, 14, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
             pin_icon.setFixedSize(20, 20)
             pin_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
             title_layout.addWidget(pin_icon)
@@ -467,23 +471,13 @@ class NoteCard(QFrame):
         
         pin_btn = QPushButton()
         pin_btn.setFixedSize(size, size)
-        pin_btn.setToolTip("Pin" if not self.note.pinned else "Unpin")
+        pin_btn.setToolTip("Unpin" if self.note.pinned else "Pin")
         pin_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
-        try:
-            pin_icon = QIcon(get_resource_path("assets/icons/check.svg"))
-            pin_btn.setIcon(pin_icon)
-            pin_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
-        except:
-            pin_label = QLabel("📌" if not self.note.pinned else "📍")
-            font = QFont()
-            font.setPointSize(int(size * 0.4))
-            pin_label.setFont(font)
-            pin_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            pin_btn.setText("")
-            pin_btn_layout = QVBoxLayout(pin_btn)
-            pin_btn_layout.setContentsMargins(0, 0, 0, 0)
-            pin_btn_layout.addWidget(pin_label)
+        pin_icon_file = "icon_pinned.svg" if self.note.pinned else "icon_pin.svg"
+        pin_icon = QIcon(get_resource_path(f"assets/icons/{pin_icon_file}"))
+        pin_btn.setIcon(pin_icon)
+        pin_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         
         pin_btn.clicked.connect(lambda: self.pin_clicked.emit(self.note.id))
         actions_layout.addWidget(pin_btn)
@@ -495,7 +489,7 @@ class NoteCard(QFrame):
         edit_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
         try:
-            edit_icon = QIcon(get_resource_path("assets/icons/edit.svg"))
+            edit_icon = QIcon(get_resource_path("assets/icons/icon_edit.svg"))
             edit_btn.setIcon(edit_icon)
             edit_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         except:
@@ -519,7 +513,7 @@ class NoteCard(QFrame):
         delete_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
         
         try:
-            delete_icon = QIcon(get_resource_path("assets/icons/delete.svg"))
+            delete_icon = QIcon(get_resource_path("assets/icons/icon_delete.svg"))
             delete_btn.setIcon(delete_icon)
             delete_btn.setIconSize(QSize(int(size * 0.6), int(size * 0.6)))
         except:
@@ -558,3 +552,7 @@ class NoteCard(QFrame):
         # Reserve bottom 40px and right 120px for buttons
         button_area = card_rect.adjusted(card_rect.width() - 120, card_rect.height() - 40, 0, 0)
         return button_area.contains(pos.toPoint())
+
+
+
+

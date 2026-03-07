@@ -19,7 +19,7 @@ class EventDialog(BaseDialog):
         self.is_edit = event is not None
         
         title = "Edit Event" if self.is_edit else "Add Event"
-        super().__init__(parent, title=title, width=500, height=600)
+        super().__init__(parent, title=title, height=630)
         
         self.setup_fields()
         

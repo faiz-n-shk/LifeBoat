@@ -17,7 +17,7 @@ class ExpenseDialog(BaseDialog):
         self.is_edit = expense is not None
         
         title = "Edit Expense" if self.is_edit else "New Expense"
-        super().__init__(parent, title=title, width=450, height=550)
+        super().__init__(parent, title=title, height=620)
         
         self.setup_fields()
         

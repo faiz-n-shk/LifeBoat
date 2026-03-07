@@ -34,8 +34,17 @@ class ExpensesView(QWidget):
         # Header
         header_layout = QHBoxLayout()
         
+        # Expenses icon
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
         from PyQt6.QtGui import QFont
-        title = QLabel("💰 Expenses")
+        
+        self.header_icon_label = QLabel()
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_expenses.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        header_layout.addWidget(self.header_icon_label)
+        
+        title = QLabel("Expenses")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
@@ -231,4 +240,10 @@ class ExpensesView(QWidget):
     
     def refresh(self):
         """Refresh view to apply config changes"""
+        # Reload header icon with current theme
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_expenses.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        
         self.load_data()

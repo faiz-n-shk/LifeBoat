@@ -68,25 +68,10 @@ class MainWindow(QWidget):
         calendar_view = CalendarView()
         self.content.register_feature("Calendar", calendar_view)
         
-        # Tasks
-        from src.features.tasks.view import TasksView
-        tasks = TasksView()
-        self.content.register_feature("Tasks", tasks)
-        
-        # Todos
-        from src.features.todos.view import TodosView
-        todos = TodosView()
-        self.content.register_feature("Todos", todos)
-        
         # Expenses
         from src.features.expenses.view import ExpensesView
         expenses = ExpensesView()
         self.content.register_feature("Expenses", expenses)
-        
-        # Goals
-        from src.features.goals.view import GoalsView
-        goals = GoalsView()
-        self.content.register_feature("Goals", goals)
         
         # Habits
         from src.features.habits.view import HabitsView
@@ -186,6 +171,9 @@ class MainWindow(QWidget):
         
         # Update separator color
         self.update_separator_color()
+        
+        # Reload navigation icons with new theme
+        self.navigation.reload_icons()
         
         # Refresh all registered features to apply new theme/font
         self.content.refresh_all_features()

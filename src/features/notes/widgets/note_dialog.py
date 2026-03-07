@@ -20,7 +20,7 @@ class NoteDialog(BaseDialog):
         self.is_edit = note is not None
         
         title = "Edit Note" if self.is_edit else "New Note"
-        super().__init__(parent, title, width=600, height=500)
+        super().__init__(parent, title)
         self.setup_content()
         self.add_buttons(save_text="Save Note", on_save=self.on_save)
     
@@ -40,11 +40,11 @@ class NoteDialog(BaseDialog):
         content_label = QLabel("Content:")
         self.layout.addWidget(content_label)
         
-        # Create content input with proper styling
+        # Create content/description input
         self.content_input = QTextEdit()
         self.content_input.setPlaceholderText("Write your note here...")
-        self.content_input.setMinimumHeight(200)
-        self.content_input.setMaximumHeight(400)
+        self.content_input.setMinimumHeight(150)
+        self.content_input.setMaximumHeight(300)
         self.content_input.setSizePolicy(
             QSizePolicy.Policy.Expanding,
             QSizePolicy.Policy.Expanding
@@ -64,7 +64,7 @@ class NoteDialog(BaseDialog):
         from src.core.path_manager import get_resource_path
         resize_handle = QLabel()
         try:
-            pixmap = QPixmap(get_resource_path("assets/icons/resize-grip.svg"))
+            pixmap = QPixmap(get_resource_path("assets/icons/icon_resize_grip.svg"))
             resize_handle.setPixmap(pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, 
                                                   Qt.TransformationMode.SmoothTransformation))
         except:
@@ -76,7 +76,7 @@ class NoteDialog(BaseDialog):
         resize_handle.setCursor(Qt.CursorShape.SizeVerCursor)
         
         resize_handle.mousePressEvent = lambda e: self._start_resize(e)
-        resize_handle.mouseMoveEvent = lambda e: self._do_resize(e, 200, 400)
+        resize_handle.mouseMoveEvent = lambda e: self._do_resize(e, 150, 300)
         
         content_container.addWidget(resize_handle)
         
@@ -93,7 +93,14 @@ class NoteDialog(BaseDialog):
         self.layout.addWidget(self.tags_input)
         
         # Pinned checkbox
-        self.pinned_check = QCheckBox("📌 Pin this note to the top")
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QIcon
+        from PyQt6.QtCore import QSize
+        
+        self.pinned_check = QCheckBox()
+        self.pinned_check.setIcon(QIcon(get_resource_path("assets/icons/icon_pin.svg")))
+        self.pinned_check.setIconSize(QSize(16, 16))
+        self.pinned_check.setText(" Pin this note to the top")
         if self.note:
             self.pinned_check.setChecked(self.note.pinned)
         self.layout.addWidget(self.pinned_check)

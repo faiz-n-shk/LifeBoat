@@ -23,10 +23,10 @@ class BehaviorSection(QWidget):
     def setup_ui(self):
         """Setup behavior settings UI"""
         layout = QVBoxLayout(self)
-        layout.setSpacing(15)
+        layout.setSpacing(20)
         
         # Startup section
-        startup_label = QLabel("Startup Behavior:")
+        startup_label = QLabel("Startup Behavior")
         startup_label.setProperty("class", "section-label")
         layout.addWidget(startup_label)
         
@@ -62,7 +62,7 @@ class BehaviorSection(QWidget):
         layout.addSpacing(10)
         
         # System Tray section
-        tray_label = QLabel("System Tray Behavior:")
+        tray_label = QLabel("System Tray Behavior")
         tray_label.setProperty("class", "section-label")
         layout.addWidget(tray_label)
         
@@ -93,6 +93,8 @@ class BehaviorSection(QWidget):
         close_tray_info.setProperty("class", "secondary-text")
         close_tray_info.setWordWrap(True)
         layout.addWidget(close_tray_info)
+        
+        layout.addStretch()
         
         # Apply and Cancel buttons
         apply_layout = QHBoxLayout()

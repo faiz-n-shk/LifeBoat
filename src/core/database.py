@@ -2,7 +2,7 @@
 Database Management
 SQLite database with Peewee ORM
 """
-from peewee import *
+from peewee import * #type: ignore
 from datetime import datetime
 from pathlib import Path
 from src.core.debug import debug_log
@@ -32,8 +32,8 @@ def initialize_database():
     """Initialize database and create tables"""
     import os
     from src.models import (
-        Event, Task, Expense, Income, Goal, 
-        Habit, HabitLog, Note, Theme, Settings, Todo
+        Event, Expense, Income, 
+        Habit, HabitLog, Note, Theme, Settings
     )
     
     db_exists = os.path.exists(DATABASE_PATH)
@@ -51,8 +51,8 @@ def initialize_database():
         
         # Create all tables
         db.create_tables([
-            Event, Task, Expense, Income, Goal,
-            Habit, HabitLog, Note, Theme, Settings, Todo
+            Event, Expense, Income,
+            Habit, HabitLog, Note, Theme, Settings
         ])
         
         # Create default themes
@@ -75,94 +75,13 @@ def initialize_database():
     else:
         # Ensure tables exist (safe mode)
         db.create_tables([
-            Event, Task, Expense, Income, Goal,
-            Habit, HabitLog, Note, Theme, Settings, Todo
+            Event, Expense, Income,
+            Habit, HabitLog, Note, Theme, Settings
         ], safe=True)
-        
-        # Run migrations for existing databases
-        # run_migrations()
     
     db.close()
     print("Database initialized")
 
-"""
-def run_migrations():
-    Run database migrations for schema updates
-    try:
-        # Migration 1: Add habit_type column to Habit table
-        cursor = db.execute_sql("PRAGMA table_info(habit)")
-        columns = [row[1] for row in cursor.fetchall()]
-        
-        if 'habit_type' not in columns:
-            print("Running migration: Adding habit_type column to Habit table...")
-            db.execute_sql("ALTER TABLE habit ADD COLUMN habit_type VARCHAR(255) DEFAULT 'Good'")
-            print("Migration completed: habit_type column added")
-        
-        # Migration 2: Add target_days column to Habit table
-        if 'target_days' not in columns:
-            print("Running migration: Adding target_days column to Habit table...")
-            db.execute_sql("ALTER TABLE habit ADD COLUMN target_days INTEGER DEFAULT 7")
-            print("Migration completed: target_days column added")
-        
-        # Migration 3: Add start_date column to Habit table
-        if 'start_date' not in columns:
-            print("Running migration: Adding start_date column to Habit table...")
-            # Use current date as default for existing habits
-            from datetime import date
-            today = date.today().isoformat()
-            db.execute_sql(f"ALTER TABLE habit ADD COLUMN start_date DATE DEFAULT '{today}'")
-            print("Migration completed: start_date column added")
-        
-        # Migration 4: Set default values for frequency if it exists
-        if 'frequency' in columns:
-            print("Running migration: Setting default frequency values...")
-            db.execute_sql("UPDATE habit SET frequency = 'Daily' WHERE frequency IS NULL")
-            print("Migration completed: frequency defaults set")
-        
-        # Migration 5: Update Matrix theme colors for better visibility
-        try:
-            print("Running migration: Updating Matrix theme colors...")
-            # Import Theme model inside migration
-            from src.models.theme import Theme as ThemeModel
-            matrix_theme = ThemeModel.get_or_none(ThemeModel.name == "Matrix")
-            if matrix_theme:
-                # Only update if colors haven't been updated yet
-                if matrix_theme.bg_tertiary == "#0f3d0f":
-                    matrix_theme.bg_tertiary = "#0a0a0a"
-                    matrix_theme.fg_secondary = "#33ff66"
-                    matrix_theme.save()
-                    print("Migration completed: Matrix theme colors updated")
-                else:
-                    print("Matrix theme already updated, skipping...")
-        except Exception as e:
-            print(f"Matrix theme migration error: {e}")
-        
-        # Migration 6: Update Light theme for better appearance
-        try:
-            print("Running migration: Updating Light theme colors...")
-            from src.models.theme import Theme as ThemeModel
-            light_theme = ThemeModel.get_or_none(ThemeModel.name == "Light")
-            if light_theme:
-                # Only update if colors haven't been updated yet (check old bg_primary)
-                if light_theme.bg_primary == "#ffffff":
-                    light_theme.bg_primary = "#f5f5f5"
-                    light_theme.bg_secondary = "#ffffff"
-                    light_theme.bg_tertiary = "#e8e8e8"
-                    light_theme.fg_primary = "#1e1e1e"
-                    light_theme.fg_secondary = "#424242"
-                    light_theme.accent = "#0078d4"
-                    light_theme.accent_hover = "#106ebe"
-                    light_theme.border = "#d0d0d0"
-                    light_theme.save()
-                    print("Migration completed: Light theme colors updated")
-                else:
-                    print("Light theme already updated, skipping...")
-        except Exception as e:
-            print(f"Light theme migration error: {e}")
-    except Exception as e:
-        print(f"Migration error: {e}")
-
-"""
 def get_default_themes():
     """Get default theme definitions"""
     return {
@@ -180,17 +99,17 @@ def get_default_themes():
             "border": "#4d4d4d"
         },
         "Light": {
-            "bg_primary": "#f5f5f5",
-            "bg_secondary": "#ffffff",
-            "bg_tertiary": "#e8e8e8",
-            "fg_primary": "#1e1e1e",
-            "fg_secondary": "#424242",
-            "accent": "#0078d4",
-            "accent_hover": "#106ebe",
-            "success": "#16825d",
-            "warning": "#ca5010",
-            "danger": "#d13438",
-            "border": "#d0d0d0"
+            "bg_primary": "#faf8f3",
+            "bg_secondary": "#f5f1e8",
+            "bg_tertiary": "#ebe6dc",
+            "fg_primary": "#2c2416",
+            "fg_secondary": "#5c5445",
+            "accent": "#d97706",
+            "accent_hover": "#b45309",
+            "success": "#059669",
+            "warning": "#dc2626",
+            "danger": "#dc2626",
+            "border": "#d4cfc3"
         },
         "Catppuccin Mocha": {
             "bg_primary": "#1e1e2e",

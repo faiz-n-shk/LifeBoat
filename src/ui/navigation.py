@@ -32,29 +32,23 @@ class NavigationSidebar(QWidget):
         layout.setSpacing(0)
         
         # App title with icon - clean modern design
-        title_container = QWidget()
-        title_container.setFixedHeight(75)
-        title_container.setStyleSheet("""
+        self.title_container = QWidget()
+        self.title_container.setFixedHeight(75)
+        self.title_container.setStyleSheet("""
             QWidget {
                 background: transparent;
             }
         """)
         
-        title_layout = QVBoxLayout(title_container)
+        title_layout = QVBoxLayout(self.title_container)
         title_layout.setContentsMargins(0, 0, 0, 0)
         title_layout.setSpacing(0)
         
-        # Top section with icon and text
-        top_section = QWidget()
-        top_section.setStyleSheet("""
-            QWidget {
-                background: qlineargradient(x1:0, y1:0, x2:0, y2:1,
-                    stop:0 rgba(70, 70, 90, 0.2),
-                    stop:1 rgba(50, 50, 70, 0.1));
-            }
-        """)
+        # Top section with icon and text - themed with accent color
+        self.top_section = QWidget()
+        self.top_section.setObjectName("nav-title-section")
         
-        top_layout = QHBoxLayout(top_section)
+        top_layout = QHBoxLayout(self.top_section)
         top_layout.setContentsMargins(15, 15, 15, 15)
         top_layout.setSpacing(12)
         
@@ -70,19 +64,22 @@ class NavigationSidebar(QWidget):
         top_layout.addWidget(icon_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
         # App title text
-        title = QLabel("Lifeboat")
+        self.title_label = QLabel("Lifeboat")
         from PyQt6.QtGui import QFont
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
         font.setLetterSpacing(QFont.SpacingType.AbsoluteSpacing, 0.8)
-        title.setFont(font)
-        title.setStyleSheet("background: transparent; color: rgba(255, 255, 255, 0.95); font-size: 18pt;")
-        top_layout.addWidget(title, 0, Qt.AlignmentFlag.AlignVCenter)
+        self.title_label.setFont(font)
+        self.title_label.setObjectName("nav-title-text")
+        top_layout.addWidget(self.title_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
         top_layout.addStretch()
         
-        title_layout.addWidget(top_section)
+        title_layout.addWidget(self.top_section)
+        
+        # Apply theme styling
+        self.apply_title_theme()
         
         # Subtle separator line
         separator = QWidget()
@@ -90,19 +87,16 @@ class NavigationSidebar(QWidget):
         separator.setStyleSheet("background: rgba(100, 100, 120, 0.15);")
         title_layout.addWidget(separator)
         
-        layout.addWidget(title_container)
+        layout.addWidget(self.title_container)
         
-        # Navigation items
+        # Navigation items with SVG icons
         nav_items = [
-            ("Dashboard", "📊"),
-            ("Calendar", "📅"),
-            ("Tasks", "☑"),
-            ("Todos", "✓"),
-            ("Expenses", "💰"),
-            ("Goals", "🎯"),
-            ("Habits", "🔄"),
-            ("Notes", "📝"),
-            ("Settings", "⚙"),
+            ("Dashboard", "feature_dashboard.svg"),
+            ("Calendar", "feature_calendar.svg"),
+            ("Expenses", "feature_expenses.svg"),
+            ("Habits", "feature_habits.svg"),
+            ("Notes", "feature_notes.svg"),
+            ("Settings", "feature_settings.svg"),
         ]
         
         for name, icon in nav_items:
@@ -134,7 +128,7 @@ class NavigationSidebar(QWidget):
         # Reload button (small circle)
         self.reload_btn = QPushButton()
         from src.core.path_manager import get_resource_path
-        self.reload_btn.setIcon(QIcon(get_resource_path("assets/icons/reload.svg")))
+        self.reload_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_reload.svg")))
         self.reload_btn.setFixedSize(20, 20)
         self.reload_btn.setIconSize(QSize(12, 12))
         self.reload_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -161,7 +155,7 @@ class NavigationSidebar(QWidget):
         
         # Restart button (small circle)
         self.restart_btn = QPushButton()
-        self.restart_btn.setIcon(QIcon(get_resource_path("assets/icons/restart.svg")))
+        self.restart_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_restart.svg")))
         self.restart_btn.setFixedSize(20, 20)
         self.restart_btn.setIconSize(QSize(12, 12))
         self.restart_btn.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
@@ -203,13 +197,92 @@ class NavigationSidebar(QWidget):
         self.set_active("Dashboard")
     
     def create_nav_button(self, name: str, icon: str) -> QPushButton:
-        """Create navigation button"""
-        btn = QPushButton(f"{icon}  {name}")
+        """Create navigation button with themed SVG icon"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        from PyQt6.QtGui import QIcon
+        from PyQt6.QtCore import QSize, QPropertyAnimation, QEasingCurve, pyqtProperty
+        
+        btn = QPushButton(f"  {name}")
+        
+        # Load themed icon
+        icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon}"), size=(20, 20))
+        btn.setIcon(QIcon(icon_pixmap))
+        btn.setIconSize(QSize(20, 20))
         btn.setObjectName("nav-button")
         btn.setProperty("active", False)
+        btn.setProperty("icon_file", icon)  # Store for reloading
         btn.setFixedHeight(50)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        
+        # Add hover animation property
+        btn._hover_offset = 0
+        
+        def get_hover_offset(self):
+            return self._hover_offset
+        
+        def set_hover_offset(self, value):
+            self._hover_offset = value
+            # Update button style with offset
+            self.setStyleSheet(f"""
+                QPushButton {{
+                    padding-left: {20 + value}px;
+                }}
+            """)
+        
+        # Bind methods to button
+        btn.get_hover_offset = lambda: get_hover_offset(btn)
+        btn.set_hover_offset = lambda v: set_hover_offset(btn, v)
+        
         btn.clicked.connect(lambda: self.on_nav_click(name))
         return btn
+    
+    def reload_icons(self):
+        """Reload all navigation icons with current theme"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        from PyQt6.QtGui import QIcon
+        
+        # Reload navigation button icons
+        for name, btn in self.buttons.items():
+            icon_file = btn.property("icon_file")
+            if icon_file:
+                icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon_file}"), size=(20, 20))
+                btn.setIcon(QIcon(icon_pixmap))
+        
+        # Reload title section theme
+        self.apply_title_theme()
+    
+    def apply_title_theme(self):
+        """Apply theme colors to the title section"""
+        from src.core.theme_manager import theme_manager
+        from src.core.database import db
+        from src.models.theme import Theme
+        
+        try:
+            db.connect(reuse_if_open=True)
+            theme = Theme.get(Theme.name == theme_manager.current_theme)
+            db.close()
+            
+            # Apply gradient background with accent color
+            self.top_section.setStyleSheet(f"""
+                QWidget#nav-title-section {{
+                    background: qlineargradient(x1:0, y1:0, x2:1, y2:1,
+                        stop:0 {theme.accent},
+                        stop:1 {theme.accent_hover});
+                }}
+            """)
+            
+            # Set text color to contrast with accent
+            self.title_label.setStyleSheet(f"""
+                QLabel#nav-title-text {{
+                    background: transparent;
+                    color: {theme.bg_primary};
+                    font-size: 18pt;
+                }}
+            """)
+        except Exception as e:
+            print(f"Error applying title theme: {e}")
     
     def on_nav_click(self, name: str):
         """Handle navigation button click"""

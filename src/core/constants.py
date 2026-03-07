@@ -5,7 +5,7 @@ DO NOT MODIFY - These values are set by the application
 
 # Application Metadata (Read-only)
 APP_NAME = "Lifeboat"
-APP_VERSION = "2.7.4"
+APP_VERSION = "2.8.0"
 APP_AUTHOR = "Fayz212"
 APP_DESCRIPTION = "Personal Life Management Application"
 

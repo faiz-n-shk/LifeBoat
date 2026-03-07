@@ -44,7 +44,16 @@ class NotesView(QWidget):
         # Header
         header_layout = QHBoxLayout()
         
-        title = QLabel("📝 Notes")
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QPixmap
+        
+        self.header_icon_label = QLabel()
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_notes.svg"), size=(24, 24))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        header_layout.addWidget(self.header_icon_label)
+        
+        title = QLabel("Notes")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
@@ -77,23 +86,11 @@ class NotesView(QWidget):
         controls_layout = QHBoxLayout()
         controls_layout.setSpacing(10)
         
-        # Search with icon outside
-        search_container = QHBoxLayout()
-        search_container.setSpacing(8)
+        from src.shared.search_bar import SearchBar
         
-        search_icon = QLabel("🔍")
-        font = QFont()
-        font.setPointSize(12)
-        search_icon.setFont(font)
-        search_container.addWidget(search_icon)
-        
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search notes...")
-        self.search_input.setMinimumHeight(36)
+        self.search_input = SearchBar("Search notes...")
         self.search_input.textChanged.connect(self.on_search)
-        search_container.addWidget(self.search_input, 1)
-        
-        controls_layout.addLayout(search_container, 3)
+        controls_layout.addWidget(self.search_input, 3)
         
         # Tag filter
         self.tag_filter = NoScrollComboBox()
@@ -104,7 +101,14 @@ class NotesView(QWidget):
         controls_layout.addWidget(self.tag_filter, 1)
         
         # Pinned toggle
-        self.pinned_btn = QPushButton("📌 Pinned")
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QIcon
+        from PyQt6.QtCore import QSize
+        
+        self.pinned_btn = QPushButton()
+        self.pinned_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_pin.svg")))
+        self.pinned_btn.setIconSize(QSize(16, 16))
+        self.pinned_btn.setText(" Pinned")
         self.pinned_btn.setCheckable(True)
         self.pinned_btn.setMinimumHeight(36)
         self.pinned_btn.setMinimumWidth(100)
@@ -129,12 +133,51 @@ class NotesView(QWidget):
         self.notes_layout.setSpacing(15)
         
         self.scroll.setWidget(self.notes_container)
+        
+        # Empty state overlay (hidden by default)
+        self.empty_overlay = QWidget(self.scroll)
+        self.empty_overlay.setStyleSheet("background: transparent;")
+        empty_layout = QVBoxLayout(self.empty_overlay)
+        empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        
+        #.svg instead of emoji
+        from src.core.path_manager import get_resource_path
+        from PyQt6.QtGui import QPixmap
+        
+        empty_icon = QLabel()
+        icon_pixmap = QPixmap(get_resource_path("assets/icons/feature_notes.svg"))
+        empty_icon.setPixmap(icon_pixmap.scaled(64, 64, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation))
+        empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(empty_icon)
+        
+        empty_label = QLabel("No notes yet")
+        font = QFont()
+        font.setPointSize(16)
+        font.setBold(True)
+        empty_label.setFont(font)
+        empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(empty_label)
+        
+        empty_hint = QLabel("Click '+ New Note' to create your first note")
+        empty_hint.setProperty("class", "secondary-text")
+        font = QFont()
+        font.setPointSize(12)
+        empty_hint.setFont(font)
+        empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        empty_layout.addWidget(empty_hint)
+        
+        self.empty_overlay.hide()
+        
         layout.addWidget(self.scroll)
         
         self.setLayout(layout)
     
+    def showEvent(self, event):
+        super().showEvent(event)
+        if hasattr(self, 'empty_overlay') and self.empty_overlay.isVisible():
+            self.empty_overlay.setGeometry(self.scroll.viewport().rect())
+    
     def load_notes(self):
-        """Load and display notes"""
         # Clear existing notes
         while self.notes_layout.count():
             item = self.notes_layout.takeAt(0)
@@ -151,52 +194,23 @@ class NotesView(QWidget):
         # Filter by tag if selected
         selected_tag = self.tag_filter.currentText()
         if selected_tag == "No Tags":
-            # Show only notes without tags
             notes = [n for n in notes if not n.tags or not n.tags.strip()]
         elif selected_tag != "All Tags":
-            # Show notes with the selected tag
             notes = [n for n in notes if n.tags and selected_tag in [t.strip() for t in n.tags.split(',')]]
         
-        # Display notes based on view mode
+        # Show/hide empty overlay
         if notes:
+            self.empty_overlay.hide()
             for note in notes:
                 note_card = NoteCard(note, view_mode=self.current_view_mode)
                 note_card.clicked.connect(self.create_edit_handler(note.id))
                 note_card.pin_clicked.connect(self.on_toggle_pin)
                 note_card.delete_clicked.connect(self.on_delete_note)
-                
                 self.notes_layout.addWidget(note_card)
         else:
-            # Empty state
-            empty_widget = QWidget()
-            empty_widget.setMinimumSize(400, 300)
-            empty_layout = QVBoxLayout(empty_widget)
-            empty_layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            
-            empty_icon = QLabel("📝")
-            font = QFont()
-            font.setPointSize(48)
-            empty_icon.setFont(font)
-            empty_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_layout.addWidget(empty_icon)
-            
-            empty_label = QLabel("No notes yet")
-            font = QFont()
-            font.setPointSize(16)
-            font.setBold(True)
-            empty_label.setFont(font)
-            empty_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_layout.addWidget(empty_label)
-            
-            empty_hint = QLabel("Click '+ New Note' to create your first note")
-            empty_hint.setProperty("class", "secondary-text")
-            font = QFont()
-            font.setPointSize(12)
-            empty_hint.setFont(font)
-            empty_hint.setAlignment(Qt.AlignmentFlag.AlignCenter)
-            empty_layout.addWidget(empty_hint)
-            
-            self.notes_layout.addWidget(empty_widget)
+            self.empty_overlay.setGeometry(self.scroll.viewport().rect())
+            self.empty_overlay.show()
+            self.empty_overlay.raise_()
     
     def create_edit_handler(self, note_id):
         """Create a handler function for viewing a specific note"""
@@ -306,7 +320,7 @@ class NotesView(QWidget):
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
         )
         
-        if msg.exec() == QMessageBox.StandardButton.Yes:
+        if msg == QMessageBox.StandardButton.Yes:
             if self.controller.delete_note(note_id):
                 self.update_tag_filter()
                 self.load_notes()
@@ -327,9 +341,21 @@ class NotesView(QWidget):
     
     def refresh(self):
         """Refresh view"""
+        # Reload header icon with current theme
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_notes.svg"), size=(24, 24))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        
         self.update_tag_filter()
         self.update_pinned_button_style()
         self.load_notes()
+    
+    def resizeEvent(self, event):
+        """Handle resize to keep overlay sized correctly"""
+        super().resizeEvent(event)
+        if hasattr(self, 'empty_overlay') and self.empty_overlay.isVisible():
+            self.empty_overlay.setGeometry(self.scroll.rect())
     
     def update_pinned_button_style(self):
         """Update pinned button styling based on current theme"""

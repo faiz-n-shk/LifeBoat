@@ -6,8 +6,8 @@ from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QFrame, QScrollArea, QGridLayout
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QDate
-from PyQt6.QtGui import QFont
+from PyQt6.QtCore import Qt, pyqtSignal, QDate, QSize
+from PyQt6.QtGui import QFont, QIcon
 from datetime import datetime, timedelta
 import calendar
 
@@ -24,6 +24,8 @@ class CalendarView(QWidget):
         self.controller = CalendarController()
         self.current_date = datetime.now()
         self.events_view = "upcoming"  # "upcoming" or "recent"
+        self.prev_btn = None  # Store reference for icon reload
+        self.next_btn = None  # Store reference for icon reload
         self.setup_ui()
         self.load_calendar()
     
@@ -41,11 +43,16 @@ class CalendarView(QWidget):
         nav_layout.setSpacing(10)
         nav_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
         
-        prev_btn = QPushButton("◀")
-        prev_btn.setFixedSize(40, 40)
-        prev_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        prev_btn.clicked.connect(self.prev_month)
-        nav_layout.addWidget(prev_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        # Previous month button with SVG icon
+        from src.shared.icon_utils import load_themed_icon
+        from src.core.path_manager import get_resource_path
+        self.prev_btn = QPushButton()
+        self.prev_btn.setIcon(QIcon(load_themed_icon(get_resource_path("assets/icons/icon_arrow-left.svg"), (28, 28))))
+        self.prev_btn.setIconSize(QSize(28, 28))
+        self.prev_btn.setFixedSize(40, 40)
+        self.prev_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.prev_btn.clicked.connect(self.prev_month)
+        nav_layout.addWidget(self.prev_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         
         self.month_label = QLabel()
         font = QFont()
@@ -56,11 +63,14 @@ class CalendarView(QWidget):
         self.month_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         nav_layout.addWidget(self.month_label, 0, Qt.AlignmentFlag.AlignVCenter)
         
-        next_btn = QPushButton("▶")
-        next_btn.setFixedSize(40, 40)
-        next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-        next_btn.clicked.connect(self.next_month)
-        nav_layout.addWidget(next_btn, 0, Qt.AlignmentFlag.AlignVCenter)
+        # Next month button with SVG icon
+        self.next_btn = QPushButton()
+        self.next_btn.setIcon(QIcon(load_themed_icon(get_resource_path("assets/icons/icon_arrow-right.svg"), (28, 28))))
+        self.next_btn.setIconSize(QSize(28, 28))
+        self.next_btn.setFixedSize(40, 40)
+        self.next_btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.next_btn.clicked.connect(self.next_month)
+        nav_layout.addWidget(self.next_btn, 0, Qt.AlignmentFlag.AlignVCenter)
         
         today_btn = QPushButton("Today")
         today_btn.setMinimumWidth(80)
@@ -456,3 +466,19 @@ class CalendarView(QWidget):
         if len(text) <= max_length:
             return text
         return text[:max_length - 3] + "..."
+    
+    def refresh(self):
+        """Refresh calendar view (reload icons and calendar)"""
+        from src.shared.icon_utils import load_themed_icon
+        from src.core.path_manager import get_resource_path
+        
+        # Reload navigation button icons
+        if self.prev_btn:
+            self.prev_btn.setIcon(QIcon(load_themed_icon(get_resource_path("assets/icons/icon_arrow-left.svg"), (28, 28))))
+            self.prev_btn.setIconSize(QSize(28, 28))
+        if self.next_btn:
+            self.next_btn.setIcon(QIcon(load_themed_icon(get_resource_path("assets/icons/icon_arrow-right.svg"), (28, 28))))
+            self.next_btn.setIconSize(QSize(28, 28))
+        
+        # Reload calendar
+        self.load_calendar()

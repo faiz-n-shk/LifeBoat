@@ -17,7 +17,7 @@ class IncomeDialog(BaseDialog):
         self.is_edit = income is not None
         
         title = "Edit Income" if self.is_edit else "New Income"
-        super().__init__(parent, title=title, width=450, height=550)
+        super().__init__(parent, title=title, height=620)
         
         self.setup_fields()
         

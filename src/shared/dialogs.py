@@ -93,7 +93,7 @@ def create_message_box(parent, title, text, icon=QMessageBox.Icon.Question,
     from src.core.path_manager import get_resource_path
     close_btn = QPushButton()
     close_btn.setObjectName("message-box-close-btn")
-    close_btn.setIcon(QIcon(get_resource_path("assets/icons/cross_mark.svg")))
+    close_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_cross.svg")))
     close_btn.setFixedSize(28, 28)
     close_btn.setIconSize(QSize(16, 16))
     close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
@@ -337,7 +337,7 @@ def show_question(parent, title, text, buttons=QMessageBox.StandardButton.Yes | 
 
 class BaseDialog(QDialog):
     
-    def __init__(self, parent=None, title="Dialog", width=450, height=550):
+    def __init__(self, parent=None, title="Dialog", width=500, height=600):
         super().__init__(parent)
         self.setWindowTitle(title)
         self.setMinimumWidth(width)
@@ -391,7 +391,7 @@ class BaseDialog(QDialog):
         
         from src.core.path_manager import get_resource_path
         try:
-            close_icon = QIcon(get_resource_path("assets/icons/cross_mark.svg"))
+            close_icon = QIcon(get_resource_path("assets/icons/icon_cross.svg"))
             self.close_btn.setIcon(close_icon)
             self.close_btn.setIconSize(QSize(16, 16))
         except:
@@ -599,7 +599,7 @@ class BaseDialog(QDialog):
         
         resize_handle = QLabel()
         from src.core.path_manager import get_resource_path
-        pixmap = QPixmap(get_resource_path("assets/icons/resize-grip.svg"))
+        pixmap = QPixmap(get_resource_path("assets/icons/icon_resize_grip.svg"))
         resize_handle.setPixmap(pixmap.scaled(16, 16, Qt.AspectRatioMode.KeepAspectRatio, 
                                               Qt.TransformationMode.SmoothTransformation))
         resize_handle.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignBottom)

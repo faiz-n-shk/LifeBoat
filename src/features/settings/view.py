@@ -1,12 +1,13 @@
 """
 Settings View
-Main settings page with change tracking
+Main settings page with sidebar navigation
 """
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QScrollArea, QFrame, QMessageBox, QLineEdit
+    QScrollArea, QFrame, QMessageBox, QPushButton, QStackedWidget, QGraphicsOpacityEffect
 )
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal, QPropertyAnimation, QEasingCurve
+from PyQt6.QtGui import QFont, QPixmap
 
 from src.features.settings.sections.appearance import AppearanceSection
 from src.features.settings.sections.locale import LocaleSection
@@ -15,66 +16,104 @@ from src.features.settings.sections.paths import PathsSection
 from src.features.settings.sections.behavior import BehaviorSection
 from src.features.settings.sections.advanced import AdvancedSection
 from src.features.settings.sections.about import AboutSection
+from src.core.path_manager import get_resource_path
+from src.core.config import config
 
 
 class SettingsView(QWidget):
-    """Settings main view with change tracking"""
+    """Settings main view with sidebar navigation"""
     
-    # Signal to request navigation away
     navigation_requested = pyqtSignal(str)
     
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.sections = []  # Store section containers for filtering
+        self.nav_buttons = []
         self.setup_ui()
     
     def setup_ui(self):
-        """Setup settings UI"""
+        """Setup settings UI with sidebar"""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(20, 20, 20, 20)
-        main_layout.setSpacing(20)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        main_layout.setSpacing(0)
         
         # Header
-        from PyQt6.QtGui import QFont
-        header = QLabel("⚙ Settings")
+        header_container = QFrame()
+        header_container.setObjectName("settings-header")
+        header_layout = QHBoxLayout(header_container)
+        header_layout.setContentsMargins(20, 20, 20, 20)
+        
+        self.header_icon_label = QLabel()
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_settings.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
+        header_layout.addWidget(self.header_icon_label)
+        
+        header = QLabel("Settings")
         font = QFont()
         font.setPointSize(18)
         font.setBold(True)
         header.setFont(font)
-        main_layout.addWidget(header)
+        header_layout.addWidget(header)
+        header_layout.addStretch()
+        
+        main_layout.addWidget(header_container)
         
         # Search bar
-        search_container = QFrame()
+        from src.shared.search_bar import SearchBar
+        search_container = QWidget()
         search_layout = QHBoxLayout(search_container)
-        search_layout.setContentsMargins(0, 0, 0, 0)
-        search_layout.setSpacing(8)
+        search_layout.setContentsMargins(20, 10, 20, 10)
         
-        # Search icon (permanent)
-        search_icon = QLabel("🔍")
-        search_icon.setFixedWidth(30)
-        search_icon.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        search_layout.addWidget(search_icon)
-        
-        # Search input
-        self.search_input = QLineEdit()
-        self.search_input.setPlaceholderText("Search settings...")
+        self.search_input = SearchBar("Search settings...")
         self.search_input.textChanged.connect(self.filter_sections)
         search_layout.addWidget(self.search_input)
         
         main_layout.addWidget(search_container)
         
-        # Scroll area for settings sections
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        # Content area with sidebar
+        content_container = QWidget()
+        content_layout = QHBoxLayout(content_container)
+        content_layout.setContentsMargins(0, 0, 0, 0)
+        content_layout.setSpacing(0)
         
-        # Content widget
-        content = QWidget()
-        self.content_layout = QVBoxLayout(content)
-        self.content_layout.setSpacing(20)
-        self.content_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+        # Sidebar
+        sidebar = QFrame()
+        sidebar.setObjectName("settings-sidebar")
+        sidebar.setFixedWidth(220)
+        sidebar_layout = QVBoxLayout(sidebar)
+        sidebar_layout.setContentsMargins(10, 10, 10, 10)
+        sidebar_layout.setSpacing(5)
+        sidebar_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
         
-        # Add settings sections
+        # Section definitions
+        self.sections_data = [
+            ("Appearance", "appearance", AppearanceSection),
+            ("Themes", "themes", ThemesSection),
+            ("Language && Region", "locale", LocaleSection),
+            ("Storage", "paths", PathsSection),
+            ("Startup && Tray", "behavior", BehaviorSection),
+            ("Advanced", "advanced", AdvancedSection),
+            ("About", "about", AboutSection)
+        ]
+        
+        # Create navigation buttons
+        for title, section_id, _ in self.sections_data:
+            btn = QPushButton(title)
+            btn.setObjectName("settings-nav-btn")
+            btn.setProperty("section_id", section_id)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setCheckable(True)
+            btn.clicked.connect(lambda checked, sid=section_id: self.switch_section(sid))
+            sidebar_layout.addWidget(btn)
+            self.nav_buttons.append(btn)
+        
+        content_layout.addWidget(sidebar)
+        
+        # Stacked widget for sections
+        self.stack = QStackedWidget()
+        self.stack.setObjectName("settings-stack")
+        
+        # Initialize sections
         self.appearance_section = AppearanceSection()
         self.themes_section = ThemesSection()
         self.locale_section = LocaleSection()
@@ -83,103 +122,215 @@ class SettingsView(QWidget):
         self.advanced_section = AdvancedSection()
         self.about_section = AboutSection()
         
-        # Create sections and store references
-        sections_data = [
-            ("Appearance", self.appearance_section),
-            ("Themes", self.themes_section),
-            ("Locale & Format", self.locale_section),
-            ("File Locations", self.paths_section),
-            ("Behavior", self.behavior_section),
-            ("Advanced", self.advanced_section),
-            ("About", self.about_section)
-        ]
+        # Wrap each section in a scroll area
+        for i, (title, section_id, _) in enumerate(self.sections_data):
+            section_widget = getattr(self, f"{section_id}_section")
+            
+            scroll = QScrollArea()
+            scroll.setWidgetResizable(True)
+            scroll.setFrameShape(QFrame.Shape.NoFrame)
+            scroll.setObjectName("settings-scroll")
+            
+            wrapper = QWidget()
+            wrapper_layout = QVBoxLayout(wrapper)
+            wrapper_layout.setContentsMargins(30, 20, 30, 20)
+            wrapper_layout.setSpacing(20)
+            wrapper_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
+            
+            # Section title
+            section_title = QLabel(title)
+            title_font = QFont()
+            title_font.setPointSize(16)
+            title_font.setBold(True)
+            section_title.setFont(title_font)
+            wrapper_layout.addWidget(section_title)
+            
+            # Section content
+            wrapper_layout.addWidget(section_widget)
+            
+            scroll.setWidget(wrapper)
+            
+            # Add opacity effect for animations (same as content_area.py)
+            opacity_effect = QGraphicsOpacityEffect()
+            opacity_effect.setOpacity(1.0)
+            scroll.setGraphicsEffect(opacity_effect)
+            scroll._opacity_effect = opacity_effect
+            
+            self.stack.addWidget(scroll)
         
-        for title, section_widget in sections_data:
-            section_container = self.create_section(title, section_widget)
-            self.sections.append({
-                'title': title,
-                'container': section_container,
-                'widget': section_widget
-            })
-            self.content_layout.addWidget(section_container)
+        content_layout.addWidget(self.stack, 1)
         
-        scroll.setWidget(content)
-        main_layout.addWidget(scroll)
+        main_layout.addWidget(content_container, 1)
         
-        self.setLayout(main_layout)
+        # Select first section by default
+        self.switch_section("appearance")
     
-    def create_section(self, title: str, section_widget: QWidget) -> QFrame:
-        """Create a settings section container"""
-        container = QFrame()
-        container.setObjectName("settings-section")
-        container.setProperty("section_title", title)  # Store title for searching
+    def switch_section(self, section_id: str):
+        """Switch to a different settings section (exact same logic as content_area.py)"""
+        # Find section index
+        section_index = next((i for i, (_, sid, _) in enumerate(self.sections_data) if sid == section_id), 0)
         
-        layout = QVBoxLayout(container)
-        layout.setSpacing(15)
+        # Don't animate if already on this section
+        if self.stack.currentIndex() == section_index:
+            return
         
-        # Section title
-        from PyQt6.QtGui import QFont
-        title_label = QLabel(title)
-        font = QFont()
-        font.setPointSize(14)
-        font.setBold(True)
-        title_label.setFont(font)
-        layout.addWidget(title_label)
+        # Update navigation buttons
+        for btn in self.nav_buttons:
+            btn.setChecked(btn.property("section_id") == section_id)
         
-        # Section content
-        layout.addWidget(section_widget)
+        # Check if animations are enabled
+        animations_enabled = config.get('appearance.enable_animations', True)
         
-        container.setLayout(layout)
-        return container
+        if animations_enabled:
+            # Get widgets
+            current_widget = self.stack.currentWidget()
+            next_widget = self.stack.widget(section_index)
+            
+            # Ensure next widget starts at full opacity
+            next_widget._opacity_effect.setOpacity(1.0)
+            
+            # Quick fade out current (100ms for snappy feel)
+            fade_out = QPropertyAnimation(current_widget._opacity_effect, b"opacity")
+            fade_out.setDuration(100)
+            fade_out.setStartValue(1.0)
+            fade_out.setEndValue(0.0)
+            fade_out.setEasingCurve(QEasingCurve.Type.InOutQuad)
+            
+            # Quick fade in next (100ms)
+            fade_in = QPropertyAnimation(next_widget._opacity_effect, b"opacity")
+            fade_in.setDuration(100)
+            fade_in.setStartValue(0.0)
+            fade_in.setEndValue(1.0)
+            fade_in.setEasingCurve(QEasingCurve.Type.InOutQuad)
+            
+            # Switch widget when fade out completes
+            def on_fade_out_finished():
+                self.stack.setCurrentIndex(section_index)
+                # Reset current widget opacity for next time
+                current_widget._opacity_effect.setOpacity(1.0)
+                fade_in.start()
+            
+            fade_out.finished.connect(on_fade_out_finished)
+            fade_out.start()
+            
+            # Store animations to prevent garbage collection
+            self._fade_out = fade_out
+            self._fade_in = fade_in
+        else:
+            # No animation, just switch and ensure opacity is correct
+            next_widget = self.stack.widget(section_index)
+            next_widget._opacity_effect.setOpacity(1.0)
+            self.stack.setCurrentIndex(section_index)
     
     def filter_sections(self, search_text: str):
         """Filter settings sections based on search text"""
         search_text = search_text.lower().strip()
         
-        # If search is empty, show all sections
+        # If search is empty, show all navigation buttons
         if not search_text:
-            for section in self.sections:
-                section['container'].setVisible(True)
+            for btn in self.nav_buttons:
+                btn.setVisible(True)
             return
         
-        # Filter sections based on title and content
-        for section in self.sections:
-            title = section['title'].lower()
+        # Filter navigation buttons and track first visible match
+        first_match_id = None
+        
+        for i, (title, section_id, _) in enumerate(self.sections_data):
+            btn = self.nav_buttons[i]
+            section_widget = getattr(self, f"{section_id}_section")
             
             # Check if search matches title
-            if search_text in title:
-                section['container'].setVisible(True)
+            if search_text in title.lower():
+                btn.setVisible(True)
+                if first_match_id is None:
+                    first_match_id = section_id
                 continue
             
             # Check if search matches any text in the section widget
-            section_text = self.get_widget_text(section['widget']).lower()
+            section_text = self.get_widget_text(section_widget).lower()
             if search_text in section_text:
-                section['container'].setVisible(True)
+                btn.setVisible(True)
+                if first_match_id is None:
+                    first_match_id = section_id
             else:
-                section['container'].setVisible(False)
+                btn.setVisible(False)
+        
+        # Automatically switch to first matching section
+        if first_match_id:
+            self.switch_section(first_match_id)
     
     def get_widget_text(self, widget: QWidget) -> str:
         """Recursively get all text from a widget and its children"""
+        from PyQt6.QtWidgets import QLineEdit, QCheckBox, QComboBox
         text_parts = []
         
         # Get text from QLabel
         if isinstance(widget, QLabel):
             text_parts.append(widget.text())
         
+        # Get text from QPushButton
+        if isinstance(widget, QPushButton):
+            text_parts.append(widget.text())
+        
+        # Get text from QCheckBox
+        if isinstance(widget, QCheckBox):
+            text_parts.append(widget.text())
+        
         # Get text from QLineEdit
         if isinstance(widget, QLineEdit):
+            if widget.text():
+                text_parts.append(widget.text())
             if widget.placeholderText():
                 text_parts.append(widget.placeholderText())
         
-        # Recursively get text from children
+        # Get text from QComboBox
+        if isinstance(widget, QComboBox):
+            for i in range(widget.count()):
+                text_parts.append(widget.itemText(i))
+        
+        # Recursively get text from all children
         for child in widget.findChildren(QWidget):
             if isinstance(child, QLabel):
                 text_parts.append(child.text())
+            elif isinstance(child, QPushButton):
+                text_parts.append(child.text())
+            elif isinstance(child, QCheckBox):
+                text_parts.append(child.text())
             elif isinstance(child, QLineEdit):
+                if child.text():
+                    text_parts.append(child.text())
                 if child.placeholderText():
                     text_parts.append(child.placeholderText())
+            elif isinstance(child, QComboBox):
+                for i in range(child.count()):
+                    text_parts.append(child.itemText(i))
         
         return " ".join(text_parts)
+    
+    def eventFilter(self, obj, event):
+        """Handle button hover animations"""
+        from PyQt6.QtCore import QEvent
+        from PyQt6.QtWidgets import QPushButton
+        
+        if isinstance(obj, QPushButton) and obj.objectName() == "settings-nav-btn":
+            if event.type() == QEvent.Type.Enter and not obj.isChecked():
+                # Subtle scale animation on hover
+                if not hasattr(obj, '_hover_anim'):
+                    obj._hover_anim = QPropertyAnimation(obj, b"geometry")
+                    obj._hover_anim.setDuration(150)
+                    obj._hover_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+                
+                current_geo = obj.geometry()
+                obj._hover_anim.setStartValue(current_geo)
+                obj._hover_anim.setEndValue(current_geo)
+                obj._hover_anim.start()
+                
+            elif event.type() == QEvent.Type.Leave and not obj.isChecked():
+                # Reset on leave
+                if hasattr(obj, '_hover_anim'):
+                    obj._hover_anim.stop()
+        
+        return super().eventFilter(obj, event)
     
     def check_unsaved_changes(self) -> bool:
         """
@@ -260,5 +411,8 @@ class SettingsView(QWidget):
     
     def refresh(self):
         """Refresh view to apply config changes"""
-        pass
+        # Reload header icon with current theme
+        from src.shared.icon_utils import load_accent_icon
+        self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_settings.svg"), size=(28, 28))
+        self.header_icon_label.setPixmap(self.header_icon_pixmap)
 
