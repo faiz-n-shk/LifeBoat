@@ -7,6 +7,7 @@ import shutil
 import sys
 import os
 from pathlib import Path
+from src.core.debug import debug_log
 
 
 def get_resource_path(relative_path):
@@ -44,14 +45,14 @@ class PathManager:
             if portable_marker.exists():
                 # PORTABLE MODE: Store everything in local UserData folder
                 self.user_data_dir = self.base_dir / "UserData"
-                print(f"[PathManager] Portable mode enabled, using: {self.user_data_dir}")
+                debug_log('PathManager', f"Portable mode enabled, using: {self.user_data_dir}")
             else:
                 # STANDARD MODE: Use AppData/Roaming for user data
                 appdata = os.getenv('APPDATA')
                 if not appdata:
                     appdata = Path.home() / 'AppData' / 'Roaming'
                 self.user_data_dir = Path(appdata) / 'Lifeboat'
-                print(f"[PathManager] Standard mode, using AppData: {self.user_data_dir}")
+                debug_log('PathManager', f"Standard mode, using AppData: {self.user_data_dir}")
             
             # Ensure user data directory exists
             self.user_data_dir.mkdir(exist_ok=True, parents=True)
@@ -72,7 +73,7 @@ class PathManager:
             self.default_db = self.base_dir / "data" / "lifeboat.db"
             self.default_logs = self.base_dir / "logs"
             
-            print(f"[PathManager] Development mode, using: {self.base_dir}")
+            debug_log('PathManager', f"Development mode, using: {self.base_dir}")
             
             # Ensure directories exist (development only)
             (self.base_dir / "config").mkdir(exist_ok=True, parents=True)
@@ -125,9 +126,9 @@ class PathManager:
         custom_path = self.custom_paths.get('database_path')
         if custom_path:
             path = Path(custom_path)
-            print(f"[PathManager.get_database_path] Using custom: {path}")
+            debug_log('PathManager.get_database_path', f"Using custom: {path}")
             return path
-        print(f"[PathManager.get_database_path] Using default: {self.default_db}")
+        debug_log('PathManager.get_database_path', f"Using default: {self.default_db}")
         return self.default_db
     
     def get_themes_path(self):
@@ -135,9 +136,9 @@ class PathManager:
         custom_path = self.custom_paths.get('themes_path')
         if custom_path:
             path = Path(custom_path)
-            print(f"[PathManager.get_themes_path] Using custom: {path}")
+            debug_log('PathManager.get_themes_path', f"Using custom: {path}")
             return path
-        print(f"[PathManager.get_themes_path] Using default: {self.default_themes}")
+        debug_log('PathManager.get_themes_path', f"Using default: {self.default_themes}")
         return self.default_themes
     
     def get_logs_path(self):
@@ -145,9 +146,9 @@ class PathManager:
         custom_path = self.custom_paths.get('logs_path')
         if custom_path:
             path = Path(custom_path)
-            print(f"[PathManager.get_logs_path] Using custom: {path}")
+            debug_log('PathManager.get_logs_path', f"Using custom: {path}")
             return path
-        print(f"[PathManager.get_logs_path] Using default: {self.default_logs}")
+        debug_log('PathManager.get_logs_path', f"Using default: {self.default_logs}")
         return self.default_logs
     
     def get_user_fonts_dir(self):
@@ -172,7 +173,7 @@ class PathManager:
                 # Check if default config exists to copy from
                 if self.default_config.exists():
                     shutil.copy2(self.default_config, custom_config)
-                    print(f"[PathManager] Copied default config to: {custom_config}")
+                    debug_log('PathManager', f"Copied default config to: {custom_config}")
                 else:
                     # Create config.yaml with minimal default content
                     # Import config_template to get default structure
@@ -180,16 +181,16 @@ class PathManager:
                     import yaml
                     with open(custom_config, 'w', encoding='utf-8') as f:
                         yaml.dump(DEFAULT_CONFIG, f, default_flow_style=False, sort_keys=False)
-                    print(f"[PathManager] Created default config at: {custom_config}")
+                    debug_log('PathManager', f"Created default config at: {custom_config}")
             else:
-                print(f"[PathManager] Using existing config at: {custom_config}")
+                debug_log('PathManager', f"Using existing config at: {custom_config}")
             
             self.custom_paths['config_path'] = str(custom_config)
             self._save_custom_paths()
             
             # Reload config from the new custom location
             from src.core.config import config
-            print(f"[PathManager] Reloading config from custom location: {custom_config}")
+            debug_log('PathManager', f"Reloading config from custom location: {custom_config}")
             config.reload()
             
             return True, f"Config file set to: {custom_config}"
@@ -213,15 +214,15 @@ class PathManager:
                 # Check if default database exists to copy from
                 if self.default_db.exists():
                     shutil.copy2(self.default_db, custom_db)
-                    print(f"[PathManager] Copied default database to: {custom_db}")
+                    debug_log('PathManager', f"Copied default database to: {custom_db}")
                 else:
                     # Create new database using database module
                     from src.core.database import Database
                     db = Database(str(custom_db))
                     db.initialize_database()
-                    print(f"[PathManager] Created new database at: {custom_db}")
+                    debug_log('PathManager', f"Created new database at: {custom_db}")
             else:
-                print(f"[PathManager] Using existing database at: {custom_db}")
+                debug_log('PathManager', f"Using existing database at: {custom_db}")
             
             self.custom_paths['database_path'] = str(custom_db)
             self._save_custom_paths()
@@ -247,15 +248,15 @@ class PathManager:
                 # Check if default themes exists to copy from
                 if self.default_themes.exists():
                     shutil.copy2(self.default_themes, custom_themes)
-                    print(f"[PathManager] Copied default themes to: {custom_themes}")
+                    debug_log('PathManager', f"Copied default themes to: {custom_themes}")
                 else:
                     # Create themes.yaml with default content
                     default_content = "custom_themes: []\n"
                     with open(custom_themes, 'w', encoding='utf-8') as f:
                         f.write(default_content)
-                    print(f"[PathManager] Created default themes at: {custom_themes}")
+                    debug_log('PathManager', f"Created default themes at: {custom_themes}")
             else:
-                print(f"[PathManager] Using existing themes at: {custom_themes}")
+                debug_log('PathManager', f"Using existing themes at: {custom_themes}")
             
             self.custom_paths['themes_path'] = str(custom_themes)
             self._save_custom_paths()
@@ -280,9 +281,9 @@ class PathManager:
                     dest = directory / log_file.name
                     if not dest.exists():
                         shutil.copy2(log_file, dest)
-                        print(f"[PathManager] Copied log file to: {dest}")
+                        debug_log('PathManager', f"Copied log file to: {dest}")
                     else:
-                        print(f"[PathManager] Log file already exists at: {dest}")
+                        debug_log('PathManager', f"Log file already exists at: {dest}")
             
             self.custom_paths['logs_path'] = str(directory)
             self._save_custom_paths()
@@ -306,7 +307,7 @@ class PathManager:
     
     def reset_database_to_default(self):
         """Reset database to default location"""
-        print(f"[PathManager.reset_database_to_default] Current custom paths: {self.custom_paths}")
+        debug_log('PathManager.reset_database_to_default', f"Current custom paths: {self.custom_paths}")
         if 'database_path' in self.custom_paths:
             del self.custom_paths['database_path']
             self._save_custom_paths()
@@ -315,7 +316,7 @@ class PathManager:
     
     def reset_themes_to_default(self):
         """Reset themes to default location"""
-        print(f"[PathManager.reset_themes_to_default] Current custom paths: {self.custom_paths}")
+        debug_log('PathManager.reset_themes_to_default', f"Current custom paths: {self.custom_paths}")
         if 'themes_path' in self.custom_paths:
             del self.custom_paths['themes_path']
             self._save_custom_paths()
@@ -324,7 +325,7 @@ class PathManager:
     
     def reset_logs_to_default(self):
         """Reset logs to default location"""
-        print(f"[PathManager.reset_logs_to_default] Current custom paths: {self.custom_paths}")
+        debug_log('PathManager.reset_logs_to_default', f"Current custom paths: {self.custom_paths}")
         if 'logs_path' in self.custom_paths:
             del self.custom_paths['logs_path']
             self._save_custom_paths()
@@ -397,7 +398,7 @@ class PathManager:
             
             current_db = self.get_database_path()
             
-            print(f"[PathManager.restore_default_database] Current DB: {current_db}")
+            debug_log('PathManager.restore_default_database', f"Current DB: {current_db}")
             
             # CRITICAL: Close database connection before deleting
             try:
@@ -405,14 +406,14 @@ class PathManager:
                     db.close()
                     print("[PathManager.restore_default_database] Database connection closed")
             except Exception as e:
-                print(f"[PathManager.restore_default_database] Warning closing DB: {e}")
+                debug_log('PathManager.restore_default_database', f"Warning closing DB: {e}")
             
             # Backup current database
             if current_db.exists():
                 backup = current_db.with_suffix('.db.backup')
                 shutil.copy2(current_db, backup)
                 current_db.unlink()
-                print(f"[PathManager.restore_default_database] Backup saved to: {backup}")
+                debug_log('PathManager.restore_default_database', f"Backup saved to: {backup}")
             
             # Recreate fresh database with default settings
             print("[PathManager.restore_default_database] Creating fresh database...")
@@ -421,7 +422,7 @@ class PathManager:
             
             return True, "Database restored to default settings. Please restart the app to complete."
         except Exception as e:
-            print(f"[PathManager.restore_default_database] ERROR: {e}")
+            debug_log('PathManager.restore_default_database', f"ERROR: {e}")
             import traceback
             traceback.print_exc()
             return False, f"Error restoring database: {e}"

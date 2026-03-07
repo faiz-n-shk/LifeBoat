@@ -43,7 +43,7 @@ class HabitsView(QWidget):
         
         header_row.addStretch()
         
-        # Score box (compact, inline with button)
+        # Score box
         score_box = QFrame()
         score_box.setObjectName("summary-card")
         
@@ -86,18 +86,15 @@ class HabitsView(QWidget):
         search_row = QHBoxLayout()
         search_row.setSpacing(10)
         
-        # Search icon
         search_icon = QLabel("🔍")
         search_icon.setFixedWidth(25)
         search_row.addWidget(search_icon)
         
-        # Search input
         self.search_input = QLineEdit()
         self.search_input.setPlaceholderText("Search habits...")
         self.search_input.textChanged.connect(self.filter_habits)
         search_row.addWidget(self.search_input, 1)
         
-        # Type filter
         self.type_filter = NoScrollComboBox()
         self.type_filter.addItems(["All Types", "Good Habits", "Bad Habits"])
         self.type_filter.currentTextChanged.connect(self.filter_habits)
@@ -105,7 +102,7 @@ class HabitsView(QWidget):
         
         layout.addLayout(search_row)
         
-        # Habits container (will be split into columns if both types exist)
+        # Habits container
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
@@ -131,17 +128,12 @@ class HabitsView(QWidget):
     
     def load_habits(self):
         """Load and display habits"""
-        # Load all habits
         self.all_habits = self.controller.get_habits()
-        
-        # Update score
         self.update_score_display()
-        
-        # Apply filters
         self.filter_habits()
     
     def filter_habits(self):
-        """Filter habits based on search and type, split into columns"""
+        """Filter habits based on search and type"""
         # Clear existing layout
         while self.habits_main_layout.count():
             item = self.habits_main_layout.takeAt(0)
@@ -156,13 +148,11 @@ class HabitsView(QWidget):
         # Filter habits
         filtered_habits = self.all_habits
         
-        # Apply type filter
         if type_filter == "Good Habits":
             filtered_habits = [h for h in filtered_habits if h.habit_type == "Good"]
         elif type_filter == "Bad Habits":
             filtered_habits = [h for h in filtered_habits if h.habit_type == "Bad"]
         
-        # Apply search filter
         if search_text:
             filtered_habits = [
                 h for h in filtered_habits 
@@ -207,7 +197,6 @@ class HabitsView(QWidget):
                 habit_item = HabitItem(habit, self.controller)
                 habit_item.edit_requested.connect(self.edit_habit)
                 habit_item.delete_requested.connect(self.delete_habit)
-                habit_item.log_requested.connect(self.log_habit)
                 good_layout.addWidget(habit_item)
             
             columns_layout.addWidget(good_column, 1)
@@ -227,14 +216,13 @@ class HabitsView(QWidget):
                 habit_item = HabitItem(habit, self.controller)
                 habit_item.edit_requested.connect(self.edit_habit)
                 habit_item.delete_requested.connect(self.delete_habit)
-                habit_item.log_requested.connect(self.log_habit)
                 bad_layout.addWidget(habit_item)
             
             columns_layout.addWidget(bad_column, 1)
             
             self.habits_main_layout.addLayout(columns_layout)
         else:
-            # Single column for one type or filtered view
+            # Single column
             single_layout = QVBoxLayout()
             single_layout.setSpacing(10)
             single_layout.setAlignment(Qt.AlignmentFlag.AlignTop)
@@ -243,7 +231,6 @@ class HabitsView(QWidget):
                 habit_item = HabitItem(habit, self.controller)
                 habit_item.edit_requested.connect(self.edit_habit)
                 habit_item.delete_requested.connect(self.delete_habit)
-                habit_item.log_requested.connect(self.log_habit)
                 single_layout.addWidget(habit_item)
             
             self.habits_main_layout.addLayout(single_layout)
@@ -301,12 +288,6 @@ class HabitsView(QWidget):
             self.controller.delete_habit(habit_id)
             self.load_habits()
     
-    def log_habit(self, habit_id):
-        """Log habit completion for today"""
-        self.controller.log_habit(habit_id)
-        self.load_habits()
-    
     def refresh(self):
         """Refresh view"""
         self.load_habits()
-

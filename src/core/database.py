@@ -5,20 +5,21 @@ SQLite database with Peewee ORM
 from peewee import *
 from datetime import datetime
 from pathlib import Path
+from src.core.debug import debug_log
 
 # Get database path from path_manager
 def get_database_path():
     """Get the correct database path (custom or default)"""
     from src.core.path_manager import path_manager
     db_path = path_manager.get_database_path()
-    print(f"[Database.get_database_path] Resolved to: {db_path}")
+    debug_log('Database.get_database_path', f"Resolved to: {db_path}")
     return db_path
 
 # Initialize database with dynamic path
 DATABASE_PATH = get_database_path()
 db = SqliteDatabase(str(DATABASE_PATH))
 
-print(f"[Database] Using database at: {DATABASE_PATH}")
+debug_log('Database', f"Using database at: {DATABASE_PATH}")
 
 
 class BaseModel(Model):

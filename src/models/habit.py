@@ -18,6 +18,10 @@ class Habit(BaseModel):
     target_count = IntegerField(default=1)  # Keep for backward compatibility
     color = CharField(default="#0078d4")
     created_at = DateTimeField(default=datetime.now)
+    
+    # New frequency fields
+    frequency_count = IntegerField(default=1)  # n number of times for frequency of the habit, for n number of period
+    frequency_period = CharField(default="day")  # Period: "day", "week", "month", "year"
 
 
 class HabitLog(BaseModel):
@@ -27,3 +31,4 @@ class HabitLog(BaseModel):
     completed = BooleanField(default=True)
     notes = TextField(null=True)
     created_at = DateTimeField(default=datetime.now)
+    count = IntegerField(default=1)  # Number of times completed on this date

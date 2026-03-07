@@ -12,6 +12,7 @@ from src.core.config import config
 from src.core.path_manager import path_manager
 from src.models.theme import Theme
 from src.core.database import db
+from src.core.debug import debug_log
 
 
 class ThemeManager(QObject):
@@ -949,6 +950,88 @@ QLabel[class="active-label"] {{
 
 QLabel[class="accent-label"] {{
     color: {theme.accent};
+}}
+
+/* Habit Dialog Custom Styles */
+QFrame#habit-type-container {{
+    background-color: {theme.bg_tertiary};
+    border: 2px solid {theme.border};
+    border-radius: 10px;
+    padding: 4px;
+}}
+
+QRadioButton#habit-type-radio {{
+    background-color: transparent;
+    color: {theme.fg_secondary};
+    border: none;
+    border-radius: 8px;
+    padding: 10px 20px;
+    font-weight: bold;
+}}
+
+QRadioButton#habit-type-radio:checked {{
+    background-color: {theme.bg_primary};
+    color: {theme.accent};
+}}
+
+QRadioButton#habit-type-radio:hover {{
+    background-color: {theme.bg_secondary};
+}}
+
+QRadioButton#habit-type-radio::indicator {{
+    width: 0px;
+    height: 0px;
+}}
+
+QFrame#frequency-box {{
+    background-color: {theme.bg_secondary};
+    border: 2px solid {theme.border};
+    border-radius: 10px;
+}}
+
+QPushButton#color-swatch {{
+    border-radius: 24px;
+}}
+
+/* Habit Card Styles */
+QFrame#habit-card {{
+    background-color: {theme.bg_secondary};
+    border: 2px solid {theme.border};
+    border-radius: 12px;
+}}
+
+QFrame#habit-card:hover {{
+    border-color: {theme.accent};
+}}
+
+QPushButton#habit-action-btn {{
+    background-color: transparent;
+    border: none;
+    border-radius: 11px;
+    padding: 4px;
+    min-width: 22px;
+    max-width: 22px;
+    min-height: 22px;
+    max-height: 22px;
+}}
+
+QPushButton#habit-action-btn:hover {{
+    background-color: {theme.bg_tertiary};
+}}
+
+QPushButton#habit-action-btn-danger {{
+    background-color: transparent;
+    border: none;
+    border-radius: 11px;
+    padding: 4px;
+    min-width: 22px;
+    max-width: 22px;
+    min-height: 22px;
+    max-height: 22px;
+}}
+
+QPushButton#habit-action-btn-danger:hover {{
+    background-color: {theme.danger}33;
 }}
 """
             return stylesheet

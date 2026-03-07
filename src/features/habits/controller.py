@@ -24,7 +24,7 @@ class HabitsController:
         except Exception as e:
             raise DatabaseError(f"Failed to retrieve habits: {str(e)}")
     
-    def create_habit(self, name, description=None, habit_type="Good", target_days=7, color="#0078d4"):
+    def create_habit(self, name, description=None, habit_type="Good", target_days=7, color="#0078d4", frequency_count=1, frequency_period="day"):
         """Create a new habit"""
         try:
             db.connect(reuse_if_open=True)
@@ -36,7 +36,9 @@ class HabitsController:
                 start_date=date.today(),
                 frequency="Daily",
                 target_count=1,
-                color=color
+                color=color,
+                frequency_count=frequency_count,
+                frequency_period=frequency_period
             )
             db.close()
             activity_logger.log('Habits', 'Created', name)
@@ -82,8 +84,8 @@ class HabitsController:
         except Exception as e:
             raise DatabaseError(f"Failed to delete habit: {str(e)}")
     
-    def log_habit(self, habit_id, log_date=None, notes=None):
-        """Log habit completion for a date"""
+    def increment_habit(self, habit_id, log_date=None):
+        """Increment habit count"""
         try:
             if log_date is None:
                 log_date = date.today()
@@ -96,28 +98,48 @@ class HabitsController:
             ).first()
             
             if existing:
-                existing.completed = not existing.completed
-                if notes:
-                    existing.notes = notes
+                existing.count += 1
+                existing.completed = True
                 existing.save()
-                log = existing
-                status = "Logged" if existing.completed else "Unlogged"
             else:
-                log = HabitLog.create(
+                HabitLog.create(
                     habit=habit,
                     date=log_date,
                     completed=True,
-                    notes=notes
+                    count=1
                 )
-                status = "Logged"
             
             db.close()
-            activity_logger.log('Habits', status, habit.name)
-            return log
-        except DoesNotExist:
-            raise RecordNotFoundError("Habit not found or has been deleted")
+            activity_logger.log('Habits', 'Incremented', habit.name)
         except Exception as e:
-            raise DatabaseError(f"Failed to log habit: {str(e)}")
+            raise DatabaseError(f"Failed to increment habit: {str(e)}")
+    
+    def decrement_habit(self, habit_id, log_date=None):
+        """Decrement habit count"""
+        try:
+            if log_date is None:
+                log_date = date.today()
+            
+            db.connect(reuse_if_open=True)
+            habit = Habit.get_by_id(habit_id)
+            
+            existing = HabitLog.select().where(
+                (HabitLog.habit == habit) & (HabitLog.date == log_date)
+            ).first()
+            
+            # Only decrement if count is more than zero, and log exists
+            if existing and existing.count > 0:
+                existing.count -= 1
+                if existing.count == 0:
+                    existing.completed = False
+                existing.save()
+                db.close()
+                activity_logger.log('Habits', 'Decremented', habit.name)
+            else:
+                db.close()
+                # Don't log if nothing was decremented
+        except Exception as e:
+            raise DatabaseError(f"Failed to decrement habit: {str(e)}")
     
     def get_habit_logs(self, habit_id, days=30):
         """Get habit logs for the last N days"""
@@ -137,176 +159,209 @@ class HabitsController:
             return []
     
     def is_completed_today(self, habit_id):
-        """Check if habit is completed today"""
+        """Check if habit frequency goal is met today"""
         try:
             db.connect(reuse_if_open=True)
             habit = Habit.get_by_id(habit_id)
             
-            log = HabitLog.select().where(
-                (HabitLog.habit == habit) & 
-                (HabitLog.date == date.today()) &
-                (HabitLog.completed == True)
-            ).first()
+            freq_count = getattr(habit, 'frequency_count', 1)
+            freq_period = getattr(habit, 'frequency_period', 'day')
             
-            db.close()
-            return log is not None
+            if freq_period == 'day':
+                log = HabitLog.select().where(
+                    (HabitLog.habit == habit) & 
+                    (HabitLog.date == date.today())
+                ).first()
+                
+                db.close()
+                if not log:
+                    return False
+                
+                count = getattr(log, 'count', 1) if log.completed else 0
+                return count >= freq_count
+            else:
+                today = date.today()
+                
+                if freq_period == 'week':
+                    start_date = today - timedelta(days=today.weekday())
+                elif freq_period == 'month':
+                    start_date = today.replace(day=1)
+                elif freq_period == 'year':
+                    start_date = today.replace(month=1, day=1)
+                else:
+                    start_date = today
+                
+                logs = HabitLog.select().where(
+                    (HabitLog.habit == habit) & 
+                    (HabitLog.date >= start_date) &
+                    (HabitLog.date <= today) &
+                    (HabitLog.completed == True)
+                )
+                
+                total_count = sum(getattr(log, 'count', 1) for log in logs)
+                db.close()
+                return total_count >= freq_count
+                
         except Exception as e:
             print(f"Error checking completion: {e}")
             return False
     
+    def get_today_count(self, habit_id):
+        """Get the count of completions for today or current period"""
+        try:
+            db.connect(reuse_if_open=True)
+            habit = Habit.get_by_id(habit_id)
+            
+            freq_period = getattr(habit, 'frequency_period', 'day')
+            today = date.today()
+            
+            if freq_period == 'day':
+                log = HabitLog.select().where(
+                    (HabitLog.habit == habit) & 
+                    (HabitLog.date == today)
+                ).first()
+                
+                db.close()
+                if not log or not log.completed:
+                    return 0
+                return getattr(log, 'count', 1)
+            else:
+                if freq_period == 'week':
+                    start_date = today - timedelta(days=today.weekday())
+                elif freq_period == 'month':
+                    start_date = today.replace(day=1)
+                elif freq_period == 'year':
+                    start_date = today.replace(month=1, day=1)
+                else:
+                    start_date = today
+                
+                logs = HabitLog.select().where(
+                    (HabitLog.habit == habit) & 
+                    (HabitLog.date >= start_date) &
+                    (HabitLog.date <= today) &
+                    (HabitLog.completed == True)
+                )
+                
+                total_count = sum(getattr(log, 'count', 1) for log in logs)
+                db.close()
+                return total_count
+                
+        except Exception as e:
+            print(f"Error getting today count: {e}")
+            return 0
+    
     def get_current_streak(self, habit_id):
-        """Calculate current streak for a habit"""
+        """Calculate current streak for a habit - only counts periods where goal was fully met"""
         try:
             db.connect(reuse_if_open=True)
             habit = Habit.get_by_id(habit_id)
             is_bad_habit = habit.habit_type == "Bad"
+            freq_count = getattr(habit, 'frequency_count', 1)
+            freq_period = getattr(habit, 'frequency_period', 'day')
             
             today = date.today()
             streak = 0
-            check_date = today
-            max_days = min(365, habit.target_days * 2)
-            days_checked = 0
             
-            while days_checked < max_days:
-                # Don't check before habit start date
-                if check_date < habit.start_date:
-                    break
+            if freq_period == 'day':
+                # Daily habits: check each day
+                check_date = today
+                max_days = min(365, habit.target_days * 2)
+                days_checked = 0
                 
-                log = HabitLog.select().where(
-                    (HabitLog.habit == habit) & (HabitLog.date == check_date)
-                ).first()
+                while days_checked < max_days:
+                    if check_date < habit.start_date:
+                        break
+                    
+                    log = HabitLog.select().where(
+                        (HabitLog.habit == habit) & (HabitLog.date == check_date)
+                    ).first()
+                    
+                    if is_bad_habit:
+                        # Bad habit: streak continues if count is BELOW goal (did it less than X times)
+                        if log:
+                            count = getattr(log, 'count', 1) if log.completed else 0
+                        else:
+                            count = 0
+                        
+                        goal_met = count < freq_count
+                        
+                        if goal_met:
+                            streak += 1
+                            check_date -= timedelta(days=1)
+                            days_checked += 1
+                        else:
+                            break
+                    else:
+                        # Good habit: check if goal was fully met
+                        if log:
+                            count = getattr(log, 'count', 1) if log.completed else 0
+                            goal_met = count >= freq_count
+                        else:
+                            goal_met = False
+                        
+                        if goal_met:
+                            streak += 1
+                            check_date -= timedelta(days=1)
+                            days_checked += 1
+                        else:
+                            break
+            else:
+                # Weekly/Monthly/Yearly habits: check each period
+                check_date = today
+                max_periods = 52 if freq_period == 'week' else (12 if freq_period == 'month' else 5)
                 
-                # For good habits: streak continues if completed
-                # For bad habits: streak continues if NOT completed (avoided)
-                if is_bad_habit:
-                    if not log or not log.completed:
-                        streak += 1
-                        check_date -= timedelta(days=1)
-                        days_checked += 1
+                for _ in range(max_periods):
+                    if check_date < habit.start_date:
+                        break
+                    
+                    # Calculate period start
+                    if freq_period == 'week':
+                        period_start = check_date - timedelta(days=check_date.weekday())
+                        period_end = period_start + timedelta(days=6)
+                    elif freq_period == 'month':
+                        period_start = check_date.replace(day=1)
+                        next_month = period_start + timedelta(days=32)
+                        period_end = next_month.replace(day=1) - timedelta(days=1)
+                    elif freq_period == 'year':
+                        period_start = check_date.replace(month=1, day=1)
+                        period_end = check_date.replace(month=12, day=31)
                     else:
-                        break  # Did the bad habit, streak broken
-                else:
-                    if log and log.completed:
-                        streak += 1
-                        check_date -= timedelta(days=1)
-                        days_checked += 1
+                        break
+                    
+                    # Count completions in this period
+                    logs = HabitLog.select().where(
+                        (HabitLog.habit == habit) & 
+                        (HabitLog.date >= period_start) &
+                        (HabitLog.date <= period_end) &
+                        (HabitLog.completed == True)
+                    )
+                    
+                    total_count = sum(getattr(log, 'count', 1) for log in logs)
+                    
+                    if is_bad_habit:
+                        # Bad habit: streak continues if count is BELOW goal (didn't do it too much, aukaat mai)
+                        goal_met = total_count < freq_count
                     else:
-                        break  # Didn't do the good habit, streak broken
+                        # Good habit: streak continues if count meets or exceeds goal
+                        goal_met = total_count >= freq_count
+                    
+                    if goal_met:
+                        streak += 1
+                        # Move to previous period
+                        if freq_period == 'week':
+                            check_date = period_start - timedelta(days=1)
+                        elif freq_period == 'month':
+                            check_date = period_start - timedelta(days=1)
+                        elif freq_period == 'year':
+                            check_date = period_start - timedelta(days=1)
+                    else:
+                        break
             
             db.close()
             return streak
         except Exception as e:
             print(f"Error calculating streak: {e}")
             return 0
-    
-    def get_completion_rate(self, habit_id):
-        """Calculate completion rate based on habit's target period"""
-        try:
-            db.connect(reuse_if_open=True)
-            habit = Habit.get_by_id(habit_id)
-            is_bad_habit = habit.habit_type == "Bad"
-            
-            # Calculate days since start
-            days_elapsed = (date.today() - habit.start_date).days + 1
-            days_to_check = min(days_elapsed, habit.target_days)
-            
-            if days_to_check <= 0:
-                db.close()
-                return 0.0
-            
-            if is_bad_habit:
-                # For bad habits: count days where NOT done
-                days_with_log = HabitLog.select().where(
-                    (HabitLog.habit == habit) & 
-                    (HabitLog.date >= habit.start_date) &
-                    (HabitLog.date < habit.start_date + timedelta(days=habit.target_days)) &
-                    (HabitLog.completed == True)
-                ).count()
-                completed_count = days_to_check - days_with_log
-            else:
-                # For good habits: count days where done
-                completed_count = HabitLog.select().where(
-                    (HabitLog.habit == habit) & 
-                    (HabitLog.date >= habit.start_date) &
-                    (HabitLog.date < habit.start_date + timedelta(days=habit.target_days)) &
-                    (HabitLog.completed == True)
-                ).count()
-            
-            db.close()
-            
-            rate = (completed_count / days_to_check) * 100
-            return round(rate, 1)
-        except Exception as e:
-            print(f"Error calculating completion rate: {e}")
-            return 0.0
-    
-    def get_days_remaining(self, habit_id):
-        """Get days remaining in habit target period"""
-        try:
-            db.connect(reuse_if_open=True)
-            habit = Habit.get_by_id(habit_id)
-            db.close()
-            
-            end_date = habit.start_date + timedelta(days=habit.target_days)
-            days_left = (end_date - date.today()).days
-            
-            return max(0, days_left)
-        except Exception as e:
-            print(f"Error calculating days remaining: {e}")
-            return 0
-    
-    def get_days_completed(self, habit_id):
-        """Get number of days completed in target period"""
-        try:
-            db.connect(reuse_if_open=True)
-            habit = Habit.get_by_id(habit_id)
-            is_bad_habit = habit.habit_type == "Bad"
-            
-            # Calculate days in target period
-            start = habit.start_date
-            end = habit.start_date + timedelta(days=habit.target_days)
-            today = date.today()
-            
-            # Only count up to today
-            actual_end = min(end, today)
-            
-            if is_bad_habit:
-                # For bad habits: count days where NOT done (no log or not completed)
-                total_days = (actual_end - start).days + 1
-                days_with_log = HabitLog.select().where(
-                    (HabitLog.habit == habit) & 
-                    (HabitLog.date >= start) &
-                    (HabitLog.date <= actual_end) &
-                    (HabitLog.completed == True)
-                ).count()
-                completed_count = total_days - days_with_log
-            else:
-                # For good habits: count days where done
-                completed_count = HabitLog.select().where(
-                    (HabitLog.habit == habit) & 
-                    (HabitLog.date >= start) &
-                    (HabitLog.date <= actual_end) &
-                    (HabitLog.completed == True)
-                ).count()
-            
-            db.close()
-            return completed_count
-        except Exception as e:
-            print(f"Error getting completed days: {e}")
-            return 0
-    
-    def is_habit_completed(self, habit_id):
-        """Check if habit target period is completed"""
-        try:
-            db.connect(reuse_if_open=True)
-            habit = Habit.get_by_id(habit_id)
-            db.close()
-            
-            end_date = habit.start_date + timedelta(days=habit.target_days)
-            return date.today() >= end_date
-        except Exception as e:
-            print(f"Error checking habit completion: {e}")
-            return False
     
     def calculate_daily_score(self):
         """Calculate today's habit score (0-100)"""
@@ -326,7 +381,6 @@ class HabitsController:
             
             today = date.today()
             
-            # Calculate good habits score (completed = positive)
             if good_habits:
                 completed_good = 0
                 for habit in good_habits:
@@ -341,7 +395,6 @@ class HabitsController:
             else:
                 good_score = 50
             
-            # Calculate bad habits score (completed = negative)
             if bad_habits:
                 completed_bad = 0
                 for habit in bad_habits:
@@ -352,7 +405,6 @@ class HabitsController:
                     ).first()
                     if log:
                         completed_bad += 1
-                # Inverse: fewer bad habits = higher score
                 bad_score = ((len(bad_habits) - completed_bad) / len(bad_habits)) * 50
             else:
                 bad_score = 50

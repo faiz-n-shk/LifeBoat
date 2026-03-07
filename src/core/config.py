@@ -9,6 +9,7 @@ from PyQt6.QtCore import QObject, pyqtSignal
 
 from src.core.constants import APP_NAME, APP_VERSION, APP_AUTHOR
 from src.core.config_template import create_default_config
+from src.core.debug import debug_log
 
 # Paths
 BASE_DIR = Path(__file__).parent.parent.parent
@@ -46,19 +47,19 @@ class Config:
         from src.core.path_manager import path_manager
         config_file = path_manager.get_config_path()
         
-        print(f"[Config.load] Loading config from: {config_file}")
-        print(f"[Config.load] Custom paths: {path_manager.custom_paths}")
+        debug_log('Config.load', f"Loading config from: {config_file}")
+        debug_log('Config.load', f"Custom paths: {path_manager.custom_paths}")
         
         if not config_file.exists():
-            print(f"[Config.load] Config doesn't exist, creating default at: {config_file}")
+            debug_log('Config.load', f"Config doesn't exist, creating default at: {config_file}")
             create_default_config(config_file)
         
         try:
             with open(config_file, 'r', encoding='utf-8') as f:
                 self._config = yaml.safe_load(f) or {}
-            print(f"[Config.load] Successfully loaded config from: {config_file}")
+            debug_log('Config.load', f"Successfully loaded config from: {config_file}")
         except Exception as e:
-            print(f"[Config.load] ERROR loading config from {config_file}: {e}")
+            debug_log('Config.load', f"ERROR loading config from {config_file}: {e}")
             import traceback
             traceback.print_exc()
             self._config = {}
@@ -113,13 +114,13 @@ class Config:
             from src.core.path_manager import path_manager
             config_file = path_manager.get_config_path()
             
-            print(f"[Config.save] Saving config to: {config_file}")
-            print(f"[Config.save] Custom paths: {path_manager.custom_paths}")
+            debug_log('Config.save', f"Saving config to: {config_file}")
+            debug_log('Config.save', f"Custom paths: {path_manager.custom_paths}")
             
             with open(config_file, 'w', encoding='utf-8') as f:
                 yaml.dump(self._config, f, default_flow_style=False, sort_keys=False)
             
-            print(f"[Config.save] Successfully saved config to: {config_file}")
+            debug_log('Config.save', f"Successfully saved config to: {config_file}")
             
             if log_changes:
                 from src.core.activity_logger import activity_logger
@@ -127,7 +128,7 @@ class Config:
             
             return True
         except Exception as e:
-            print(f"[Config.save] ERROR saving config: {e}")
+            debug_log('Config.save', f"ERROR saving config: {e}")
             import traceback
             traceback.print_exc()
             return False

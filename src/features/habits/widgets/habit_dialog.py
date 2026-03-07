@@ -1,23 +1,25 @@
 """
-Habit Dialog
-Dialog for creating and editing habits
+Habit Dialog - Clean 2-column layout
 """
-from PyQt6.QtWidgets import QLabel, QLineEdit, QComboBox, QSpinBox, QPushButton, QHBoxLayout, QColorDialog
+from PyQt6.QtWidgets import (
+    QLabel, QLineEdit, QPushButton, 
+    QHBoxLayout, QVBoxLayout, QFrame, QTextEdit,
+    QRadioButton, QButtonGroup, QWidget
+)
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
-from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox
-
-from src.shared.dialogs import BaseDialog
+from PyQt6.QtGui import QFont
+from src.shared.dialogs import NoScrollComboBox, NoScrollSpinBox, BaseDialog
 
 
 class HabitDialog(BaseDialog):
     """Dialog for creating/editing habits"""
     
     def __init__(self, parent=None, habit=None):
-        super().__init__(parent, title="Edit Habit" if habit else "New Habit", width=450, height=550)
+        super().__init__(parent, title="Edit Habit" if habit else "Create New Habit", width=900, height=600)
         self.habit = habit
-        self.selected_color = "#0078d4"
+        self.selected_color = "#30e86e"
         self.custom_days = 7
+        self.color_buttons = []
         self.setup_fields()
         
         if habit:
@@ -25,20 +27,142 @@ class HabitDialog(BaseDialog):
     
     def setup_fields(self):
         """Setup dialog fields"""
-        # Name
-        self.add_title_field(label="Habit Name:", placeholder="Enter habit name...")
+        # Create scrollable container
+        from PyQt6.QtWidgets import QScrollArea
         
-        # Habit Type
-        type_label = QLabel("Habit Type:")
-        self.type_input = NoScrollComboBox()
-        self.type_input.addItems(["Good", "Bad"])
-        self.type_input.currentTextChanged.connect(self.update_ui_for_type)
-        self.layout.addWidget(type_label)
-        self.layout.addWidget(self.type_input)
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        
+        # Main container with 2 columns
+        main_container = QWidget()
+        main_layout = QHBoxLayout(main_container)
+        main_layout.setSpacing(30)
+        main_layout.setContentsMargins(10, 10, 10, 10)
+        
+        # Font for labels
+        label_font = QFont()
+        label_font.setPointSize(11)
+        label_font.setBold(True)
+        
+        # Font for inputs
+        input_font = QFont()
+        input_font.setPointSize(10)
+        
+        # ========== LEFT COLUMN ==========
+        left_col = QWidget()
+        left_layout = QVBoxLayout(left_col)
+        left_layout.setSpacing(18)
+        left_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Name
+        name_lbl = QLabel("Habit Name")
+        name_lbl.setFont(label_font)
+        left_layout.addWidget(name_lbl)
+        
+        self.title_input = QLineEdit()
+        self.title_input.setPlaceholderText("e.g., Drink water")
+        self.title_input.setMinimumHeight(40)
+        self.title_input.setFont(input_font)
+        left_layout.addWidget(self.title_input)
+        
+        # Type
+        type_lbl = QLabel("Habit Type")
+        type_lbl.setFont(label_font)
+        left_layout.addWidget(type_lbl)
+        
+        type_frame = QFrame()
+        type_frame.setObjectName("habit-type-container")
+        type_frame.setMinimumHeight(45)
+        type_layout = QHBoxLayout(type_frame)
+        type_layout.setContentsMargins(5, 5, 5, 5)
+        type_layout.setSpacing(5)
+        
+        self.type_button_group = QButtonGroup()
+        
+        self.good_radio = QRadioButton("✓ Good")
+        self.good_radio.setObjectName("habit-type-radio")
+        self.good_radio.setChecked(True)
+        self.good_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.good_radio.toggled.connect(self.update_ui_for_type)
+        radio_font = QFont()
+        radio_font.setPointSize(11)
+        self.good_radio.setFont(radio_font)
+        self.type_button_group.addButton(self.good_radio, 0)
+        type_layout.addWidget(self.good_radio)
+        
+        self.bad_radio = QRadioButton("✗ Bad")
+        self.bad_radio.setObjectName("habit-type-radio")
+        self.bad_radio.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.bad_radio.setFont(radio_font)
+        self.type_button_group.addButton(self.bad_radio, 1)
+        type_layout.addWidget(self.bad_radio)
+        
+        left_layout.addWidget(type_frame)
+        
+        # Description
+        desc_lbl = QLabel("Description (Optional)")
+        desc_lbl.setFont(label_font)
+        left_layout.addWidget(desc_lbl)
+        
+        self.description_input = QTextEdit()
+        self.description_input.setPlaceholderText("Why do you want to build this habit?")
+        self.description_input.setMinimumHeight(140)
+        self.description_input.setFont(input_font)
+        left_layout.addWidget(self.description_input)
+        
+        left_layout.addStretch()
+        
+        # ========== RIGHT COLUMN ==========
+        right_col = QWidget()
+        right_layout = QVBoxLayout(right_col)
+        right_layout.setSpacing(18)
+        right_layout.setContentsMargins(0, 0, 0, 0)
+        
+        # Frequency
+        freq_lbl = QLabel("Frequency")
+        freq_lbl.setFont(label_font)
+        right_layout.addWidget(freq_lbl)
+        
+        freq_frame = QFrame()
+        freq_frame.setObjectName("frequency-box")
+        freq_frame.setMinimumHeight(55)
+        freq_layout = QHBoxLayout(freq_frame)
+        freq_layout.setContentsMargins(15, 12, 15, 12)
+        freq_layout.setSpacing(10)
+        
+        at_least = QLabel("At least")
+        at_least.setFont(input_font)
+        freq_layout.addWidget(at_least)
+        
+        self.frequency_count_input = NoScrollSpinBox()
+        self.frequency_count_input.setMinimum(1)
+        self.frequency_count_input.setMaximum(100)
+        self.frequency_count_input.setValue(1)
+        self.frequency_count_input.setFixedWidth(70)
+        self.frequency_count_input.setMinimumHeight(38)
+        self.frequency_count_input.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.frequency_count_input.setFont(input_font)
+        freq_layout.addWidget(self.frequency_count_input)
+        
+        times = QLabel("times per")
+        times.setFont(input_font)
+        freq_layout.addWidget(times)
+        
+        self.frequency_period_input = NoScrollComboBox()
+        self.frequency_period_input.addItems(["Day", "Week", "Month", "Year"])
+        self.frequency_period_input.setCurrentText("Day")
+        self.frequency_period_input.setMinimumHeight(38)
+        self.frequency_period_input.setFont(input_font)
+        freq_layout.addWidget(self.frequency_period_input, 1)
+        
+        right_layout.addWidget(freq_frame)
         
         # Target Duration
-        self.target_label = QLabel("Target Duration:")
-        self.layout.addWidget(self.target_label)
+        target_lbl = QLabel("Target Duration")
+        target_lbl.setFont(label_font)
+        right_layout.addWidget(target_lbl)
         
         self.target_input = NoScrollComboBox()
         self.target_input.addItems([
@@ -49,66 +173,114 @@ class HabitDialog(BaseDialog):
             "1 Year (365 days)",
             "Custom"
         ])
+        self.target_input.setMinimumHeight(40)
+        self.target_input.setFont(input_font)
         self.target_input.currentTextChanged.connect(self.on_target_changed)
-        self.layout.addWidget(self.target_input)
+        right_layout.addWidget(self.target_input)
         
-        # Custom days input (hidden by default)
+        # Custom days
         self.custom_days_input = NoScrollSpinBox()
         self.custom_days_input.setMinimum(1)
         self.custom_days_input.setMaximum(365)
         self.custom_days_input.setValue(7)
-        self.custom_days_input.setSuffix(" days (max 365)")
+        self.custom_days_input.setSuffix(" days")
+        self.custom_days_input.setMinimumHeight(40)
+        self.custom_days_input.setFont(input_font)
         self.custom_days_input.setVisible(False)
         self.custom_days_input.valueChanged.connect(self.on_custom_days_changed)
-        self.layout.addWidget(self.custom_days_input)
+        right_layout.addWidget(self.custom_days_input)
         
-        # Color picker
-        color_label = QLabel("Color:")
-        self.layout.addWidget(color_label)
+        # Color
+        color_lbl = QLabel("Habit Color")
+        color_lbl.setFont(label_font)
+        right_layout.addWidget(color_lbl)
         
-        color_row = QHBoxLayout()
-        color_row.setSpacing(10)
+        colors_widget = QWidget()
+        colors_layout = QHBoxLayout(colors_widget)
+        colors_layout.setContentsMargins(0, 0, 0, 0)
+        colors_layout.setSpacing(12)
         
-        self.color_preview = QPushButton()
-        self.color_preview.setFixedSize(40, 40)
-        self.update_color_preview(self.selected_color)
-        color_row.addWidget(self.color_preview)
+        colors = ["#30e86e", "#3b82f6", "#8b5cf6", "#ec4899", "#f97316", "#eab308"]
         
-        pick_color_btn = QPushButton("Choose Color")
-        pick_color_btn.clicked.connect(self.pick_color)
-        color_row.addWidget(pick_color_btn, 1)
+        for color in colors:
+            btn = QPushButton()
+            btn.setFixedSize(36, 36)
+            btn.setCursor(Qt.CursorShape.PointingHandCursor)
+            btn.setProperty("color_value", color)
+            btn.setObjectName("color-swatch")
+            btn.clicked.connect(lambda checked, c=color: self.select_color(c))
+            self.color_buttons.append(btn)
+            colors_layout.addWidget(btn)
         
-        self.layout.addLayout(color_row)
+        colors_layout.addStretch()
+        right_layout.addWidget(colors_widget)
         
-        # Description
-        self.add_description_field(
-            label="Description:",
-            placeholder="Enter habit description (optional)...",
-            min_height=60,
-            max_height=120
-        )
+        right_layout.addStretch()
+        
+        # Add columns
+        main_layout.addWidget(left_col, 1)
+        main_layout.addWidget(right_col, 1)
+        
+        scroll.setWidget(main_container)
+        self.layout.addWidget(scroll)
         
         # Buttons
         self.add_buttons(save_text="Save Habit" if not self.habit else "Update Habit")
         
-        # Set initial placeholder
-        self.update_ui_for_type("Good")
+        # Apply styling
+        self.update_color_swatches()
+        self.update_ui_for_type()
     
-    def update_ui_for_type(self, habit_type):
-        """Update UI based on habit type"""
-        if habit_type == "Good":
-            self.target_label.setText("Goal Duration (to build good habits or unbuild bad ones):")
-            if not self.habit:
-                self.selected_color = "#28a745"
-                self.update_color_preview(self.selected_color)
-        else:
-            self.target_label.setText("Goal Duration (to break habit):")
-            if not self.habit:
-                self.selected_color = "#dc3545"
-                self.update_color_preview(self.selected_color)
+    def select_color(self, color):
+        """Select color"""
+        self.selected_color = color
+        self.update_color_swatches()
+    
+    def update_color_swatches(self):
+        """Update color swatch styling"""
+        for btn in self.color_buttons:
+            color = btn.property("color_value")
+            is_selected = (color == self.selected_color)
+            
+            if is_selected:
+                btn.setStyleSheet(f"""
+                    QPushButton#color-swatch {{
+                        background-color: {color};
+                        border: 4px solid {color};
+                        border-radius: 18px;
+                        outline: 3px solid {color}70;
+                        outline-offset: 2px;
+                    }}
+                """)
+            else:
+                btn.setStyleSheet(f"""
+                    QPushButton#color-swatch {{
+                        background-color: {color};
+                        border: 2px solid transparent;
+                        border-radius: 18px;
+                    }}
+                    QPushButton#color-swatch:hover {{
+                        border: 3px solid {color};
+                        outline: 2px solid {color}50;
+                        outline-offset: 1px;
+                    }}
+                """)
+    
+    def update_ui_for_type(self):
+        """Update UI for habit type"""
+        # Only set default colors for NEW habits, not when editing existing ones
+        if not self.habit:
+            # Only change color if user hasn't manually selected one yet
+            # Check if current color is one of the defaults
+            if self.selected_color in ["#30e86e", "#ef4444"]:
+                if self.good_radio.isChecked():
+                    self.selected_color = "#30e86e"
+                else:
+                    self.selected_color = "#ef4444"
+                self.update_color_swatches()
     
     def on_target_changed(self, text):
-        """Handle target duration change"""
+        """Handle target change"""
         if text == "Custom":
             self.custom_days_input.setVisible(True)
             self.custom_days = self.custom_days_input.value()
@@ -126,35 +298,26 @@ class HabitDialog(BaseDialog):
                 self.custom_days = 365
     
     def on_custom_days_changed(self, value):
-        """Handle custom days value change"""
+        """Handle custom days change"""
         self.custom_days = value
     
-    def pick_color(self):
-        """Open color picker dialog"""
-        color = QColorDialog.getColor(QColor(self.selected_color), self, "Choose Habit Color")
-        if color.isValid():
-            self.selected_color = color.name()
-            self.update_color_preview(self.selected_color)
-    
-    def update_color_preview(self, color):
-        """Update color preview button"""
-        self.color_preview.setStyleSheet(f"""
-            QPushButton {{
-                background-color: {color};
-                border: 2px solid #888;
-                border-radius: 6px;
-            }}
-        """)
-    
     def load_habit_data(self):
-        """Load existing habit data into fields"""
+        """Load habit data"""
         if not self.habit:
             return
         
         self.title_input.setText(self.habit.name)
-        self.type_input.setCurrentText(self.habit.habit_type)
         
-        # Set target duration
+        if self.habit.habit_type == "Good":
+            self.good_radio.setChecked(True)
+        else:
+            self.bad_radio.setChecked(True)
+        
+        if hasattr(self.habit, 'frequency_count') and hasattr(self.habit, 'frequency_period'):
+            self.frequency_count_input.setValue(self.habit.frequency_count)
+            period_map = {"day": "Day", "week": "Week", "month": "Month", "year": "Year"}
+            self.frequency_period_input.setCurrentText(period_map.get(self.habit.frequency_period, "Day"))
+        
         if self.habit.target_days == 7:
             self.target_input.setCurrentText("1 Week (7 days)")
         elif self.habit.target_days == 31:
@@ -172,17 +335,21 @@ class HabitDialog(BaseDialog):
         
         if self.habit.color:
             self.selected_color = self.habit.color
-            self.update_color_preview(self.selected_color)
+            self.update_color_swatches()
         
         if self.habit.description:
             self.description_input.setPlainText(self.habit.description)
     
     def get_habit_data(self):
-        """Get habit data from dialog fields"""
+        """Get habit data"""
+        period_map = {"Day": "day", "Week": "week", "Month": "month", "Year": "year"}
+        
         return {
             'name': self.title_input.text().strip(),
-            'habit_type': self.type_input.currentText(),
+            'habit_type': "Good" if self.good_radio.isChecked() else "Bad",
             'target_days': self.custom_days,
             'color': self.selected_color,
-            'description': self.description_input.toPlainText().strip() or None
+            'description': self.description_input.toPlainText().strip() or None,
+            'frequency_count': self.frequency_count_input.value(),
+            'frequency_period': period_map[self.frequency_period_input.currentText()]
         }

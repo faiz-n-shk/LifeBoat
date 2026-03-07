@@ -6,6 +6,7 @@ import os
 from datetime import datetime, timedelta
 from pathlib import Path
 from src.core.path_manager import path_manager
+from src.core.debug import debug_log
 
 
 class ActivityLogger:
@@ -46,9 +47,9 @@ class ActivityLogger:
                 
                 # Rename to archived log
                 latest_log.rename(archive_path)
-                print(f"[ActivityLogger] Archived previous log to: {archive_name}")
+                debug_log('ActivityLogger', f"Archived previous log to: {archive_name}")
             except Exception as e:
-                print(f"[ActivityLogger] Error archiving log: {e}")
+                debug_log('ActivityLogger', f"Error archiving log: {e}")
     
     def _ensure_log_file(self):
         """Ensure log file exists"""
@@ -85,7 +86,7 @@ class ActivityLogger:
                 f.write(log_entry)
         
         except Exception as e:
-            print(f"[ActivityLogger] Error writing to log: {e}")
+            debug_log('ActivityLogger', f"Error writing to log: {e}")
     
     def get_recent_activities(self, mode: str = "standard", limit: int = 10, exclude_features: list = None):
         """
@@ -181,13 +182,13 @@ class ActivityLogger:
                             continue
                 
                 except Exception as e:
-                    print(f"[ActivityLogger] Error reading log file {log_file.name}: {e}")
+                    debug_log('ActivityLogger', f"Error reading log file {log_file.name}: {e}")
                     continue
             
             return activities
         
         except Exception as e:
-            print(f"[ActivityLogger] Error reading activities: {e}")
+            debug_log('ActivityLogger', f"Error reading activities: {e}")
             return []
 
 
