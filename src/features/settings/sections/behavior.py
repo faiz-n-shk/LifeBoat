@@ -157,7 +157,9 @@ class BehaviorSection(QWidget):
             # Log changes if any
             if changes:
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "updated behavior", ", ".join(changes))
+                from src.core.activity_formatter import format_settings_log
+                action, details = format_settings_log('behavior', changes)
+                activity_logger.log("Settings", action, details)
             
             # Update tray icon visibility
             self.update_tray_icon()

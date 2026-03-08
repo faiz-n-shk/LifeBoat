@@ -115,11 +115,11 @@ class DashboardView(QWidget):
         # Section title with icon
         section_header = QHBoxLayout()
         
-        progress_icon = QLabel()
+        self.progress_icon_label = QLabel()
         from src.shared.icon_utils import load_themed_icon
         progress_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_progress.svg"), size=(20, 20))
-        progress_icon.setPixmap(progress_icon_pixmap)
-        section_header.addWidget(progress_icon)
+        self.progress_icon_label.setPixmap(progress_icon_pixmap)
+        section_header.addWidget(self.progress_icon_label)
         
         section_title = QLabel("Progress Overview")
         font = QFont()
@@ -173,11 +173,11 @@ class DashboardView(QWidget):
         # Section title with icon
         expense_header = QHBoxLayout()
         
-        expense_icon = QLabel()
+        self.expense_icon_label = QLabel()
         from src.shared.icon_utils import load_themed_icon
         expense_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_money-pieChart.svg"), size=(20, 20))
-        expense_icon.setPixmap(expense_icon_pixmap)
-        expense_header.addWidget(expense_icon)
+        self.expense_icon_label.setPixmap(expense_icon_pixmap)
+        expense_header.addWidget(self.expense_icon_label)
         
         expense_title = QLabel("Expenses by Category")
         font = QFont()
@@ -225,11 +225,11 @@ class DashboardView(QWidget):
         # Section title with icon
         stats_header = QHBoxLayout()
         
-        stats_icon = QLabel()
+        self.stats_icon_label = QLabel()
         from src.shared.icon_utils import load_themed_icon
         stats_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_chart.svg"), size=(20, 20))
-        stats_icon.setPixmap(stats_icon_pixmap)
-        stats_header.addWidget(stats_icon)
+        self.stats_icon_label.setPixmap(stats_icon_pixmap)
+        stats_header.addWidget(self.stats_icon_label)
         
         stats_title = QLabel("Quick Stats")
         font = QFont()
@@ -281,11 +281,11 @@ class DashboardView(QWidget):
         # Section title with icon
         activity_header = QHBoxLayout()
         
-        activity_icon = QLabel()
+        self.activity_icon_label = QLabel()
         from src.shared.icon_utils import load_themed_icon
         activity_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_clock-history.svg"), size=(20, 20))
-        activity_icon.setPixmap(activity_icon_pixmap)
-        activity_header.addWidget(activity_icon)
+        self.activity_icon_label.setPixmap(activity_icon_pixmap)
+        activity_header.addWidget(self.activity_icon_label)
         
         activity_title = QLabel("Recent Activity")
         font = QFont()
@@ -372,6 +372,27 @@ class DashboardView(QWidget):
             value_widget = layout.itemAt(3).widget()
             if isinstance(value_widget, QLabel):
                 value_widget.setText(value)
+    
+    def reload_stat_item_icons(self):
+        """Reload all quick stat item icons with current theme"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        
+        # Reload icon for each stat item
+        stat_items = [
+            (self.notes_stat, "icon_notes.svg"),
+            (self.expenses_stat, "feature_expenses.svg"),
+            (self.events_week_stat, "icon_calendar.svg"),
+            (self.habits_stat, "feature_habits.svg")
+        ]
+        
+        for frame, icon_file in stat_items:
+            layout = frame.layout()
+            if layout and layout.count() >= 1:
+                icon_label = layout.itemAt(0).widget()
+                if isinstance(icon_label, QLabel):
+                    icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{icon_file}"), size=(16, 16))
+                    icon_label.setPixmap(icon_pixmap)
     
     def load_data_with_animation(self):
         """Load data and trigger animations"""
@@ -731,12 +752,69 @@ class DashboardView(QWidget):
         """Refresh view to apply config changes"""
         # Reload header icon with current theme
         from src.core.path_manager import get_resource_path
-        from src.shared.icon_utils import load_accent_icon
+        from src.shared.icon_utils import load_accent_icon, load_themed_icon
         self.header_icon_pixmap = load_accent_icon(get_resource_path("assets/icons/feature_dashboard.svg"), size=(28, 28))
         self.header_icon_label.setPixmap(self.header_icon_pixmap)
         
+        # Reload all section icons with current theme
+        if hasattr(self, 'progress_icon_label'):
+            progress_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_progress.svg"), size=(20, 20))
+            self.progress_icon_label.setPixmap(progress_icon_pixmap)
+        
+        if hasattr(self, 'expense_icon_label'):
+            expense_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_money-pieChart.svg"), size=(20, 20))
+            self.expense_icon_label.setPixmap(expense_icon_pixmap)
+        
+        if hasattr(self, 'stats_icon_label'):
+            stats_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_chart.svg"), size=(20, 20))
+            self.stats_icon_label.setPixmap(stats_icon_pixmap)
+        
+        if hasattr(self, 'activity_icon_label'):
+            activity_icon_pixmap = load_themed_icon(get_resource_path("assets/icons/icon_clock-history.svg"), size=(20, 20))
+            self.activity_icon_label.setPixmap(activity_icon_pixmap)
+        
+        # Reload stat card icons
+        self.events_card.reload_icon()
+        self.habits_card.reload_icon()
+        self.notes_card.reload_icon()
+        self.expenses_card.reload_icon()
+        
+        # Reload quick stats icons
+        self.reload_stat_item_icons()
+        
+        # Reload recent activity icons
+        self.load_recent_activity()
+        
         # Mark as initial load to trigger animations
         self.initial_load = True
+        
+        # Reset widgets to 0 state before loading
+        from src.core.config import config
+        if config.get('appearance.enable_animations', True):
+            # Reset stat cards
+            self.events_card._displayed_value = 0
+            self.habits_card._displayed_value = 0
+            self.notes_card._displayed_value = 0
+            self.expenses_card._displayed_value = 0
+            
+            # Reset progress rings
+            self.habits_total_ring._progress = 0
+            self.habits_total_ring._target_progress = 0
+            self.habits_today_ring._progress = 0
+            self.habits_today_ring._target_progress = 0
+            self.events_ring._progress = 0
+            self.events_ring._target_progress = 0
+            self.expenses_ring._progress = 0
+            self.expenses_ring._target_progress = 0
+            self.expense_chart.canvas._animation_progress = 0
+            
+            self.habits_total_ring.update()
+            self.habits_today_ring.update()
+            self.events_ring.update()
+            self.expenses_ring.update()
+            self.expense_chart.canvas.update()
+        
+        self.load_data_with_animation()
         
         # Reset widgets to 0 state before loading
         from src.core.config import config

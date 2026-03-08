@@ -93,7 +93,7 @@ def create_message_box(parent, title, text, icon=QMessageBox.Icon.Question,
     from src.core.path_manager import get_resource_path
     close_btn = QPushButton()
     close_btn.setObjectName("message-box-close-btn")
-    close_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_cross.svg")))
+    close_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_x.svg")))
     close_btn.setFixedSize(28, 28)
     close_btn.setIconSize(QSize(16, 16))
     close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))

@@ -83,7 +83,10 @@ class CalendarController:
                 color=event_data.get('color', '#0078d4')
             )
             
-            activity_logger.log("Calendar", "created", f"'{event_data['title']}'")
+            # Log with formatted message
+            from src.core.activity_formatter import format_event_log
+            action, details = format_event_log('created', event_data['title'], event.start_date)
+            activity_logger.log("Calendar", action, details)
             
             db.close()
             return event
@@ -107,7 +110,10 @@ class CalendarController:
             event.updated_at = datetime.now()
             event.save()
             
-            activity_logger.log("Calendar", "updated", f"'{event_data['title']}'")
+            # Log with formatted message
+            from src.core.activity_formatter import format_event_log
+            action, details = format_event_log('updated', event_data['title'], event.start_date)
+            activity_logger.log("Calendar", action, details)
             
             db.close()
             return True
@@ -125,7 +131,10 @@ class CalendarController:
             title = event.title
             event.delete_instance()
             
-            activity_logger.log("Calendar", "deleted", f"'{title}'")
+            # Log with formatted message
+            from src.core.activity_formatter import format_event_log
+            action, details = format_event_log('deleted', title)
+            activity_logger.log("Calendar", action, details)
             
             db.close()
             return True

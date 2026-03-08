@@ -91,7 +91,12 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             expense = Expense.create(**data)
-            activity_logger.log("Expenses", "created", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_expense_log
+            action, details = format_expense_log('created', data.get('category', 'Expense'), data.get('amount', 0), data.get('description'))
+            activity_logger.log("Expenses", action, details)
+            
             return expense
         except Exception as e:
             raise DatabaseError(f"Failed to create expense: {str(e)}")
@@ -103,7 +108,12 @@ class ExpensesController:
         try:
             db.connect(reuse_if_open=True)
             income = Income.create(**data)
-            activity_logger.log("Expenses", "created income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_income_log
+            action, details = format_income_log('created', data.get('source', 'Income'), data.get('amount', 0), data.get('description'))
+            activity_logger.log("Expenses", action, details)
+            
             return income
         except Exception as e:
             raise DatabaseError(f"Failed to create income: {str(e)}")
@@ -118,7 +128,12 @@ class ExpensesController:
             for key, value in data.items():
                 setattr(expense, key, value)
             expense.save()
-            activity_logger.log("Expenses", "updated", f"{data.get('category', 'Expense')} - {data.get('amount', 0)}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_expense_log
+            action, details = format_expense_log('updated', data.get('category', expense.category), data.get('amount', expense.amount), data.get('description'))
+            activity_logger.log("Expenses", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Expense not found or has been deleted")
@@ -135,7 +150,12 @@ class ExpensesController:
             for key, value in data.items():
                 setattr(income, key, value)
             income.save()
-            activity_logger.log("Expenses", "updated income", f"{data.get('source', 'Income')} - {data.get('amount', 0)}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_income_log
+            action, details = format_income_log('updated', data.get('source', income.source), data.get('amount', income.amount), data.get('description'))
+            activity_logger.log("Expenses", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Income not found or has been deleted")
@@ -152,7 +172,12 @@ class ExpensesController:
             category = expense.category
             amount = expense.amount
             expense.delete_instance()
-            activity_logger.log("Expenses", "deleted", f"{category} - {amount}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_expense_log
+            action, details = format_expense_log('deleted', category, amount)
+            activity_logger.log("Expenses", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Expense not found or has been deleted")
@@ -169,7 +194,12 @@ class ExpensesController:
             source = income.source
             amount = income.amount
             income.delete_instance()
-            activity_logger.log("Expenses", "deleted income", f"{source} - {amount}")
+            
+            # Log with formatted currency
+            from src.core.activity_formatter import format_income_log
+            action, details = format_income_log('deleted', source, amount)
+            activity_logger.log("Expenses", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Income not found or has been deleted")

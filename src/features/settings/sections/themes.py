@@ -210,7 +210,9 @@ class ThemesSection(QWidget):
         # Log theme change
         if old_theme != theme_name:
             from src.core.activity_logger import activity_logger
-            activity_logger.log("Settings", "changed theme", f"{old_theme} → {theme_name}")
+            from src.core.activity_formatter import format_theme_log
+            action, details = format_theme_log('changed', theme_name, old_theme)
+            activity_logger.log("Settings", action, details)
         
         config.signals.appearance_changed.emit()
         self.load_themes()
@@ -226,7 +228,9 @@ class ThemesSection(QWidget):
                 
                 # Log theme creation
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "created custom theme", "New custom theme")
+                from src.core.activity_formatter import format_theme_log
+                action, details = format_theme_log('created', 'custom theme')
+                activity_logger.log("Settings", action, details)
                 
                 self.load_themes()
             else:
@@ -248,10 +252,13 @@ class ThemesSection(QWidget):
             if theme_manager.update_theme(theme.name, colors):
                 # Log theme edit
                 from src.core.activity_logger import activity_logger
+                from src.core.activity_formatter import format_theme_log
                 if theme.name != new_name:
-                    activity_logger.log("Settings", "renamed theme", f"'{theme.name}' → '{new_name}'")
+                    action, details = format_theme_log('renamed', new_name, theme.name)
+                    activity_logger.log("Settings", action, details)
                 else:
-                    activity_logger.log("Settings", "edited theme", f"'{theme.name}'")
+                    action, details = format_theme_log('edited', theme.name)
+                    activity_logger.log("Settings", action, details)
                 
                 # If editing active theme, reload it with new name
                 if theme.name == theme_manager.get_active_theme() or new_name == theme_manager.get_active_theme():
@@ -277,7 +284,9 @@ class ThemesSection(QWidget):
                 
                 # Log theme customization
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "customized theme", f"Based on '{theme.name}'")
+                from src.core.activity_formatter import format_theme_log
+                action, details = format_theme_log('customized', theme.name)
+                activity_logger.log("Settings", action, details)
                 
                 self.load_themes()
             else:
@@ -304,7 +313,9 @@ class ThemesSection(QWidget):
             if theme_manager.delete_theme(theme.name):
                 # Log theme deletion
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "deleted theme", f"'{theme.name}'")
+                from src.core.activity_formatter import format_theme_log
+                action, details = format_theme_log('deleted', theme.name)
+                activity_logger.log("Settings", action, details)
                 
                 self.load_themes()
 

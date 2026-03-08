@@ -1,4 +1,4 @@
-# Lifeboat 2.0 Dependencies
+# Lifeboat v2 Dependencies
 
 # UI Framework
 PyQt6==6.10.2

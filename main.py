@@ -18,27 +18,67 @@ from src.core.database import initialize_database
 from src.core.config import ensure_config_exists, config
 
 
-# Setup error logs directory
-ERROR_LOGS_DIR = Path(__file__).parent / "errorLogs"
-ERROR_LOGS_DIR.mkdir(exist_ok=True)
+class LazyErrorFileHandler(logging.Handler):
+    """Handler that only creates the log file when an error actually occurs"""
+    
+    def __init__(self):
+        super().__init__()
+        self.file_handler = None
+        self.error_logs_dir = None
+        
+    def emit(self, record):
+        """Emit a record, creating the file handler if needed"""
+        # Only create file handler when we actually need to log something
+        if self.file_handler is None:
+            from src.core.path_manager import path_manager
+            from datetime import datetime
+            
+            # Get error logs directory
+            self.error_logs_dir = path_manager.get_error_logs_path()
+            
+            # Create directory only when first error occurs
+            self.error_logs_dir.mkdir(exist_ok=True)
+            
+            # Create daily error log file with format: errorLog_DD-MM-YYYY.log
+            today = datetime.now().strftime("%d-%m-%Y")
+            error_log_file = self.error_logs_dir / f"errorLog_{today}.log"
+            
+            # Create the file handler
+            self.file_handler = logging.FileHandler(error_log_file, encoding='utf-8')
+            self.file_handler.setFormatter(self.formatter)
+            self.file_handler.setLevel(self.level)
+        
+        # Emit the record to the file handler
+        self.file_handler.emit(record)
+    
+    def close(self):
+        """Close the file handler if it exists"""
+        if self.file_handler:
+            self.file_handler.close()
+        super().close()
 
-# Configure logging with both file and console handlers
-log_handlers = [
-    # Always log errors to file (even in production)
-    logging.FileHandler(ERROR_LOGS_DIR / "error.log", encoding='utf-8')
-]
 
-# Add console handler only if DEBUG_ENABLED
-if DEBUG_ENABLED:
-    log_handlers.append(logging.StreamHandler(sys.stdout))
+def setup_error_logging():
+    """Setup error logging with lazy file creation"""
+    # Configure logging with lazy file handler
+    log_handlers = [
+        # Lazy file handler - only creates file when errors occur
+        LazyErrorFileHandler()
+    ]
+    
+    # Add console handler only if DEBUG_ENABLED
+    if DEBUG_ENABLED:
+        log_handlers.append(logging.StreamHandler(sys.stdout))
+    
+    logging.basicConfig(
+        level=logging.INFO if DEBUG_ENABLED else logging.ERROR,
+        format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+        handlers=log_handlers,
+        force=True
+    )
 
-logging.basicConfig(
-    level=logging.INFO if DEBUG_ENABLED else logging.ERROR,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=log_handlers,
-    force=True
-)
-
+# Setup logging
+setup_error_logging()
 logger = logging.getLogger(__name__)
 
 
@@ -54,7 +94,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     
     # Show error dialog to user (always show for critical errors)
     try:
-        error_msg = f"An unexpected error occurred:\n\n{exc_type.__name__}: {exc_value}\n\nError details have been saved to errorLogs/error.log"
+        error_msg = f"An unexpected error occurred:\n\n{exc_type.__name__}: {exc_value}\n\nError details have been saved to the error log file."
         QMessageBox.critical(None, "Critical Error", error_msg)
     except:
         pass  # If we can't show dialog, just log it

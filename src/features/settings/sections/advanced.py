@@ -91,6 +91,55 @@ class AdvancedSection(QWidget):
         # Separator
         layout.addSpacing(10)
         
+        # Log Rotation Group
+        log_rotation_label = QLabel("Log File Management")
+        log_rotation_label.setProperty("class", "section-label")
+        layout.addWidget(log_rotation_label)
+        
+        from PyQt6.QtWidgets import QSpinBox
+        log_rotation_layout = QHBoxLayout()
+        log_rotation_desc = QLabel("Create new log file:")
+        log_rotation_desc.setFixedWidth(150)
+        log_rotation_layout.addWidget(log_rotation_desc)
+        
+        # Preset combo box
+        self.log_rotation_combo = NoScrollComboBox()
+        self.log_rotation_combo.addItems([
+            "Every App Startup",
+            "After 1 Day",
+            "After 2 Days",
+            "After 3 Days",
+            "After 1 Week",
+            "Custom"
+        ])
+        self.log_rotation_combo.setFixedWidth(180)
+        log_rotation_layout.addWidget(self.log_rotation_combo)
+        
+        # Custom hours spinner (hidden by default)
+        self.log_rotation_spin = QSpinBox()
+        self.log_rotation_spin.setMinimum(1)
+        self.log_rotation_spin.setMaximum(168)  # Max 1 week
+        self.log_rotation_spin.setSuffix(" hours")
+        self.log_rotation_spin.setFixedWidth(120)
+        self.log_rotation_spin.setVisible(False)  # Hidden by default
+        log_rotation_layout.addWidget(self.log_rotation_spin)
+        
+        log_rotation_layout.addStretch()
+        layout.addLayout(log_rotation_layout)
+        
+        # Log rotation info label
+        log_rotation_info = QLabel(
+            "Controls when a new log file is created. 'Every App Startup' creates a new log each time (like before). "
+            "Other options reuse 'latest.log' if restarted within the time period, then archive it with a timestamp."
+            "and a new file is created. Lower values create more log files but keep them smaller."
+        )
+        log_rotation_info.setProperty("class", "secondary-text")
+        log_rotation_info.setWordWrap(True)
+        layout.addWidget(log_rotation_info)
+        
+        # Separator
+        layout.addSpacing(10)
+        
         # Recent Activity Group
         activity_label = QLabel("Recent Activity Display")
         activity_label.setProperty("class", "section-label")
@@ -156,11 +205,73 @@ class AdvancedSection(QWidget):
         layout.addLayout(apply_layout)
         
         self.setLayout(layout)
+        
+        # Connect signals AFTER buttons are created
+        self.log_rotation_combo.currentIndexChanged.connect(self.on_log_rotation_preset_changed)
+        self.log_rotation_spin.valueChanged.connect(self.on_value_changed)
+        
+        # Load initial values AFTER everything is set up
+        self.load_log_rotation_setting()
     
     def on_value_changed(self):
         """Handle any value change"""
         self.apply_btn.setEnabled(True)
         self.cancel_btn.setEnabled(True)
+    
+    def on_log_rotation_preset_changed(self, index):
+        """Handle log rotation preset change"""
+        # Show/hide custom spinner based on selection
+        is_custom = (index == 5)  # "Custom" is index 5
+        self.log_rotation_spin.setVisible(is_custom)
+        
+        # Enable apply button
+        self.on_value_changed()
+    
+    def load_log_rotation_setting(self):
+        """Load log rotation setting from config and set UI"""
+        hours = config.get('advanced.log_rotation_hours', 120)  # Default 5 days
+        
+        # Block signals while loading to prevent triggering on_value_changed
+        self.log_rotation_combo.blockSignals(True)
+        self.log_rotation_spin.blockSignals(True)
+        
+        # Map hours to preset index
+        preset_map = {
+            0: 0,    # Every App Startup
+            24: 1,   # After 1 Day
+            48: 2,   # After 2 Days
+            72: 3,   # After 3 Days
+            168: 4   # After 1 Week
+        }
+        
+        if hours in preset_map:
+            self.log_rotation_combo.setCurrentIndex(preset_map[hours])
+            self.log_rotation_spin.setVisible(False)
+        else:
+            # Custom value
+            self.log_rotation_combo.setCurrentIndex(5)  # "Custom"
+            self.log_rotation_spin.setValue(hours)
+            self.log_rotation_spin.setVisible(True)
+        
+        # Unblock signals
+        self.log_rotation_combo.blockSignals(False)
+        self.log_rotation_spin.blockSignals(False)
+    
+    def get_log_rotation_hours(self):
+        """Get the selected log rotation hours value"""
+        index = self.log_rotation_combo.currentIndex()
+        
+        # Map preset index to hours
+        preset_hours = {
+            0: 0,    # Every App Startup
+            1: 24,   # After 1 Day
+            2: 48,   # After 2 Days
+            3: 72,   # After 3 Days
+            4: 168,  # After 1 Week
+            5: self.log_rotation_spin.value()  # Custom
+        }
+        
+        return preset_hours.get(index, 120)
     
     def update_db_version_display(self):
         """Update the database version display label"""
@@ -282,6 +393,24 @@ class AdvancedSection(QWidget):
             changes.append(f"Debug buttons: {'enabled' if new_debug else 'disabled'}")
         config.set('advanced.show_debug_buttons', new_debug)
         
+        # Save log rotation hours
+        old_rotation = config.get('advanced.log_rotation_hours', 120)
+        new_rotation = self.get_log_rotation_hours()
+        if old_rotation != new_rotation:
+            if new_rotation == 0:
+                changes.append("Log rotation: Every app startup")
+            elif new_rotation == 24:
+                changes.append("Log rotation: After 1 day")
+            elif new_rotation == 48:
+                changes.append("Log rotation: After 2 days")
+            elif new_rotation == 72:
+                changes.append("Log rotation: After 3 days")
+            elif new_rotation == 168:
+                changes.append("Log rotation: After 1 week")
+            else:
+                changes.append(f"Log rotation: After {new_rotation} hours")
+        config.set('advanced.log_rotation_hours', new_rotation)
+        
         # Save recent activity mode
         mode_map = {0: 'session', 1: 'today', 2: '3days', 3: 'standard', 4: '30days', 5: 'all', 6: 'none'}
         old_activity = config.get('advanced.recent_activity_mode', 'all')
@@ -303,7 +432,9 @@ class AdvancedSection(QWidget):
             # Log changes if any
             if changes:
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "updated advanced", ", ".join(changes))
+                from src.core.activity_formatter import format_settings_log
+                action, details = format_settings_log('advanced', changes)
+                activity_logger.log("Settings", action, details)
             
             # Emit signal to reload UI with new advanced settings
             config.signals.advanced_changed.emit()
@@ -338,6 +469,9 @@ class AdvancedSection(QWidget):
         
         # Reload values from config
         self.debug_check.setChecked(config.get('advanced.show_debug_buttons', False))
+        
+        # Reload log rotation setting
+        self.load_log_rotation_setting()
         
         # Reload activity mode
         activity_mode = config.get('advanced.recent_activity_mode', 'all')

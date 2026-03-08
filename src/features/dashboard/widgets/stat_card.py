@@ -113,3 +113,10 @@ class StatCard(QFrame):
     def displayedValue(self, value):
         self._displayed_value = value
         self.value_label.setText(str(int(value)))
+    
+    def reload_icon(self):
+        """Reload icon with current theme"""
+        from src.core.path_manager import get_resource_path
+        from src.shared.icon_utils import load_themed_icon
+        icon_pixmap = load_themed_icon(get_resource_path(f"assets/icons/{self.icon_file}"), size=(40, 40))
+        self.icon_label.setPixmap(icon_pixmap)

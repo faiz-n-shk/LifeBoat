@@ -151,6 +151,13 @@ class PathManager:
         debug_log('PathManager.get_logs_path', f"Using default: {self.default_logs}")
         return self.default_logs
     
+    def get_error_logs_path(self):
+        """Get the error logs directory path (inside logs directory)"""
+        logs_dir = self.get_logs_path()
+        error_logs_dir = logs_dir / "errorLogs"
+        # Don't create directory here - let it be created when first error occurs
+        return error_logs_dir
+    
     def get_user_fonts_dir(self):
         """Get the user fonts directory (writable location for imported fonts)"""
         return self.user_fonts_dir

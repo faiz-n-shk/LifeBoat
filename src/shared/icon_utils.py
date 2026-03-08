@@ -92,3 +92,48 @@ def load_accent_icon(svg_path: str, size: tuple = (24, 24)) -> QPixmap:
         color = "#ff0000"  # Fallback
     
     return load_colored_svg(svg_path, color, size)
+
+
+def save_themed_tick_icon(output_path: str, background_color: str, foreground_color: str):
+    """
+    Generate and save a themed tick icon
+    
+    Args:
+        output_path: Where to save the themed icon
+        background_color: Hex color of the background (accent color)
+        foreground_color: Hex color for the tick (theme foreground)
+    """
+    import logging
+    from pathlib import Path
+    from src.core.path_manager import get_resource_path
+    
+    logger = logging.getLogger(__name__)
+    
+    try:
+        # Ensure output directory exists
+        output_file = Path(output_path)
+        output_file.parent.mkdir(parents=True, exist_ok=True)
+        
+        # Calculate luminance to determine contrasting color
+        bg_color = QColor(background_color)
+        r, g, b = bg_color.red(), bg_color.green(), bg_color.blue()
+        luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+        
+        # Use white for dark backgrounds, dark gray for light backgrounds
+        tick_color = "#ffffff" if luminance < 0.5 else "#1a1a1a"
+        
+        # Load the tick icon with contrasting color
+        tick_pixmap = load_colored_svg(
+            get_resource_path("assets/icons/icon_tick.svg"),
+            tick_color,
+            size=(16, 16)
+        )
+        
+        # Save to file with absolute path
+        success = tick_pixmap.save(str(output_file.absolute()), "PNG")
+        if success:
+            logger.debug(f"Saved themed tick icon to: {output_file.absolute()}")
+        else:
+            logger.error(f"Failed to save themed tick icon to: {output_file.absolute()}")
+    except Exception as e:
+        logger.error(f"Error saving themed tick icon: {e}", exc_info=True)

@@ -41,7 +41,12 @@ class HabitsController:
                 frequency_period=frequency_period
             )
             db.close()
-            activity_logger.log('Habits', 'Created', name)
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_habit_log
+            action, details = format_habit_log('created', name, habit_type)
+            activity_logger.log('Habits', action, details)
+            
             return habit
         except Exception as e:
             raise DatabaseError(f"Failed to create habit: {str(e)}")
@@ -59,7 +64,12 @@ class HabitsController:
             
             habit.save()
             db.close()
-            activity_logger.log('Habits', 'Updated', name)
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_habit_log
+            action, details = format_habit_log('updated', name)
+            activity_logger.log('Habits', action, details)
+            
             return habit
         except DoesNotExist:
             raise RecordNotFoundError("Habit not found or has been deleted")
@@ -77,7 +87,12 @@ class HabitsController:
             
             habit.delete_instance()
             db.close()
-            activity_logger.log('Habits', 'Deleted', name)
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_habit_log
+            action, details = format_habit_log('deleted', name)
+            activity_logger.log('Habits', action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Habit not found or has been deleted")
@@ -110,7 +125,11 @@ class HabitsController:
                 )
             
             db.close()
-            activity_logger.log('Habits', 'Incremented', habit.name)
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_habit_log
+            action, details = format_habit_log('incremented', habit.name)
+            activity_logger.log('Habits', action, details)
         except Exception as e:
             raise DatabaseError(f"Failed to increment habit: {str(e)}")
     
@@ -134,7 +153,11 @@ class HabitsController:
                     existing.completed = False
                 existing.save()
                 db.close()
-                activity_logger.log('Habits', 'Decremented', habit.name)
+                
+                # Log with formatted message
+                from src.core.activity_formatter import format_habit_log
+                action, details = format_habit_log('decremented', habit.name)
+                activity_logger.log('Habits', action, details)
             else:
                 db.close()
                 # Don't log if nothing was decremented

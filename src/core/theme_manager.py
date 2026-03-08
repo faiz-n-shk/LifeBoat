@@ -144,7 +144,6 @@ class ThemeManager(QObject):
             
             # Helper to get absolute paths for CSS url()
             from src.core.path_manager import get_resource_path
-            import os
             
             def css_url(relative_path):
                 """Convert relative asset path to absolute path for CSS"""
@@ -155,7 +154,7 @@ class ThemeManager(QObject):
             arrow_down_url = css_url("assets/icons/icon_arrow-down.svg")
             arrow_up_url = css_url("assets/icons/icon_arrow-up.svg")
             calendar_url = css_url("assets/icons/icon_calendar.svg")
-            check_url = css_url("assets/icons/icon_check.svg")
+            tick_url = css_url("assets/icons/icon_tick.svg")
             
             stylesheet = f"""
 /* {theme_name} Theme - Generated Stylesheet */
@@ -449,7 +448,7 @@ QCheckBox::indicator:hover {{
 QCheckBox::indicator:checked {{
     background-color: {theme.accent};
     border-color: {theme.accent};
-    image: {check_url};
+    image: {tick_url};
 }}
 
 /* RadioButton */

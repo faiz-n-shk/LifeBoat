@@ -172,7 +172,7 @@ class AboutSection(QWidget):
         
         # Close button
         close_btn = QPushButton()
-        close_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_cross.svg")))
+        close_btn.setIcon(QIcon(get_resource_path("assets/icons/icon_x.svg")))
         close_btn.setFixedSize(28, 28)
         close_btn.setIconSize(QSize(16, 16))
         close_btn.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))

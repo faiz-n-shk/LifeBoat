@@ -204,7 +204,9 @@ class LocaleSection(QWidget):
             # Log changes if any
             if changes:
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "updated locale", ", ".join(changes))
+                from src.core.activity_formatter import format_settings_log
+                action, details = format_settings_log('locale', changes)
+                activity_logger.log("Settings", action, details)
             
             # Emit signal to reload formatters and UI
             config.signals.locale_changed.emit()

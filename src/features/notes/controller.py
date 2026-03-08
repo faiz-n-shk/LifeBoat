@@ -56,7 +56,12 @@ class NotesController:
                 created_at=datetime.now(),
                 updated_at=datetime.now()
             )
-            activity_logger.log("Notes", "created", f"'{title}'")
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_note_log
+            action, details = format_note_log('created', title, tags)
+            activity_logger.log("Notes", action, details)
+            
             return note
         except Exception as e:
             raise DatabaseError(f"Failed to create note: {str(e)}")
@@ -72,7 +77,12 @@ class NotesController:
             note.pinned = pinned
             note.updated_at = datetime.now()
             note.save()
-            activity_logger.log("Notes", "updated", f"'{title}'")
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_note_log
+            action, details = format_note_log('updated', title, tags)
+            activity_logger.log("Notes", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Note not found or has been deleted")
@@ -86,7 +96,12 @@ class NotesController:
             note = Note.get_by_id(note_id)
             title = note.title
             note.delete_instance()
-            activity_logger.log("Notes", "deleted", f"'{title}'")
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_note_log
+            action, details = format_note_log('deleted', title)
+            activity_logger.log("Notes", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Note not found or has been deleted")
@@ -101,8 +116,13 @@ class NotesController:
             note.pinned = not note.pinned
             note.updated_at = datetime.now()
             note.save()
-            action = "pinned" if note.pinned else "unpinned"
-            activity_logger.log("Notes", action, f"'{note.title}'")
+            action_type = "pinned" if note.pinned else "unpinned"
+            
+            # Log with formatted message
+            from src.core.activity_formatter import format_note_log
+            action, details = format_note_log(action_type, note.title)
+            activity_logger.log("Notes", action, details)
+            
             return True
         except DoesNotExist:
             raise RecordNotFoundError("Note not found or has been deleted")

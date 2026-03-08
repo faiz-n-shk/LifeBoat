@@ -310,15 +310,48 @@ class CalendarView(QWidget):
                 cell_layout.setContentsMargins(8, 8, 8, 8)
                 cell_layout.setSpacing(4)
                 
-                # Day number
-                day_label = QLabel(str(day))
-                font = QFont()
-                font.setPointSize(12)
-                font.setBold(is_today)
-                day_label.setFont(font)
+                # Day number with background box for today
                 if is_today:
-                    day_label.setStyleSheet("color: rgba(137, 180, 250, 1.0);")
-                cell_layout.addWidget(day_label)
+                    # Container for day number with background
+                    from src.core.theme_manager import theme_manager
+                    theme = theme_manager.get_theme_by_name(theme_manager.get_active_theme())
+                    
+                    day_container = QFrame()
+                    day_container.setFixedSize(28, 28)
+                    
+                    # Calculate contrasting text color
+                    from PyQt6.QtGui import QColor
+                    accent_color = QColor(theme.accent if theme else "#3498db")
+                    r, g, b = accent_color.red(), accent_color.green(), accent_color.blue()
+                    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+                    text_color = "#ffffff" if luminance < 0.5 else "#000000"
+                    
+                    day_container.setStyleSheet(f"""
+                        QFrame {{
+                            background-color: {theme.accent if theme else '#3498db'};
+                            border-radius: 6px;
+                        }}
+                    """)
+                    
+                    day_container_layout = QVBoxLayout(day_container)
+                    day_container_layout.setContentsMargins(0, 0, 0, 0)
+                    
+                    day_label = QLabel(str(day))
+                    font = QFont()
+                    font.setPointSize(12)
+                    font.setBold(True)
+                    day_label.setFont(font)
+                    day_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+                    day_label.setStyleSheet(f"color: {text_color};")
+                    day_container_layout.addWidget(day_label)
+                    
+                    cell_layout.addWidget(day_container, 0, Qt.AlignmentFlag.AlignLeft)
+                else:
+                    day_label = QLabel(str(day))
+                    font = QFont()
+                    font.setPointSize(12)
+                    day_label.setFont(font)
+                    cell_layout.addWidget(day_label)
                 
                 # Event indicators (max 3, with event names)
                 if date in events_by_date:

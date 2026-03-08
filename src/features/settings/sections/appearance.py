@@ -234,7 +234,9 @@ class AppearanceSection(QWidget):
             # Log changes if any
             if changes:
                 from src.core.activity_logger import activity_logger
-                activity_logger.log("Settings", "updated appearance", ", ".join(changes))
+                from src.core.activity_formatter import format_settings_log
+                action, details = format_settings_log('appearance', changes)
+                activity_logger.log("Settings", action, details)
             
             # Emit signal to reload UI
             config.signals.appearance_changed.emit()

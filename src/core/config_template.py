@@ -3,7 +3,7 @@ Default Configuration Template
 Used to create config.yaml if it doesn't exist
 """
 
-DEFAULT_CONFIG_YAML = """# Lifeboat 2.0 Configuration
+DEFAULT_CONFIG_YAML = """# Lifeboat v2 Configuration
 # This file is auto-generated. Modify values as needed.
 
 # Window Settings
@@ -109,6 +109,7 @@ advanced:
   show_debug_buttons: false  # Show reload/restart buttons in navigation
   auto_update_database: true  # Auto-update database on app updates
   recent_activity_mode: "all"  # Options: "session", "today", "3days", "standard" (7 days), "30days", "all", "none"
+  log_rotation_hours: 120  # Hours before creating new log file (0=every startup, 24=1day, 48=2days, 72=3days, 168=1week, or custom)
 
 # Behavior Settings
 behavior:

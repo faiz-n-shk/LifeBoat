@@ -1,6 +1,6 @@
 """
 Activity Logger
-Logs user activities across the application with session-based log rotation
+Logs user activities across the application with smart time-based log rotation
 """
 import os
 from datetime import datetime, timedelta
@@ -10,7 +10,7 @@ from src.core.debug import debug_log
 
 
 class ActivityLogger:
-    """Singleton activity logger with session-based rotation"""
+    """Singleton activity logger with smart time-based rotation"""
     
     _instance = None
     
@@ -27,40 +27,97 @@ class ActivityLogger:
         self._initialized = True
         self.session_start = datetime.now()
         self.log_file = None
-        self._rotate_on_start()
+        self.session_logged = False  # Track if session start was logged
+        self._smart_rotate_on_start()
         self._ensure_log_file()
     
-    def _rotate_on_start(self):
-        """Rotate log on app start - archive previous latest.log"""
+    def _get_last_log_time(self, log_path: Path) -> datetime:
+        """Get the last modification time of the log file"""
+        try:
+            if log_path.exists():
+                return datetime.fromtimestamp(log_path.stat().st_mtime)
+        except Exception as e:
+            debug_log('ActivityLogger', f"Error getting log time: {e}")
+        return None
+    
+    def _smart_rotate_on_start(self):
+        """Smart rotation - only archive if enough time has passed"""
+        from src.core.config import config
+        
         logs_dir = path_manager.get_logs_path()
         logs_dir.mkdir(parents=True, exist_ok=True)
         
         latest_log = logs_dir / "latest.log"
         
-        # If latest.log exists, archive it with timestamp
-        if latest_log.exists():
+        # If latest.log doesn't exist, no rotation needed
+        if not latest_log.exists():
+            debug_log('ActivityLogger', "No existing latest.log, starting fresh")
+            return
+        
+        # Get the rotation threshold from settings (in hours, default 120 = 5 days)
+        rotation_hours = config.get('advanced.log_rotation_hours', 120)
+        
+        # If rotation_hours is 0, always rotate (every app startup)
+        if rotation_hours == 0:
             try:
-                # Get file modification time for accurate archiving
-                mod_time = datetime.fromtimestamp(latest_log.stat().st_mtime)
-                archive_name = f"{mod_time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
+                last_log_time = self._get_last_log_time(latest_log)
+                if last_log_time:
+                    archive_name = f"{last_log_time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
+                else:
+                    archive_name = f"{datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.log"
+                
+                archive_path = logs_dir / archive_name
+                latest_log.rename(archive_path)
+                debug_log('ActivityLogger', f"Archived log to: {archive_name} (every app startup mode)")
+            except Exception as e:
+                debug_log('ActivityLogger', f"Error archiving log: {e}")
+            return
+        
+        # Get last modification time of latest.log
+        last_log_time = self._get_last_log_time(latest_log)
+        
+        if last_log_time is None:
+            debug_log('ActivityLogger', "Could not determine last log time, keeping latest.log")
+            return
+        
+        # Calculate time difference
+        time_since_last_log = datetime.now() - last_log_time
+        hours_passed = time_since_last_log.total_seconds() / 3600
+        
+        debug_log('ActivityLogger', f"Hours since last log: {hours_passed:.2f}, threshold: {rotation_hours}")
+        
+        # Only rotate if enough time has passed
+        if hours_passed >= rotation_hours:
+            try:
+                # Archive with timestamp from last modification
+                archive_name = f"{last_log_time.strftime('%Y-%m-%d_%H-%M-%S')}.log"
                 archive_path = logs_dir / archive_name
                 
                 # Rename to archived log
                 latest_log.rename(archive_path)
-                debug_log('ActivityLogger', f"Archived previous log to: {archive_name}")
+                debug_log('ActivityLogger', f"Archived log to: {archive_name} (after {hours_passed:.2f} hours)")
             except Exception as e:
                 debug_log('ActivityLogger', f"Error archiving log: {e}")
+        else:
+            debug_log('ActivityLogger', f"Reusing latest.log (only {hours_passed:.2f} hours passed, threshold is {rotation_hours})")
     
     def _ensure_log_file(self):
-        """Ensure log file exists"""
+        """Ensure log file exists and log session start once"""
         logs_dir = path_manager.get_logs_path()
         logs_dir.mkdir(parents=True, exist_ok=True)
         self.log_file = logs_dir / "latest.log"
         
-        # Log session start
-        if not self.log_file.exists():
-            with open(self.log_file, 'w', encoding='utf-8') as f:
-                f.write(f"[{self.session_start.strftime('%Y-%m-%d %H:%M:%S')}] [System] App started\n")
+        # Log session start only once
+        if not self.session_logged:
+            if not self.log_file.exists():
+                # New file - log "App started"
+                with open(self.log_file, 'w', encoding='utf-8') as f:
+                    f.write(f"[{self.session_start.strftime('%Y-%m-%d %H:%M:%S')}] [System] App started\n")
+            else:
+                # Existing file - log "session resumed"
+                with open(self.log_file, 'a', encoding='utf-8') as f:
+                    f.write(f"[{self.session_start.strftime('%Y-%m-%d %H:%M:%S')}] [System] App started (session resumed)\n")
+            self.session_logged = True
     
     def log(self, feature: str, action: str, details: str = None):
         """
@@ -72,7 +129,11 @@ class ActivityLogger:
             details: Additional details about the action
         """
         try:
-            self._ensure_log_file()
+            # Ensure log file exists (but don't log session start again)
+            if self.log_file is None:
+                logs_dir = path_manager.get_logs_path()
+                logs_dir.mkdir(parents=True, exist_ok=True)
+                self.log_file = logs_dir / "latest.log"
             
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             log_entry = f"[{timestamp}] [{feature}] {action}"
@@ -126,10 +187,9 @@ class ActivityLogger:
             
             activities = []
             
-            # Get all log files sorted by modification time (newest first)
+            # Get all log files sorted by name (newest first based on timestamp in filename)
             log_files = sorted(
                 [f for f in logs_dir.glob("*.log")],
-                key=lambda x: x.stat().st_mtime,
                 reverse=True
             )
             
@@ -137,20 +197,14 @@ class ActivityLogger:
             if mode == "session":
                 log_files = [f for f in log_files if f.name == "latest.log"]
             
-            # Read logs from newest to oldest
+            # Read all activities from all files first
             for log_file in log_files:
-                if len(activities) >= limit:
-                    break
-                
                 try:
                     with open(log_file, 'r', encoding='utf-8') as f:
                         lines = f.readlines()
                     
-                    # Read from end to get most recent first
-                    for line in reversed(lines):
-                        if len(activities) >= limit:
-                            break
-                        
+                    # Parse all lines
+                    for line in lines:
                         line = line.strip()
                         if not line:
                             continue
@@ -197,6 +251,10 @@ class ActivityLogger:
                 except Exception as e:
                     debug_log('ActivityLogger', f"Error reading log file {log_file.name}: {e}")
                     continue
+            
+            # Sort all activities by timestamp (newest first) and limit
+            activities.sort(key=lambda x: x['timestamp'], reverse=True)
+            return activities[:limit]
             
             return activities
         
