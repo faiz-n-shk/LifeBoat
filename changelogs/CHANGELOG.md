@@ -1,6 +1,132 @@
 # Changelog
 
-## [v2.8.1] - 2026-03-08 (Current Beta)
+## [v2.8.2] - 2026-03-07 (Current Beta)
+
+**Commit:** `10d5111`  
+**Tag:** `v2.8.2`  
+**Build Type:** Beta
+
+---
+
+### Fixed
+
+- **Icon Theme Update Issues**: Fixed icons not updating after theme changes
+  - Icons now properly refresh when switching themes
+  - Accent color changes immediately reflected in all icons
+  - Eliminated stale icon cache issues
+  - Applied across all features: Dashboard, Calendar, Expenses, Habits, Notes, Settings
+
+- **Theme Manager Icon Refresh**: Enhanced theme switching to trigger icon reloads
+  - Added icon refresh mechanism to theme change signals
+  - Improved icon caching with theme-aware invalidation
+  - Smoother visual transitions during theme switches
+
+### Added
+
+- **Advanced Settings - Log File Creation Control**: New setting to enable/disable log file creation
+  - Toggle for activity log file generation
+  - Helps reduce disk I/O for users who don't need logs
+  - Setting persists across sessions
+  - Located in Advanced settings section
+
+- **Activity Formatter Module**: New comprehensive activity formatting system
+  - `src/core/activity_formatter.py` - 256 lines of formatting logic
+  - Structured activity log formatting
+  - Better readability for activity logs
+  - Consistent formatting across all logged actions
+
+- **Icon Utilities Enhancement**: Expanded icon loading utilities
+  - Added `load_icon()` function for standard icon loading
+  - Improved SVG color replacement logic
+  - Better error handling for missing icons
+  - Enhanced caching mechanism
+
+- **Test Suite**: Added error logging test suite
+  - `src/scripts/tests/test_error_logging.py` - 331 lines
+  - Comprehensive testing for logging functionality
+  - Validates error handling across modules
+
+### Changed
+
+- **Activity Logger**: Enhanced with improved formatting and control
+  - Integrated with new activity formatter
+  - Better structured log output
+  - Conditional log file creation based on settings
+  - Improved performance with reduced I/O
+
+- **Config Template**: Updated to reflect new advanced settings
+  - Added log file creation toggle
+  - Better documentation for new settings
+  - Consistent with current feature set
+
+- **Path Manager**: Added log directory management
+  - Ensures log directory exists when needed
+  - Better path resolution for log files
+  - Improved error handling
+
+- **Feature Controllers**: Enhanced icon refresh on theme changes
+  - Calendar controller: Icon refresh on theme switch
+  - Dashboard view: Dynamic icon updates
+  - Expenses controller: Themed icon reloading
+  - Habits controller: Icon cache invalidation
+  - Notes controller: Icon refresh mechanism
+  - Settings sections: Theme-aware icon updates
+
+- **Dashboard Stat Cards**: Added icon refresh capability
+  - Stat cards now update icons on theme change
+  - Better visual consistency
+  - Smoother theme transitions
+
+- **Settings Sections**: Improved theme-aware behavior
+  - About section: Updated version display
+  - Advanced section: 136 lines of enhancements
+  - Appearance section: Better theme preview
+  - Behavior section: Improved setting controls
+  - Locale section: Enhanced localization support
+  - Themes section: Better theme management UI
+
+- **Shared Dialogs**: Minor improvements to dialog system
+  - Better theme integration
+  - Improved visual consistency
+
+### Technical Details
+
+### Icon Theme Update Fix
+
+The icon update issue was caused by icons not being refreshed when themes changed. The fix involved:
+
+1. Adding icon refresh signals to theme manager
+2. Implementing icon cache invalidation on theme change
+3. Updating all feature controllers to listen for theme changes
+4. Refreshing icons in stat cards and UI elements
+
+### Activity Formatter
+
+New formatting system provides:
+
+- Structured activity log entries
+- Consistent formatting across all actions
+- Better readability for debugging
+- Reduced code duplication
+
+### Log File Control
+
+Users can now disable log file creation in Advanced settings:
+
+- Reduces disk I/O for users who don't need logs
+- Logs still appear in console for debugging
+- Setting persists across sessions
+- No performance impact when disabled
+
+### Commit History
+
+```
+10d5111 - fix icon theme update issues and add advanced settings
+```
+
+---
+
+## [v2.8.1] - 2026-03-08
 
 **Commit:** `0ede159`  
 **Tag:** `v2.8.1`  
